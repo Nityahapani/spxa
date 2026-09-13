@@ -1,0 +1,71 @@
+site_name: spxa
+site_description: Stochastic processes as first-class algebraic objects
+site_url: https://nityahapani.github.io/spxa
+repo_url: https://github.com/Nityahapani/spxa
+repo_name: Nityahapani/spxa
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+  - mkdocs-jupyter:
+      execute: false
+
+nav:
+  - Home: index.md
+  - Theory:
+      - Lévy–Khintchine: theory/levy_khintchine.md
+      - Triplet arithmetic: theory/triplet_arithmetic.md
+      - Beyond Lévy: theory/beyond_levy.md
+  - Tutorials:
+      - First composition: tutorials/01_first_composition.ipynb
+      - Finance models: tutorials/02_finance_models.ipynb
+      - Physics applications: tutorials/03_physics_applications.ipynb
+  - API reference: api/
+  - Process registry: process_registry.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md

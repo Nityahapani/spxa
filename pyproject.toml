@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "spxa"
+version = "0.0.1"
+description = "Stochastic processes as first-class algebraic objects"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "QOSI", email = "dev@qosi.dev" }]
+requires-python = ">=3.10"
+keywords = ["stochastic processes", "levy processes", "probability", "mathematics", "finance"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "sympy>=1.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov",
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "pre-commit",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-jupyter",
+]
+
+[project.urls]
+Homepage = "https://github.com/Nityahapani/spxa"
+Documentation = "https://nityahapani.github.io/spxa"
+Repository = "https://github.com/Nityahapani/spxa"
+Issues = "https://github.com/Nityahapani/spxa/issues"
+Changelog = "https://github.com/Nityahapani/spxa/blob/main/CHANGELOG.md"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "ANN", "B", "SIM"]
+ignore = ["ANN101", "ANN102", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+markers = [
+    "exactness: marks tests that verify closed-form results against published formulas (never skip)",
+    "slow: marks tests that take more than 5 seconds",
+]
+
+[tool.coverage.run]
+source = ["spxa"]
+omit = ["spxa/_internals/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
