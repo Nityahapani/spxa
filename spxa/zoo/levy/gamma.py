@@ -122,13 +122,12 @@ class GammaProcess(Process):
 
     def _triplet(self) -> LevyTriplet:
         from scipy import integrate  # type: ignore[import-untyped]
+        from scipy.special import expi  # type: ignore[import-untyped]
 
         nu = _gamma_levy_measure(self.a, self.b)
-        b_drift, _ = integrate.quad(
-            lambda x: self.a * np.exp(-self.b * x) / x,
-            0.0, 1.0,
-            limit=200,
-        )
+        # ∫_0^1 a·e^{-bx}/x dx = a · E_1(b) where E_1 is the exponential integral.
+        # expi(-b) = -E_1(b) for b > 0, so E_1(b) = -expi(-b).
+        b_drift = -self.a * float(expi(-self.b))
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
