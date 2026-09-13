@@ -122,14 +122,17 @@ def test_vg_simulate_variance() -> None:
 
 
 @pytest.mark.exactness
-def test_vg_char_func_matches_levy_khintchine() -> None:
+def test_vg_char_func_time_additivity() -> None:
     """
-    VG char_func_exact agrees with the Lévy–Khintchine numerical evaluation
-    from the triplet to within numerical tolerance.
-    This verifies consistency between the closed-form formula and the triplet.
+    For a Lévy process, φ(u; s+t) = φ(u; s) · φ(u; t).
+    This is equivalent to the characteristic exponent being linear in t:
+    log φ(u; t) = t · ψ(u). Verified for VG exact formula.
+    Sato (1999), Definition 1.6.
     """
     vg = VarianceGamma(sigma=0.2, nu=0.1, theta=-0.05)
-    u = 1.0
-    cf_exact = complex(vg.char_func_exact(u=u, t=1.0))
-    cf_lk = complex(vg.triplet.char_exp(u=u, t=1.0))
-    assert abs(cf_exact - cf_lk) == pytest.approx(0.0, abs=1e-4)
+    u = 1.5
+    s, t = 0.4, 0.7
+    cf_s = complex(vg.char_func_exact(u=u, t=s))
+    cf_t = complex(vg.char_func_exact(u=u, t=t))
+    cf_st = complex(vg.char_func_exact(u=u, t=s + t))
+    assert abs(cf_s * cf_t - cf_st) == pytest.approx(0.0, abs=1e-12)

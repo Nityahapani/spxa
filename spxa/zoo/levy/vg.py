@@ -163,6 +163,10 @@ class VarianceGamma(Process):
 
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu_measure)
 
+    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Use the exact closed-form characteristic function for VG."""
+        return self.char_func_exact(u=u, t=t)
+
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
@@ -174,6 +178,31 @@ class VarianceGamma(Process):
             tail_index=None,
             is_subordinator=False,
         )
+
+    def cumulants(self, order: int) -> dict[int, float]:
+        """
+        Exact closed-form cumulants for VG.
+
+        κ_1 = θ
+        κ_2 = σ² + θ²ν
+        κ_3 = 2θ³ν² + 3σ²θν
+        κ_4 = 3σ⁴ν + 12σ²θ²ν² + 6θ⁴ν³
+
+        Reference: Madan, Carr & Chang (1998), Section 2.
+        """
+        s, n, t_ = self.sigma, self.nu, self.theta
+        result: dict[int, float] = {}
+        if order >= 1:
+            result[1] = t_
+        if order >= 2:
+            result[2] = s**2 + t_**2 * n
+        if order >= 3:
+            result[3] = 2 * t_**3 * n**2 + 3 * s**2 * t_ * n
+        if order >= 4:
+            result[4] = 3 * s**4 * n + 12 * s**2 * t_**2 * n**2 + 6 * t_**4 * n**3
+        for k in range(5, order + 1):
+            result[k] = self._triplet().cumulant(k)
+        return result
 
     def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """

@@ -84,10 +84,12 @@ class LevyTriplet:
                 exp_term = np.exp(1j * ui * x) - 1 - 1j * ui * x * (abs(x) <= 1)
                 return exp_term * k
 
-            jump_re, _ = integrate.quad(lambda x: integrand(x).real, -np.inf, np.inf,
-                                        limit=200, points=[-1.0, 0.0, 1.0])
-            jump_im, _ = integrate.quad(lambda x: integrand(x).imag, -np.inf, np.inf,
-                                        limit=200, points=[-1.0, 0.0, 1.0])
+            jump_re_neg, _ = integrate.quad(lambda x: integrand(x).real, -np.inf, -1e-8, limit=200)
+            jump_re_pos, _ = integrate.quad(lambda x: integrand(x).real, 1e-8, np.inf, limit=200)
+            jump_re = jump_re_neg + jump_re_pos
+            jump_im_neg, _ = integrate.quad(lambda x: integrand(x).imag, -np.inf, -1e-8, limit=200)
+            jump_im_pos, _ = integrate.quad(lambda x: integrand(x).imag, 1e-8, np.inf, limit=200)
+            jump_im = jump_im_neg + jump_im_pos
 
             psi = drift_term + gaussian_term + complex(jump_re, jump_im)
             results.flat[i] = np.exp(t * psi)
