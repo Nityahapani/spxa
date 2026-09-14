@@ -91,7 +91,7 @@ def l2_char_func_distance(
     cf_Y = Y.char_func(u=u_grid, t=t)
 
     diff_sq = np.abs(cf_X - cf_Y) ** 2
-    return float(np.trapz(diff_sq, u_grid) / (2 * np.pi))
+    return float(np.trapezoid(diff_sq, u_grid) / (2 * np.pi))
 
 
 def hellinger_distance(
@@ -138,7 +138,7 @@ def hellinger_distance(
     cf_Y_half = Y.char_func(u=u_grid / 2, t=t)
 
     integrand = (cf_X_half * np.conj(cf_Y_half)).real
-    overlap = float(np.trapz(integrand, u_grid) / (2 * np.pi))
+    overlap = float(np.trapezoid(integrand, u_grid) / (2 * np.pi))
     overlap = np.clip(overlap, 0.0, 1.0)
 
     return 1.0 - overlap
@@ -193,7 +193,7 @@ def wasserstein2_distance(
         pdf = np.zeros(len(x_vals))
         for i, x in enumerate(x_vals):
             integrand = (cf_vals * np.exp(-1j * u_grid * x)).real
-            pdf[i] = float(np.trapz(integrand, u_grid)) / np.pi
+            pdf[i] = float(np.trapezoid(integrand, u_grid)) / np.pi
 
         pdf = np.maximum(pdf, 0)
         cdf = np.cumsum(pdf) * dx
@@ -208,7 +208,7 @@ def wasserstein2_distance(
     q_X = np.interp(p_grid, cdf_X, x_X)
     q_Y = np.interp(p_grid, cdf_Y, x_Y)
 
-    w2_sq = float(np.trapz((q_X - q_Y) ** 2, p_grid))
+    w2_sq = float(np.trapezoid((q_X - q_Y) ** 2, p_grid))
     return float(np.sqrt(max(w2_sq, 0.0)))
 
 
@@ -262,7 +262,7 @@ def kl_divergence_mc(
         densities = np.zeros(len(x_vals))
         for i, x in enumerate(x_vals):
             integrand = (cf * np.exp(-1j * u_grid * x)).real
-            densities[i] = float(np.trapz(integrand, u_grid)) / (2 * np.pi)
+            densities[i] = float(np.trapezoid(integrand, u_grid)) / (2 * np.pi)
         return np.maximum(densities, 1e-300)
 
     p_vals = density_at(X, samples)

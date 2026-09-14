@@ -409,10 +409,32 @@ class _ComposedProcess(Process):
                 self._left.simulate(n_steps, n_paths, T, rng)
                 + self._right.simulate(n_steps, n_paths, T, rng)
             )
-        raise NotImplementedError(
-            "Simulation of subordinated processes is not yet implemented. "
-            "Use the concrete process class directly."
-        )
+        if self._operation == "@":
+            # Subordination: Z_t = X_{T_t}
+            # Simulate the subordinator to get random time changes,
+            # then simulate the parent process at those random times.
+            # Uses a path-by-path approach: for each path, simulate the
+            # subordinator time grid, then interpolate the parent process.
+            rng = rng or np.random.default_rng()
+            time_grid = np.linspace(0, T, n_steps + 1)
+
+            # Simulate subordinator paths on a fine grid
+            sub_paths = self._right.simulate(n_steps, n_paths, T, rng)
+            # sub_paths[:, k] = T_k (random time at step k)
+
+            # For each path, simulate parent at fine resolution and interpolate
+            # We simulate the parent on a finer grid covering [0, max(T_T)]
+            max_time = float(sub_paths[:, -1].max()) * 1.5 + 1e-6
+            fine_steps = max(n_steps * 4, 500)
+            parent_paths = self._left.simulate(fine_steps, n_paths, max_time, rng)
+            fine_grid = np.linspace(0, max_time, fine_steps + 1)
+
+            paths = np.zeros((n_paths, n_steps + 1))
+            for i in range(n_paths):
+                paths[i] = np.interp(sub_paths[i], fine_grid, parent_paths[i])
+
+            return paths
+        raise NotImplementedError(f"Simulation not implemented for operation '{self._operation}'.")
 
     def __repr__(self) -> str:
         return f"({self._left!r} {self._operation} {self._right!r})"
