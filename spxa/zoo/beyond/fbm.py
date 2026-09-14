@@ -182,28 +182,32 @@ class FractionalBrownianMotion(Process):
         dt = T / n_steps
         n = n_steps
 
-        times = np.arange(n + 1) * dt
-        gamma = np.array([self.covariance(times[k], times[k]) if k == 0
-                          else 0.5 * self.sigma**2 * (
-                              abs(times[k] - times[0])**(2*self.H)
-                              + abs(times[k] + times[0])**(2*self.H) - 2*abs(times[k])**(2*self.H)
-                          )
-                          for k in range(n)])
+        def acf(k: int) -> float:
+            if k == 0:
+                return self.sigma**2 * dt**(2 * self.H)
+            return 0.5 * self.sigma**2 * dt**(2 * self.H) * (
+                (k + 1)**(2 * self.H) - 2 * k**(2 * self.H) + (k - 1)**(2 * self.H)
+            )
+
+        gamma = np.array([acf(k) for k in range(n)])
 
         row = np.zeros(2 * n)
         row[:n] = gamma
-        row[n:] = gamma[n - 1:0:-1]
+        row[n] = 0.0
+        if n > 1:
+            row[n + 1:] = gamma[n - 1:0:-1]
 
         eigenvalues = np.fft.fft(row).real
         if np.any(eigenvalues < 0):
             eigenvalues = np.maximum(eigenvalues, 0)
 
-        sqrt_eigs = np.sqrt(eigenvalues / (2 * n))
+        sqrt_eigs = np.sqrt(np.maximum(eigenvalues, 0) / (2 * n))
 
         paths = np.zeros((n_paths, n + 1))
         for i in range(n_paths):
-            z = rng.standard_normal(2 * n)
-            w = np.fft.fft(sqrt_eigs * (z[:n] + 1j * z[n:]))
+            z_real = rng.standard_normal(2 * n)
+            z_imag = rng.standard_normal(2 * n)
+            w = np.fft.fft(sqrt_eigs * (z_real + 1j * z_imag))
             increments = w[:n].real
             paths[i, 1:] = np.cumsum(increments)
 
