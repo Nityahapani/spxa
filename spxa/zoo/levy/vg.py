@@ -143,6 +143,14 @@ class VarianceGamma(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
+        # The VG Lévy density k(x) = C/|x| * exp(Ax - B|x|) has a non-integrable
+        # singularity at 0 that makes generic quadrature unreliable.
+        # We use the known closed-form mean E[X_1] = θ as the drift anchor,
+        # with the truncation-function correction absorbed analytically.
+        # The drift in the Lévy–Khintchine formula with h(x)=1_{|x|≤1} is:
+        #   b = E[X_1] - ∫_{|x|>1} x k(x) dx
+        # The second term is computed numerically on [1,∞), where the integrand
+        # has no singularity and converges exponentially (exponential tails).
         from scipy import integrate  # type: ignore[import-untyped]
 
         nu_measure = _vg_levy_measure(self.sigma, self.nu, self.theta)
@@ -151,15 +159,18 @@ class VarianceGamma(Process):
         A = self.theta / self.sigma**2
         B = np.sqrt(self.theta**2 / self.sigma**4 + 2.0 / (self.sigma**2 * self.nu))
 
-        b_pos, _ = integrate.quad(
-            lambda x: (C / x) * np.exp(A * x - B * x),
-            0.0, 1.0, limit=200
+        # ∫_1^∞ x * k(x) dx  (positive side, no singularity at origin)
+        tail_pos, _ = integrate.quad(
+            lambda x: (C / x) * np.exp(A * x - B * x) * x,
+            1.0, np.inf, limit=200
         )
-        b_neg, _ = integrate.quad(
-            lambda x: (C / (-x)) * np.exp(A * x - B * (-x)) * (-1),
-            -1.0, 0.0, limit=200
+        # ∫_{-∞}^{-1} x * k(x) dx = -∫_1^∞ x * k(-x) dx
+        tail_neg, _ = integrate.quad(
+            lambda x: (C / x) * np.exp(-A * x - B * x) * (-x),
+            1.0, np.inf, limit=200
         )
-        b_drift = b_pos + b_neg
+        # b = mean - tail_correction
+        b_drift = self.theta - tail_pos - tail_neg
 
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu_measure)
 
