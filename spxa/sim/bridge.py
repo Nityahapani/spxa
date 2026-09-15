@@ -99,13 +99,12 @@ def brownian_bridge(
     for i in range(1, n_points + 1):
         t = time_grid[i]
         t_prev = time_grid[i - 1]
-        t_next = time_grid[i + 1]
+        t_end_local = time_grid[-1]
         x_prev = paths[:, i - 1]
-        x_next = paths[:, -1]
+        x_end_val = paths[:, -1]  # always the pinned endpoint
 
-        frac = (t_next - t) / (t_next - t_prev)
-        mu_cond = x_prev + (x_next - x_prev) * (t - t_prev) / (t_next - t_prev)
-        var_cond = sigma**2 * (t - t_prev) * (t_next - t) / (t_next - t_prev)
+        mu_cond = x_prev + (x_end_val - x_prev) * (t - t_prev) / (t_end_local - t_prev)
+        var_cond = sigma**2 * (t - t_prev) * (t_end_local - t) / (t_end_local - t_prev)
 
         paths[:, i] = mu_cond + np.sqrt(var_cond) * rng.standard_normal(n_paths)
 
