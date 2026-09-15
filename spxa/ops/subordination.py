@@ -183,14 +183,19 @@ def bernstein_function(subordinator: Process, lam: float | np.ndarray) -> np.nda
     """
     if not subordinator.properties.is_subordinator:
         raise ValueError(f"{type(subordinator).__name__} is not a subordinator.")
+
+    # Use closed-form method if the process provides one
+    if hasattr(subordinator, "bernstein_function"):
+        lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
+        result = subordinator.bernstein_function(lam_arr)
+        return result if np.asarray(result).shape != (1,) else np.asarray(result)[0]
+
     lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
     results = np.zeros(len(lam_arr))
     for i, lv in enumerate(lam_arr):
         if lv == 0.0:
             results[i] = 0.0
             continue
-        # E[e^{-λ T_1}] = char_func_T(u = iλ; 1)
-        # For stability use the real part of log only when |cf| > 0
         u_T = complex(0.0, lv)
         try:
             cf_val = complex(subordinator.char_func(u=u_T, t=1.0))

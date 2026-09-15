@@ -145,6 +145,14 @@ class TestSubordination:
         phi_0 = bernstein_function(g, lam=0.0)
         assert float(phi_0) == pytest.approx(0.0, abs=1e-6)
 
+    def test_bernstein_function_gamma_exact(self) -> None:
+        """φ_Gamma(λ) = a·log(1 + λ/b) exactly. Schilling et al. (2012), Example 3.9."""
+        g = GammaProcess(a=1.0, b=2.0)
+        lam_vals = np.array([0.0, 0.5, 1.0, 2.0])
+        phi_vals = bernstein_function(g, lam=lam_vals)
+        expected = np.array([0.0, np.log(1.25), np.log(1.5), np.log(2.0)])
+        np.testing.assert_allclose(phi_vals, expected, rtol=1e-10)
+
     def test_bernstein_function_gamma_positive(self) -> None:
         """Bernstein function φ(λ) ≥ 0 for λ ≥ 0, tested at numerically stable values."""
         g = GammaProcess(a=1.0, b=2.0)

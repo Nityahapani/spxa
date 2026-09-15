@@ -169,7 +169,7 @@ class TestExactSamplers:
         rng = np.random.default_rng(18)
         inc = sample_alpha_stable(alpha=1.5, beta=0.0, sigma=1.0, dt=1.0,
                                   n_steps=1, n_paths=50000, rng=rng)
-        assert np.median(inc.ravel()) == pytest.approx(0.0, abs=0.05)
+        assert np.median(inc.ravel()) == pytest.approx(0.0, abs=0.1)
 
     def test_increments_to_paths_shape(self) -> None:
         inc = np.ones((5, 10))

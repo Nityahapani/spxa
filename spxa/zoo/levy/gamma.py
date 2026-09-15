@@ -142,6 +142,26 @@ class GammaProcess(Process):
             is_subordinator=True,
         )
 
+    def bernstein_function(self, lam: float | np.ndarray) -> np.ndarray:
+        """
+        Exact Bernstein (Laplace exponent) function of the Gamma subordinator.
+
+        φ(λ) = a · log(1 + λ/b)
+
+        Derivation: E[e^{-λ G_1}] = (b/(b+λ))^a for G_1 ~ Gamma(a, b).
+        So φ(λ) = -log E[e^{-λ G_1}] = a · log(1 + λ/b).
+
+        Reference: Schilling, Song & Vondraček (2012), Example 3.9.
+
+        Parameters
+        ----------
+        lam :
+            Non-negative real argument(s).
+        """
+        lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
+        result = self.a * np.log1p(lam_arr / self.b)
+        return result if result.shape != (1,) else result[0]
+
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
         Exact closed-form cumulant: κ_n(X_t) = a·t·(n-1)! / b^n.
