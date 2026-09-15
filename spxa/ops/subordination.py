@@ -184,9 +184,23 @@ def bernstein_function(subordinator: Process, lam: float | np.ndarray) -> np.nda
     if not subordinator.properties.is_subordinator:
         raise ValueError(f"{type(subordinator).__name__} is not a subordinator.")
     lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
-    u_T = 1j * lam_arr.astype(complex)
-    laplace_vals = subordinator.char_func(u=u_T, t=1.0)
-    phi = -np.log(laplace_vals + 1e-300).real
+    results = np.zeros(len(lam_arr))
+    for i, lv in enumerate(lam_arr):
+        if lv == 0.0:
+            results[i] = 0.0
+            continue
+        # E[e^{-λ T_1}] = char_func_T(u = iλ; 1)
+        # For stability use the real part of log only when |cf| > 0
+        u_T = complex(0.0, lv)
+        try:
+            cf_val = complex(subordinator.char_func(u=u_T, t=1.0))
+            if abs(cf_val) < 1e-15:
+                results[i] = np.inf
+            else:
+                results[i] = -np.log(abs(cf_val))
+        except Exception:
+            results[i] = float("nan")
+    phi = results
     return phi if phi.shape != (1,) else phi[0]
 
 

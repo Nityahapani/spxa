@@ -182,8 +182,19 @@ def geometric_levy(
     rng = rng or np.random.default_rng()
     time_grid = np.linspace(0, T, n_steps + 1)
     driver_paths = driver.simulate(n_steps=n_steps, n_paths=n_paths, T=T, rng=rng)
-    kappas = driver.cumulants(order=2)
-    drift_correction = mu - 0.5 * sigma**2 * kappas[2]
+
+    # Risk-neutral drift correction: ensures E[S_t] = S_0 * exp(mu * t)
+    # For a general Lévy process X, E[exp(sigma*X_1)] = phi_X(-i*sigma; 1)
+    # The log of this is the cumulant generating function at sigma.
+    # Drift correction: log(E[exp(sigma*X_1)]) must equal mu*t for S_t = S_0*exp((mu+drift)*t + sigma*X_t)
+    # So drift_correction = mu - log(phi_X(-i*sigma; 1))
+    try:
+        mgf_val = complex(driver.char_func(u=-1j * sigma, t=1.0))
+        drift_correction = mu - np.log(abs(mgf_val) + 1e-300).real
+    except Exception:
+        kappas = driver.cumulants(order=2)
+        drift_correction = mu - 0.5 * sigma**2 * kappas[2]
+
     log_paths = drift_correction * time_grid[np.newaxis, :] + sigma * driver_paths
     return s0 * np.exp(log_paths)
 
