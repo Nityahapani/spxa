@@ -211,6 +211,26 @@ class Process(ABC):
         lines.append("=" * 60)
         return "\n".join(lines)
 
+    def __story_latex__(self) -> str:
+        """
+        Return a LaTeX derivation of this process's composition and properties.
+
+        Output is a ``\\begin{aligned}...\\end{aligned}`` block suitable for
+        display in a Jupyter notebook:
+
+        .. code-block:: python
+
+            from IPython.display import display, Math
+            display(Math(Z.__story_latex__()))
+
+        See Also
+        --------
+        __story__ : Plain-text version.
+        spxa.story.story_latex : Standalone function.
+        """
+        from spxa.story.narrator import story_latex
+        return story_latex(self)
+
     def _degradation_reason(self) -> str:
         """Return the reason for exactness degradation from the composition notes."""
         notes = self._properties().notes
