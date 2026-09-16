@@ -98,13 +98,14 @@ class InverseGaussianProcess(Process):
 
     Notes
     -----
-    Cumulants (Tweedie 1957):
-      κ_n(X_t) = t · μ^{2n-1} · (2n-1)!! / (λ^{n-1} · (2n-3)!!)
-    Simplified:
-      κ_1 = μ
-      κ_2 = μ³/λ
-      κ_3 = 3μ⁵/λ²
-      κ_4 = 15μ⁷/λ³
+    Cumulants (Tweedie 1957, equation 2.5):
+      κ_n(X_t) = t · (2n-1)!! · μ^{2n-1} / λ^{n-1}
+    where (2n-1)!! = 1·3·5·...·(2n-1).
+    Explicitly:
+      κ₁ = μ
+      κ₂ = 3μ³/λ
+      κ₃ = 15μ⁵/λ²
+      κ₄ = 105μ⁷/λ³
 
     Bernstein function (Schilling et al. 2012):
       φ(s) = (λ/μ)(1 - sqrt(1 - 2μ²s/λ))

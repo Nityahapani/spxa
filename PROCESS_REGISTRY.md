@@ -23,8 +23,8 @@ Every process implemented in spxa. The exactness level, available cumulants, sim
 | `AlphaStable` | EXACT | order < α only | Chambers–Mallows–Stuck | Samorodnitsky & Taqqu 1994 |
 | `TemperedStable` | EXACT | all orders | rejection from stable | Rosiński 2007 |
 | `MeixnerProcess` | EXACT | all orders | acceptance-rejection | Schoutens & Teugels 1998 |
-| `InverseGaussian` | EXACT | all orders | exact (Wald distribution) | Tweedie 1957 |
-| `NegativeBinomial` | EXACT | all orders | exact | Quenouille 1949 |
+| `InverseGaussianProcess` | EXACT | all orders | exact (Wald distribution) | Tweedie 1957 |
+| `MeixnerProcess` | EXACT | all orders (closed form to n=4, numerical above) | Gil-Pelaez CDF inversion | Schoutens & Teugels 1998 |
 
 ## Beyond Lévy (`spxa.zoo.beyond`)
 
