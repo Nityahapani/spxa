@@ -27,3 +27,10 @@ __all__ = [
     "PoissonProcess",
     "VarianceGamma",
 ]
+from spxa.zoo.multivariate import (
+    MultivariateBrownianMotion,
+    MultivariateLevyTriplet,
+    CorrelatedLevy,
+    correlated_brownian_motion,
+    independent_levy_vector,
+)
