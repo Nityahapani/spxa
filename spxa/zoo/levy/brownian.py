@@ -98,6 +98,19 @@ class BrownianMotion(Process):
             hurst_index=None,
         )
 
+    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """
+        Exact characteristic function: E[e^{iuX_t}] = exp(iμtu - σ²tu²/2).
+
+        Sato (1999), Example 8.3.
+        """
+        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
+        result = np.exp(1j * self.mu * t * u_arr - 0.5 * self.sigma**2 * t * u_arr**2)
+        return result if result.shape != (1,) else result[0]
+
+    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        return self.char_func_exact(u=u, t=t)
+
     def simulate(
         self,
         n_steps: int,

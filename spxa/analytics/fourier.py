@@ -74,7 +74,9 @@ def european_call_price(
     u_grid = np.arange(n_points) * eta
     u_shifted = u_grid - (alpha + 1) * 1j
 
-    cf_vals = process.char_func(u=u_shifted, t=t)
+    # Use char_func_exact if the process provides it (avoids slow LK quadrature)
+    cf_fn = getattr(process, "char_func_exact", None) or process.char_func
+    cf_vals = cf_fn(u=u_shifted, t=t)
 
     numerator = np.exp(-r * t) * cf_vals
     denominator = alpha**2 + alpha - u_grid**2 + 1j * (2 * alpha + 1) * u_grid
