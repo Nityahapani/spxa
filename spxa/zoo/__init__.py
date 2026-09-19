@@ -7,26 +7,13 @@ from spxa.zoo.levy import (
     GammaProcess,
     InverseGaussianProcess,
     MeixnerProcess,
+    NegativeBinomialProcess,
     NIG,
     PoissonProcess,
+    TemperedStable,
     VarianceGamma,
 )
 from spxa.zoo.beyond import FractionalBrownianMotion, HawkesProcess, OULevy
-
-__all__ = [
-    "AlphaStable",
-    "BrownianMotion",
-    "CGMY",
-    "FractionalBrownianMotion",
-    "GammaProcess",
-    "HawkesProcess",
-    "InverseGaussianProcess",
-    "MeixnerProcess",
-    "NIG",
-    "OULevy",
-    "PoissonProcess",
-    "VarianceGamma",
-]
 from spxa.zoo.multivariate import (
     MultivariateBrownianMotion,
     MultivariateLevyTriplet,
@@ -34,3 +21,25 @@ from spxa.zoo.multivariate import (
     correlated_brownian_motion,
     independent_levy_vector,
 )
+
+__all__ = [
+    "AlphaStable",
+    "BrownianMotion",
+    "CGMY",
+    "CorrelatedLevy",
+    "FractionalBrownianMotion",
+    "GammaProcess",
+    "HawkesProcess",
+    "InverseGaussianProcess",
+    "MeixnerProcess",
+    "MultivariateBrownianMotion",
+    "MultivariateLevyTriplet",
+    "NegativeBinomialProcess",
+    "NIG",
+    "OULevy",
+    "PoissonProcess",
+    "TemperedStable",
+    "VarianceGamma",
+    "correlated_brownian_motion",
+    "independent_levy_vector",
+]
