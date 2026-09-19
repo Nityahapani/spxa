@@ -5,10 +5,9 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 ## Unreleased
 
 ### Added
-- Repository foundation: directory structure, docs, GitHub workflows
-- Theory documentation: Lévy–Khintchine, triplet arithmetic, beyond Lévy
-- Process registry
-- CI/CD workflows: test, lint, docs, benchmarks
+- `TemperedStable` — pure-jump subordinator with Lévy density C·x^{-1-α}·exp(-λx); exact Bernstein function, cumulants, char_func, CDF inversion simulation (Rosiński 2007)
+- `NegativeBinomialProcess` — finite-activity discrete subordinator; exact characteristic function, cumulants to order 4, NegBin simulation (Quenouille 1949)
+- 34 exactness tests for both new processes
 
 ## 0.1.0 — TBD
 

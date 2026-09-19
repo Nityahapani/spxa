@@ -50,13 +50,13 @@ from spxa.story.narrator import CompositionNode, NodeKind
 
 
 class _NegBinLevyMeasure(LevyMeasure):
-    """
+    r"""
     Lévy measure of the Negative Binomial process.
 
     ν = ∑_{k=1}^∞ (r · p^k / k) · δ_k
 
     This is a discrete measure on {1, 2, 3, ...} with total mass
-    ν(ℝ\{0}) = r · log(1/(1-p)) < ∞ (finite activity).
+    nu(R\{0}) = r · log(1/(1-p)) < ∞ (finite activity).
 
     Quenouille (1949); Kozubowski & Podgórski (2009), Section 2.
     """
@@ -161,7 +161,7 @@ class NegativeBinomialProcess(Process):
             math_note=(
                 f"φ(u;t) = ((1-p)/(1-p·e^{{iu}}))^{{rt}}; "
                 f"κ₁={r*p/(1-p):.4f}, κ₂={r*p/(1-p)**2:.4f}; "
-                f"finite activity: ν(ℝ\\\\{{0}})=r·log(1/(1-p))={r*np.log(1/(1-p)):.4f}"
+                f"finite activity: nu(R\\{{0}})=r*log(1/(1-p))={r*np.log(1/(1-p)):.4f}"
             ),
             reference="Quenouille (1949); Johnson et al. (2005) Ch. 5",
         )
