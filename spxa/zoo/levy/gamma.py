@@ -162,6 +162,9 @@ class GammaProcess(Process):
         result = self.a * np.log1p(lam_arr / self.b)
         return result if result.shape != (1,) else result[0]
 
+    def cumulants(self, order: int) -> dict[int, float]:
+        return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
+
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
         Exact closed-form cumulant: κ_n(X_t) = a·t·(n-1)! / b^n.

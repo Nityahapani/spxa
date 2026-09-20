@@ -207,6 +207,9 @@ class NIG(Process):
         result = np.exp(t * exponent)
         return result if result.shape != (1,) else result[0]
 
+    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        return self.char_func_exact(u=u, t=t)
+
     def simulate(
         self,
         n_steps: int,
