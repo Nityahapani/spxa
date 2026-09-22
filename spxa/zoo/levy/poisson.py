@@ -112,6 +112,19 @@ class PoissonProcess(Process):
             is_subordinator=(self.jump_size > 0),
         )
 
+    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """φ(u;t) = exp(λt(e^{icu}-1)). Characteristic function of a Poisson process."""
+        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
+        result = np.exp(self.rate * t * (np.exp(1j * self.jump_size * u_arr) - 1))
+        return result if result.shape != (1,) else result[0]
+
+    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        return self.char_func_exact(u=u, t=t)
+
+    def cumulants(self, order: int) -> dict[int, float]:
+        """κ_n(X_t) = λ·c^n for all n ≥ 1. All cumulants of a Poisson distribution are equal to the mean."""
+        return {n: self.rate * (self.jump_size ** n) for n in range(1, order + 1)}
+
     def simulate(
         self,
         n_steps: int,
