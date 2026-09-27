@@ -1,3 +1,21 @@
+<p align="center">
+<img width="870" height="808" alt="Image 27-09-26 at 12 12 PM" src="https://github.com/user-attachments/assets/4bbf9e5b-d578-42f8-8c12-b467f6e015cf" />
+  
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-%3E%3D3.10-blue.svg" alt="Python Version">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/exactness-algebraic-orange.svg" alt="Exactness">
+  <img src="https://img.shields.io/badge/status-active-success.svg" alt="Status">
+</p>
+
+<p align="center">
+  <em>Processes as first-class algebraic objects with exact Lévy–Khintchine triplet arithmetic.</em>
+</p>
+
+---
+
 # spxa — Stochastic Process Algebra
 
 **spxa** is a Python library where stochastic processes are first-class algebraic objects.
