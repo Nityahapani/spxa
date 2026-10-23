@@ -55,11 +55,10 @@ schemes for stochastic volatility models. *Mathematical Finance*, 20(2), 177–2
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
 
 import numpy as np
-import scipy.special as sp
 
+from spxa.core._validation import validate_order, validate_time
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError
 from spxa.core.process import Process
@@ -102,8 +101,10 @@ class CIRProcess(Process):
         kappa: float,
         theta: float,
         sigma: float,
-        r0: Optional[float] = None,
+        r0: float | None = None,
     ) -> None:
+        if not np.all(np.isfinite([kappa, theta, sigma, theta if r0 is None else r0])):
+            raise ValueError("Process parameters and initial state must be finite")
         if kappa <= 0:
             raise ValueError(f"kappa must be strictly positive, got {kappa}")
         if theta <= 0:
@@ -127,7 +128,17 @@ class CIRProcess(Process):
 
         node = CompositionNode(
             kind=NodeKind.PRIMITIVE,
-            name=f"CIRProcess(kappa={self.kappa}, theta={self.theta}, sigma={self.sigma}, r0={self.r0})",
+            name=(
+                "CIRProcess(kappa="
+                f"{self.kappa}"
+                ", theta="
+                f"{self.theta}"
+                ", sigma="
+                f"{self.sigma}"
+                ", r0="
+                f"{self.r0}"
+                ")"
+            ),
             math_note=(
                 f"dr_t = κ(θ - r_t)dt + σ√r_t dW_t; κ={self.kappa}, θ={self.theta}, "
                 f"σ={self.sigma}, r0={self.r0}; Feller ratio 2κθ/σ² = {feller_ratio:.4f} "
@@ -209,97 +220,40 @@ class CIRProcess(Process):
     # Analytical Conditional Moments & Cumulants
     # ------------------------------------------------------------------
 
-    def conditional_mean(self, t: float, r0: Optional[float] = None) -> float:
-        r"""
-        Conditional expectation E[r_t | r_0] = θ + (r_0 - θ) e^{-κt}.
+    def conditional_mean(self, t: float, r0: float | None = None) -> float:
+        return self.conditional_cumulant(1, t, r0)
 
-        Parameters
-        ----------
-        t : float
-            Time horizon t ≥ 0.
-        r0 : float, optional
-            Initial state r_0 ≥ 0. Defaults to `self.r0`.
-        """
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
-        return float(self.theta + (val_r0 - self.theta) * np.exp(-self.kappa * t))
+    def conditional_variance(self, t: float, r0: float | None = None) -> float:
+        return self.conditional_cumulant(2, t, r0)
 
-    def conditional_variance(self, t: float, r0: Optional[float] = None) -> float:
-        r"""
-        Conditional variance:
-        Var(r_t | r_0) = r_0 (σ²/κ)(e^{-κt} - e^{-2κt}) + θ(σ²/(2κ))(1 - e^{-κt})².
-
-        Parameters
-        ----------
-        t : float
-            Time horizon t ≥ 0.
-        r0 : float, optional
-            Initial state r_0 ≥ 0. Defaults to `self.r0`.
-        """
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
-
-        exp_k = np.exp(-self.kappa * t)
-        exp_2k = np.exp(-2.0 * self.kappa * t)
-        var = (
-            val_r0 * (self.sigma**2 / self.kappa) * (exp_k - exp_2k)
-            + self.theta * (self.sigma**2 / (2.0 * self.kappa)) * ((1.0 - exp_k) ** 2)
-        )
-        return float(max(var, 0.0))
-
-    def conditional_std(self, t: float, r0: Optional[float] = None) -> float:
+    def conditional_std(self, t: float, r0: float | None = None) -> float:
         r"""Conditional standard deviation std(r_t | r_0)."""
         return float(np.sqrt(self.conditional_variance(t, r0)))
 
-    def conditional_cumulant(self, n: int, t: float, r0: Optional[float] = None) -> float:
-        r"""
-        Exact conditional cumulant κ_n(r_t | r_0) of order n ≥ 1.
-
-        Derived from the cumulant generating function of the non-central
-        chi-squared distribution 2c r_t ~ χ²_d(λ):
-            κ_n(r_t | r_0) = (n - 1)! (d + nλ) / (2 cⁿ)
-
-        where:
-            c = 2κ / (σ² (1 - e^{-κt}))
-            d = 4κθ / σ²
-            λ = 2c r_0 e^{-κt}
-        """
-        if n < 1:
-            raise ValueError(f"Cumulant order must be an integer >= 1, got {n}")
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
-
+    def conditional_cumulant(self, n: int, t: float, r0: float | None = None) -> float:
+        """Noncentral-chi-square cumulants, in a form stable as t tends to zero."""
+        validate_order(n)
+        validate_time(t)
+        initial = self.r0 if r0 is None else float(r0)
+        if not np.isfinite(initial) or initial < 0:
+            raise ValueError("r0 must be non-negative and finite")
         if t == 0:
-            return float(val_r0 if n == 1 else 0.0)
-
-        exp_k = math.exp(-self.kappa * t)
-        denom_c = self.sigma**2 * (1.0 - exp_k)
-        c = 2.0 * self.kappa / denom_c
-        d = 4.0 * self.kappa * self.theta / (self.sigma**2)
-        lam = 2.0 * c * val_r0 * exp_k
-
-        # κ_n(Y) = 2^{n-1} (n-1)! (d + nλ)
-        # κ_n(r_t) = κ_n(Y) / (2c)^n = (n-1)! (d + nλ) / (2 * c^n)
-        fact = math.factorial(n - 1)
-        return float(fact * (d + float(n) * lam) / (2.0 * (c**n)))
+            return initial if n == 1 else 0.0
+        scale = self.sigma**2 * (-math.expm1(-self.kappa * t)) / (2 * self.kappa)
+        shape = 2 * self.kappa * self.theta / self.sigma**2
+        return float(
+            math.factorial(n - 1)
+            * (shape * scale**n + n * initial * math.exp(-self.kappa * t) * scale ** (n - 1))
+        )
 
     def conditional_cumulants(
         self,
         t: float,
         order: int = 4,
-        r0: Optional[float] = None,
+        r0: float | None = None,
     ) -> dict[int, float]:
         r"""Compute exact conditional cumulants up to specified order."""
-        if order < 1:
+        if isinstance(order, bool) or not isinstance(order, (int, np.integer)) or order < 1:
             raise ValueError(f"order must be >= 1, got {order}")
         return {n: self.conditional_cumulant(n, t, r0) for n in range(1, order + 1)}
 
@@ -308,7 +262,7 @@ class CIRProcess(Process):
         Exact n-th cumulant of the stationary Gamma distribution:
         κ_n(r_∞) = (n - 1)! θ (σ² / (2κ))^{n - 1}.
         """
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError(f"Cumulant order must be an integer >= 1, got {n}")
         fact = math.factorial(n - 1)
         scale = self.sigma**2 / (2.0 * self.kappa)
@@ -323,13 +277,13 @@ class CIRProcess(Process):
         h : float
             Time lag h ≥ 0.
         """
-        if h < 0:
+        if not np.isfinite(h) or h < 0:
             raise ValueError(f"Lag h must be non-negative, got {h}")
         return float(self.stationary_variance * np.exp(-self.kappa * h))
 
     def autocorrelation(self, h: float) -> float:
         r"""Stationary autocorrelation Corr(r_t, r_{t+h}) = e^{-κh}."""
-        if h < 0:
+        if not np.isfinite(h) or h < 0:
             raise ValueError(f"Lag h must be non-negative, got {h}")
         return float(np.exp(-self.kappa * h))
 
@@ -337,159 +291,64 @@ class CIRProcess(Process):
     # Characteristic Function & Laplace Transform
     # ------------------------------------------------------------------
 
-    def laplace_transform(self, u: float, t: float, r0: Optional[float] = None) -> float:
-        r"""
-        Exact conditional Laplace transform E[e^{-u r_t} | r_0] = A(t, u) e^{-B(t, u) r_0}.
-
-        Parameters
-        ----------
-        u : float
-            Transform parameter u ≥ 0.
-        t : float
-            Horizon t ≥ 0.
-        r0 : float, optional
-            Initial state r_0 ≥ 0.
-        """
-        if u < 0:
-            raise ValueError(f"Transform argument u must be non-negative, got {u}")
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
-
-        if t == 0:
-            return float(np.exp(-u * val_r0))
-        if u == 0:
-            return 1.0
-
-        exp_k = np.exp(-self.kappa * t)
-        scale_term = (self.sigma**2 * (1.0 - exp_k)) / (2.0 * self.kappa)
-        denom = 1.0 + u * scale_term
-        a_power = 2.0 * self.kappa * self.theta / (self.sigma**2)
-        a_factor = denom ** (-a_power)
-        b_factor = (u * exp_k) / denom
-
-        return float(a_factor * np.exp(-b_factor * val_r0))
+    def laplace_transform(self, u: float, t: float, r0: float | None = None) -> float:
+        if not np.isfinite(u) or u < 0:
+            raise ValueError("Transform argument u must be non-negative and finite")
+        return float(complex(self.char_func(1j * u, t, r0)).real)
 
     def char_func(
-        self,
-        u: Union[float, complex],
-        t: float = 1.0,
-        r0: Optional[float] = None,
-    ) -> complex:
-        r"""
-        Conditional characteristic function E[e^{i u r_t} | r_0] = A(t, -iu) e^{-B(t, -iu) r_0}.
-
-        Parameters
-        ----------
-        u : float or complex
-            Frequency argument.
-        t : float
-            Horizon t ≥ 0.
-        r0 : float, optional
-            Initial state r_0 ≥ 0.
-        """
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
-
-        if t == 0:
-            return complex(np.exp(1j * u * val_r0))
-        if u == 0:
-            return complex(1.0, 0.0)
-
-        w = -1j * u
-        exp_k = np.exp(-self.kappa * t)
-        scale_term = (self.sigma**2 * (1.0 - exp_k)) / (2.0 * self.kappa)
-        denom = 1.0 + w * scale_term
-        a_power = 2.0 * self.kappa * self.theta / (self.sigma**2)
-        a_factor = denom ** (-a_power)
-        b_factor = (w * exp_k) / denom
-
-        return complex(a_factor * np.exp(-b_factor * val_r0))
+        self, u: complex | float | np.ndarray, t: float = 1.0, r0: float | None = None
+    ) -> complex | np.ndarray:
+        validate_time(t)
+        initial = self.r0 if r0 is None else float(r0)
+        if not np.isfinite(initial) or initial < 0:
+            raise ValueError("r0 must be non-negative and finite")
+        z = np.asarray(u, dtype=complex)
+        scale = self.sigma**2 * (-math.expm1(-self.kappa * t)) / (2 * self.kappa)
+        if np.any(1 + z.imag * scale <= 0):
+            raise ValueError("CIR MGF is outside its finite domain")
+        shape = 2 * self.kappa * self.theta / self.sigma**2
+        log_cf = -shape * np.log1p(-1j * z * scale) + 1j * z * initial * math.exp(
+            -self.kappa * t
+        ) / (1 - 1j * z * scale)
+        result = np.exp(log_cf)
+        return complex(result) if z.ndim == 0 else np.asarray(result)
 
     # ------------------------------------------------------------------
     # Transition & Stationary Probability Densities
     # ------------------------------------------------------------------
 
     def transition_density(
-        self,
-        y: Union[float, np.ndarray],
-        t: float,
-        r0: Optional[float] = None,
-        s: float = 0.0,
-    ) -> Union[float, np.ndarray]:
-        r"""
-        Exact transition probability density p(y, t | r_s, s).
+        self, y: float | np.ndarray, t: float, r0: float | None = None, s: float = 0.0
+    ) -> float | np.ndarray:
+        """Scaled noncentral-chi-square density, avoiding unscaled Bessel overflow."""
+        from scipy.stats import ncx2
 
-        p(y, t | x, s) = c exp(-u - v) (v / u)^{q/2} I_q(2 √(uv))
-
-        where Δt = t - s > 0, c = 2κ / (σ²(1 - e^{-κΔt})), q = 2κθ/σ² - 1,
-        u = c x e^{-κΔt}, and v = c y.
-        """
         dt = t - s
-        if dt <= 0:
-            raise ValueError(f"t must be strictly greater than s (dt={dt})")
-        val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
-            raise ValueError(f"r0 must be non-negative, got {val_r0}")
+        if not np.isfinite(s) or s < 0 or not np.isfinite(dt) or dt <= 0:
+            raise ValueError("t must be strictly greater than s, with finite nonnegative times")
+        initial = self.r0 if r0 is None else float(r0)
+        if not np.isfinite(initial) or initial < 0:
+            raise ValueError("r0 must be non-negative and finite")
+        scale = self.sigma**2 * (-math.expm1(-self.kappa * dt)) / (4 * self.kappa)
+        values = np.asarray(y, dtype=float)
+        result = np.asarray(
+            ncx2.pdf(
+                values / scale,
+                self.degrees_of_freedom,
+                initial * math.exp(-self.kappa * dt) / scale,
+            )
+            / scale
+        )
+        return float(result) if values.ndim == 0 else result
 
-        y_arr = np.asarray(y, dtype=float)
-        is_scalar = y_arr.ndim == 0
-        y_arr = np.atleast_1d(y_arr)
+    def stationary_density(self, y: float | np.ndarray) -> float | np.ndarray:
+        """Stationary Gamma density, evaluated in log-stable library form."""
+        from scipy.stats import gamma
 
-        exp_k = np.exp(-self.kappa * dt)
-        c = 2.0 * self.kappa / (self.sigma**2 * (1.0 - exp_k))
-        d = 4.0 * self.kappa * self.theta / (self.sigma**2)
-        q = d / 2.0 - 1.0
-        u = c * val_r0 * exp_k
-
-        out = np.zeros_like(y_arr)
-        pos = y_arr > 0.0
-
-        if np.any(pos):
-            y_pos = y_arr[pos]
-            v = c * y_pos
-            if u <= 0.0:
-                # Boundary case u = 0 (e.g. r0 = 0): non-central chi-sq reduces to central Gamma(alpha=d/2, scale=1/c)
-                alpha = d / 2.0
-                out[pos] = (c**alpha / sp.gamma(alpha)) * (y_pos ** (alpha - 1.0)) * np.exp(-c * y_pos)
-            else:
-                # Use exponentially-scaled Bessel function ive to prevent floating-point overflow:
-                # exp(-u - v) * iv(q, 2*sqrt(u*v)) = exp(-(sqrt(u) - sqrt(v))^2) * ive(q, 2*sqrt(u*v))
-                sqrt_u = math.sqrt(u)
-                sqrt_v = np.sqrt(v)
-                bessel_arg = 2.0 * sqrt_u * sqrt_v
-                exp_factor = np.exp(-((sqrt_u - sqrt_v) ** 2))
-                ratio_factor = (v / u) ** (q / 2.0)
-                out[pos] = c * exp_factor * ratio_factor * sp.ive(q, bessel_arg)
-
-        return float(out[0]) if is_scalar else out
-
-    def stationary_density(self, y: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        r"""
-        Exact stationary Gamma probability density f_∞(y).
-
-        f_∞(y) = (β^α / Γ(α)) y^{α - 1} e^{-β y}  for y > 0
-        where α = 2κθ / σ² and β = 2κ / σ².
-        """
-        y_arr = np.asarray(y, dtype=float)
-        is_scalar = y_arr.ndim == 0
-        y_arr = np.atleast_1d(y_arr)
-
-        alpha = self.stationary_shape
-        beta = self.stationary_rate
-
-        out = np.zeros_like(y_arr)
-        pos = y_arr > 0.0
-        if np.any(pos):
-            y_pos = y_arr[pos]
-            out[pos] = (beta**alpha / sp.gamma(alpha)) * (y_pos ** (alpha - 1.0)) * np.exp(-beta * y_pos)
-
-        return float(out[0]) if is_scalar else out
+        values = np.asarray(y, dtype=float)
+        result = np.asarray(gamma.pdf(values, self.stationary_shape, scale=self.stationary_scale))
+        return float(result) if values.ndim == 0 else result
 
     # ------------------------------------------------------------------
     # Term Structure & Zero-Coupon Bond Pricing
@@ -497,9 +356,9 @@ class CIRProcess(Process):
 
     def bond_price(
         self,
-        tau: Union[float, np.ndarray],
-        r0: Optional[float] = None,
-    ) -> Union[float, np.ndarray]:
+        tau: float | np.ndarray,
+        r0: float | None = None,
+    ) -> float | np.ndarray:
         r"""
         Cox–Ingersoll–Ross zero-coupon bond price P(τ) = A(τ) exp(-B(τ) r_0).
 
@@ -519,11 +378,11 @@ class CIRProcess(Process):
         is_scalar = tau_arr.ndim == 0
         tau_arr = np.atleast_1d(tau_arr)
 
-        if np.any(tau_arr < 0):
+        if not np.all(np.isfinite(tau_arr)) or np.any(tau_arr < 0):
             raise ValueError("Maturity tau must be non-negative")
 
         val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
+        if not np.isfinite(val_r0) or val_r0 < 0:
             raise ValueError(f"r0 must be non-negative, got {val_r0}")
 
         gamma = math.sqrt(self.kappa**2 + 2.0 * self.sigma**2)
@@ -537,7 +396,9 @@ class CIRProcess(Process):
             exp_neg_g = np.exp(-gamma * t_pos)
             denom = (gamma + self.kappa) + (gamma - self.kappa) * exp_neg_g
             b_val = 2.0 * (1.0 - exp_neg_g) / denom
-            ln_a = power * (math.log(2.0 * gamma) + 0.5 * (self.kappa - gamma) * t_pos - np.log(denom))
+            ln_a = power * (
+                math.log(2.0 * gamma) + 0.5 * (self.kappa - gamma) * t_pos - np.log(denom)
+            )
             ln_p = ln_a - b_val * val_r0
             out[pos] = np.exp(ln_p)
 
@@ -545,9 +406,9 @@ class CIRProcess(Process):
 
     def bond_yield(
         self,
-        tau: Union[float, np.ndarray],
-        r0: Optional[float] = None,
-    ) -> Union[float, np.ndarray]:
+        tau: float | np.ndarray,
+        r0: float | None = None,
+    ) -> float | np.ndarray:
         r"""
         Continuously compounded zero-coupon bond yield y(τ) = -ln(P(τ)) / τ.
 
@@ -557,11 +418,11 @@ class CIRProcess(Process):
         is_scalar = tau_arr.ndim == 0
         tau_arr = np.atleast_1d(tau_arr)
 
-        if np.any(tau_arr < 0):
+        if not np.all(np.isfinite(tau_arr)) or np.any(tau_arr < 0):
             raise ValueError("Maturity tau must be non-negative")
 
         val_r0 = self.r0 if r0 is None else float(r0)
-        if val_r0 < 0:
+        if not np.isfinite(val_r0) or val_r0 < 0:
             raise ValueError(f"r0 must be non-negative, got {val_r0}")
 
         gamma = math.sqrt(self.kappa**2 + 2.0 * self.sigma**2)
@@ -577,7 +438,9 @@ class CIRProcess(Process):
             exp_neg_g = np.exp(-gamma * t_pos)
             denom = (gamma + self.kappa) + (gamma - self.kappa) * exp_neg_g
             b_val = 2.0 * (1.0 - exp_neg_g) / denom
-            ln_a = power * (math.log(2.0 * gamma) + 0.5 * (self.kappa - gamma) * t_pos - np.log(denom))
+            ln_a = power * (
+                math.log(2.0 * gamma) + 0.5 * (self.kappa - gamma) * t_pos - np.log(denom)
+            )
             ln_p = ln_a - b_val * val_r0
             out[pos_mask] = -ln_p / t_pos
 
@@ -593,10 +456,11 @@ class CIRProcess(Process):
             required="EXACT",
             actual="MOMENT_PROPAGATION",
             reason=(
-                "CIRProcess has state-dependent diffusion σ√r_t and serially correlated increments — "
-                "it is not a Lévy process and has no Lévy–Khintchine triplet. "
-                "Use .conditional_mean(), .conditional_variance(), .stationary_mean, "
-                ".bond_price(), or .simulate()."
+                "CIRProcess has state-dependent diffusion σ√r_t and serially "
+                "correlated increments — it is not a Lévy process and has no "
+                "Lévy–Khintchine triplet. Use .conditional_mean(), "
+                ".conditional_variance(), .stationary_mean, .bond_price(), or "
+                ".simulate()."
             ),
         )
 
@@ -617,24 +481,33 @@ class CIRProcess(Process):
             is_subordinator=False,
             hurst_index=None,
             notes=[
-                f"Cox–Ingersoll–Ross (CIR) square-root diffusion: dr_t = κ(θ - r_t)dt + σ√r_t dW_t.",
+                "Cox–Ingersoll–Ross (CIR) square-root diffusion: dr_t = κ(θ - r_t)dt + σ√r_t dW_t.",
                 f"Parameters: κ={self.kappa}, θ={self.theta}, σ={self.sigma}, r0={self.r0}.",
                 f"Feller ratio 2κθ/σ² = {self.feller_ratio:.4f} ({feller_status}).",
-                f"Stationary distribution: Gamma(shape={self.stationary_shape:.4f}, scale={self.stationary_scale:.4f}).",
-                "CIRProcess has state-dependent diffusion σ√r_t and serially correlated increments.",
+                (
+                    "Stationary distribution: Gamma(shape="
+                    f"{self.stationary_shape:.4f}"
+                    ", scale="
+                    f"{self.stationary_scale:.4f}"
+                    ")."
+                ),
+                (
+                    "CIRProcess has state-dependent diffusion σ√r_t and serially "
+                    "correlated increments."
+                ),
             ],
         )
 
     def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
-        r"""Stationary cumulants κ_1, ..., κ_order."""
-        return {n: self.stationary_cumulant(n) for n in range(1, order + 1)}
+        """The common protocol denotes X_1, not the stationary distribution."""
+        return self.conditional_cumulants(t=1.0, order=order)
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
         method: str = "exact",
     ) -> np.ndarray:
         r"""
@@ -652,7 +525,8 @@ class CIRProcess(Process):
             Random number generator.
         method : {"exact", "truncated_euler", "reflected_euler"}, default "exact"
             Simulation scheme:
-            - "exact": Exact non-central chi-squared transition distribution (zero discretization bias).
+            - "exact": Exact non-central chi-squared transition distribution (zero
+            discretization bias).
             - "truncated_euler": Higham–Mao full truncation Euler–Maruyama scheme.
             - "reflected_euler": Reflected Euler–Maruyama scheme.
 
@@ -683,9 +557,13 @@ class CIRProcess(Process):
 
     def __repr__(self) -> str:
         return (
-            f"CIRProcess(kappa={self.kappa}, theta={self.theta}, "
-            f"sigma={self.sigma}, r0={self.r0})"
+            f"CIRProcess(kappa={self.kappa}, theta={self.theta}, sigma={self.sigma}, r0={self.r0})"
         )
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        validate_order(order)
+        validate_time(t)
+        return self.conditional_cumulants(t=t, order=order)
 
 
 # Alias for readability and standard financial naming

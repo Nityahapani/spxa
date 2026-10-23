@@ -33,7 +33,7 @@ Schilling, R., Song, R. & Vondraček, Z. (2012). *Bernstein Functions*,
 
 from __future__ import annotations
 
-from typing import Optional
+from collections.abc import Callable
 
 import numpy as np
 
@@ -51,7 +51,7 @@ def _ts_levy_measure(alpha: float, C: float, lam: float) -> DensityLevyMeasure:
 
     Rosiński (2007), equation (1.1).
     """
-    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+    from scipy.special import gamma as gamma_fn
 
     def density(x: np.ndarray) -> np.ndarray:
         out = np.zeros_like(x, dtype=float)
@@ -60,17 +60,20 @@ def _ts_levy_measure(alpha: float, C: float, lam: float) -> DensityLevyMeasure:
         return out
 
     def tail(xv: float) -> float:
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy import integrate
+
         result, _ = integrate.quad(
             lambda t: C * t ** (-1 - alpha) * np.exp(-lam * t),
-            xv, np.inf, limit=200,
+            xv,
+            np.inf,
+            limit=200,
         )
-        return result
+        return float(result)
 
     # Cumulants: κ_n = C·Γ(n-α)/λ^{n-α} for n ≥ 1
     # Derived from the cumulant generating function of the TS distribution.
     # Rosiński (2007), Proposition 2.1 / Cont & Tankov (2004), Table 4.1.
-    def moment_fn(n: int):
+    def moment_fn(n: int) -> Callable[[], float]:
         return lambda: C * float(gamma_fn(n - alpha)) / lam ** (n - alpha)
 
     return DensityLevyMeasure(
@@ -144,7 +147,8 @@ class TemperedStable(Process):
         self.C = C
         self.lam = lam
 
-        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+        from scipy.special import gamma as gamma_fn
+
         kappa1 = C * float(gamma_fn(1 - alpha)) / lam ** (1 - alpha)
 
         node = CompositionNode(
@@ -160,7 +164,7 @@ class TemperedStable(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy import integrate
 
         nu = _ts_levy_measure(self.alpha, self.C, self.lam)
 
@@ -169,7 +173,9 @@ class TemperedStable(Process):
         # at x=1. Split at a small epsilon to avoid x^{-α} near 0.
         b_drift, _ = integrate.quad(
             lambda x: self.C * x ** (-self.alpha) * np.exp(-self.lam * x),
-            0.0, 1.0, limit=200,
+            0.0,
+            1.0,
+            limit=200,
         )
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
@@ -198,13 +204,13 @@ class TemperedStable(Process):
         lam :
             Non-negative real argument(s) s.
         """
-        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+        from scipy.special import gamma as gamma_fn
 
         s = np.atleast_1d(np.asarray(lam, dtype=float))
         coeff = self.C * float(gamma_fn(-self.alpha))
         # Γ(-α) < 0 for α∈(0,1); the Bernstein function is -C·Γ(-α)·(...) > 0
-        result = -coeff * ((self.lam + s) ** self.alpha - self.lam ** self.alpha)
-        return result if result.shape != (1,) else result[0]
+        result = -coeff * ((self.lam + s) ** self.alpha - self.lam**self.alpha)
+        return np.asarray(result if result.shape != (1,) else result[0])
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
@@ -221,102 +227,59 @@ class TemperedStable(Process):
         t :
             Time. Default 1.
         """
-        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+        from scipy.special import gamma as gamma_fn
 
-        return t * self.C * float(gamma_fn(n - self.alpha)) / self.lam ** (n - self.alpha)
+        return float(t * self.C * float(gamma_fn(n - self.alpha)) / self.lam ** (n - self.alpha))
 
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
-        Exact characteristic function.
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Evaluate the named characteristic function on its exponential-moment strip."""
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        return np.exp(t * self.characteristic_exponent(u))
 
-        φ(u; t) = exp(t·C·Γ(-α)·((λ-iu)^α - λ^α))
-
-        Derived from the Bernstein function via φ(u;t) = exp(-t·φ(-iu))
-        where φ is the Laplace exponent. Rosiński (2007), equation (1.3).
-
-        Parameters
-        ----------
-        u :
-            Frequency argument(s).
-        t :
-            Time.
-        """
-        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
-
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        coeff = self.C * float(gamma_fn(-self.alpha))
-        exponent = t * coeff * ((self.lam - 1j * u_arr) ** self.alpha - self.lam ** self.alpha)
-        result = np.exp(exponent)
-        return result if result.shape != (1,) else result[0]
-
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def simulate(
-        self,
-        n_steps: int,
-        n_paths: int = 1,
-        T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        self, n_steps: int, n_paths: int = 1, T: float = 1.0, rng: np.random.Generator | None = None
     ) -> np.ndarray:
+        """Exponential tilting of positive stable increments, with bounded retries.
+
+        No density truncation or approximate fallback is used. Extremely costly
+        parameter requests raise rather than loop indefinitely.
+        References: Rosinski (2007), exponential tempering of stable laws.
         """
-        Exact simulation via Gil-Pelaez CDF inversion.
+        from spxa.sim.exact import increments_to_paths, sample_tempered_stable
 
-        For each increment of length Δt, the distribution is
-        TemperedStable(α, C·Δt, λ) — the intensity scales linearly with Δt.
-        We invert the characteristic function numerically using the
-        Gil-Pelaez formula to recover the CDF, then sample via interpolation.
-
-        Parameters
-        ----------
-        n_steps, n_paths, T, rng :
-            Standard simulation parameters.
-
-        Returns
-        -------
-        np.ndarray
-            Shape (n_paths, n_steps + 1).
-
-        References
-        ----------
-        Gil-Pelaez, J. (1951). Note on the inversion theorem.
-        *Biometrika*, 38, 481–482.
-        """
-        rng = rng or np.random.default_rng()
-        dt = T / n_steps
-
-        # Build CDF for TS(alpha, C*dt, lam) increment
-        # Mean and std for grid centering
-        mean_dt = self.cumulant_exact(1, t=dt)
-        std_dt = np.sqrt(self.cumulant_exact(2, t=dt))
-        x_half = max(10 * std_dt, 1e-6)
-        n_x = 2000
-        x_grid = np.linspace(max(mean_dt - x_half, 1e-8), mean_dt + x_half, n_x)
-
-        n_u = 1500
-        u_max = min(50.0 / std_dt, 1000.0)
-        u_grid = np.linspace(1e-6, u_max, n_u)
-
-        cf_vals = self.char_func_exact(u=u_grid, t=dt)
-        pdf = np.zeros(n_x)
-        for j, x in enumerate(x_grid):
-            integrand = (cf_vals * np.exp(-1j * u_grid * x)).real
-            pdf[j] = float(np.trapezoid(integrand, u_grid)) / np.pi
-
-        pdf = np.maximum(pdf, 0.0)
-        dx = x_grid[1] - x_grid[0]
-        cdf = np.cumsum(pdf) * dx
-        cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-        u_unif = rng.uniform(size=(n_paths, n_steps))
-        increments = np.interp(u_unif, cdf, x_grid)
-
-        paths = np.zeros((n_paths, n_steps + 1))
-        paths[:, 1:] = np.cumsum(increments, axis=1)
-        return paths
+        if n_steps < 1 or n_paths < 1 or not np.isfinite(T) or T < 0:
+            raise ValueError("Positive sizes and finite nonnegative horizon required")
+        if T == 0:
+            return np.zeros((n_paths, n_steps + 1))
+        return increments_to_paths(
+            sample_tempered_stable(
+                self.alpha,
+                self.C,
+                self.lam,
+                T / n_steps,
+                n_steps,
+                n_paths,
+                rng or np.random.default_rng(),
+            )
+        )
 
     def __repr__(self) -> str:
         return f"TemperedStable(alpha={self.alpha}, C={self.C}, lam={self.lam})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Continuous tempered-stable log CF (Rosinski, 2007)."""
+        from scipy.special import gamma
+
+        z = np.asarray(u, dtype=complex)
+        if np.any(z.imag < -self.lam):
+            raise ValueError("Exponential moment outside the tempered stable convergence strip")
+        return np.asarray(
+            self.C * gamma(-self.alpha) * ((self.lam - 1j * z) ** self.alpha - self.lam**self.alpha)
+        )

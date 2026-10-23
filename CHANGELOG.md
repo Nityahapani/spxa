@@ -4,6 +4,38 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [Unreleased]
 
+### Correctness repair proposal (local, pending core approval)
+
+- Correct primitive Gamma/IG/NIG/stable/CGMY/Meixner triplets, exponents and cumulants;
+  retain continuous exponents and enforce exponential-moment strips.
+- Integrate atomic measures correctly; fix scalar/vector truncation drift; enforce immutable parameters.
+- Add time-aware cumulants, finite-horizon Hawkes/product/OU behavior and valid Lévy-clock checks.
+- Implement canonical BM/Gamma and BM/IG triplets; document generic composition limits honestly.
+- Correct supported integral moments, distribution divergences, raw-CF asset normalization,
+  joint bridges, coupled strong-error estimates and bounded tempered-stable sampling.
+- Correct erroneous regression oracles; add independent law/limit/domain regressions.
+- Repair strict documentation navigation/MathJax, registry, MIT text, notebook MSD,
+  benchmark workloads, release-note extraction and CI dependency installation.
+
+
+### Refreshed against current upstream (ef80f28; local proposal)
+
+- Preserve all six new process families, aliases, API sections, examples and tests.
+- Integrate Compound Poisson atoms and zero-size events correctly; seal jump distributions,
+  including deep-copied arrays; retain vectorized compounding without suppressed errors.
+- Stabilize high-rate small-jump and scalar-image exponents and explicit tail-domain moments.
+- Separate CIR/Gaussian OU transient and stationary cumulants; normalize the two-sided OU PSD.
+- Stabilize Heston CF/moment strips and the Black–Scholes limit, use numerical Riccati cumulant
+  ODEs through order twelve, honor pricing r/q overrides and correct full-truncation state.
+- Implement exact absorbing gamma-mixture / reciprocal-Bessel CEV transitions; preserve its
+  old simulation arguments and add portable T. Compute Greeks without mutation, propagate
+  the selected initial law and full finite-variance tails, and document infinite moments
+  and the gamma>1 collateralized call convention.
+- Use direct Merton Poisson PMFs with explicit ordinary/tilted tail checks.
+- Normalize first-passage tutorial histograms unconditionally, retaining censoring mass.
+- Add independent current-upstream regression tests; historical results are not reused as
+  current verification. Core RFC/two-maintainer approvals remain pending.
+
 ### Added
 
 - `zoo/beyond/cev.py` — `CEVProcess` (`CEV`, `ConstantElasticityOfVariance`):
@@ -15,12 +47,11 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   non-central chi-squared representation across equity leverage ($\gamma < 1$), geometric Brownian motion
   ($\gamma = 1$), and commodity inverse leverage ($\gamma > 1$) regimes, exact Put-Call parity,
   analytical absorption probability $P(S_T = 0) = 1 - F_{\chi^2}(x; 1/(1-\gamma))$, transition CDF,
-  analytical Greeks (Delta, Gamma, Vega), conditional moments (closed-form for $\gamma \in \{0.5, 1.0\}$ and
+  finite-difference Greeks (Delta, Gamma, Vega), conditional moments (closed-form for $\gamma \in \{0.5, 1.0\}$ and
   quadrature propagation for general $\gamma$), and vectorized path simulation.
   References: Cox (1975); Schroder (1989); Emanuel & MacBeth (1982); Choi & Wu (2021).
-- `sim/exact.py` — Vectorized `sample_cev` simulation routine supporting second-order Milstein
-  and Euler–Maruyama schemes with absorbing boundary conditions at zero and exact geometric Brownian motion
-  for $\gamma = 1$.
+- `sim/exact.py` — Vectorized `sample_cev` with exact absorbing / reciprocal-Bessel transitions
+  and exact GBM at $\gamma=1$, plus explicitly approximate Euler/Milstein alternatives.
 - `zoo/levy/merton.py` — `MertonJumpDiffusion` (`MertonProcess`, `Merton76`):
   Merton (1976) jump-diffusion process combining continuous Brownian motion with
   normally distributed compound Poisson jump shocks: $X_t = \mu t + \sigma W_t + \sum_{i=1}^{N_t} Y_i$,
@@ -50,7 +81,7 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   with `MOMENT_PROPAGATION` exactness level. Features exact Gaussian transition density, exact
   conditional moments and cumulants, stationary distribution $N(\mu, \sigma^2/(2\theta))$,
   relaxation time $\tau = 1/\theta$, half-life $t_{1/2} = \ln(2)/\theta$, exponential autocovariance
-  and autocorrelation, two-time covariance, Lorentzian power spectral density $S(\omega) = \sigma^2/(\pi(\theta^2+\omega^2))$,
+  and autocorrelation, two-time covariance, Lorentzian power spectral density $S(\omega) = \sigma^2/(2\pi(\theta^2+\omega^2))$,
   exact Laplace transform and characteristic function, Vasicek zero-coupon bond pricing $P(\tau) = A(\tau)e^{-B(\tau)r_0}$,
   yield curves, and asymptotic long-term yield.
   References: Uhlenbeck & Ornstein (1930); Vasicek (1977).
@@ -84,7 +115,7 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [1.0.0] — 2026-09-19
 
-Initial public release. Establishes the algebraic core, the 13-process Lévy zoo, the beyond-Lévy
+Initial public release. Establishes the algebraic core, the 11-process Lévy zoo, the beyond-Lévy
 category, the ops/sim/analytics layers, multivariate support, and the story renderer.
 
 ### Added — Core engine
@@ -120,7 +151,7 @@ category, the ops/sim/analytics layers, multivariate support, and the story rend
   (Samorodnitsky & Taqqu 1994)
 - `CGMY` — exact char_func, closed-form cumulants finite for `α < 2`, series-representation
   simulation (Carr, Geman, Madan, Yor 2002; Rosiński 2001)
-- `InverseGaussianProcess` — exact Bernstein function, cumulants `(2n−1)!!·μ^{2n-1}/λ^{n-1}`,
+- `InverseGaussianProcess` — exact Bernstein function, cumulants `(2n−3)!!·μ^{2n-1}/λ^{n-1}`,
   exact `char_func`, Wald simulation (Tweedie 1957)
 - `MeixnerProcess` — stable log-cosh characteristic function, exact cumulants to order 4,
   Gil-Pelaez CDF-inversion simulation (Schoutens & Teugels 1998)
@@ -135,8 +166,8 @@ category, the ops/sim/analytics layers, multivariate support, and the story rend
   simulation; raises `ExactnessError` on `.triplet` (not a semimartingale)
 - `HawkesProcess` — `MOMENT_PROPAGATION`; mean intensity, Fano factor, Ogata thinning
   simulation (Hawkes 1971)
-- `OULevy` — `MOMENT_PROPAGATION`; stationary mean/variance, autocovariance, exact
-  discretisation simulation (Barndorff-Nielsen & Shephard 2001)
+- `OULevy` — `MOMENT_PROPAGATION`; stationary mean/variance, autocovariance, approximate
+  kernel-quadrature simulation (Barndorff-Nielsen & Shephard 2001)
 
 ### Added — Multivariate (`spxa.zoo.multivariate`)
 

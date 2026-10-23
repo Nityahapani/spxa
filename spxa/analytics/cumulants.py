@@ -23,11 +23,11 @@ def skewness(process: Process, t: float = 1.0) -> float:
     t :
         Time. Cumulants scale as κ_n(X_t) = t · κ_n(X_1).
     """
-    kappas = process.cumulants(order=3)
+    kappas = process.cumulants_at(order=3, t=t)
     k2, k3 = kappas[2], kappas[3]
     if k2 <= 0:
         raise ValueError("Variance is zero or negative — skewness undefined.")
-    return t * k3 / (t * k2) ** 1.5
+    return float(k3 / k2**1.5)
 
 
 def excess_kurtosis(process: Process, t: float = 1.0) -> float:
@@ -41,11 +41,11 @@ def excess_kurtosis(process: Process, t: float = 1.0) -> float:
     t :
         Time.
     """
-    kappas = process.cumulants(order=4)
+    kappas = process.cumulants_at(order=4, t=t)
     k2, k4 = kappas[2], kappas[4]
     if k2 <= 0:
         raise ValueError("Variance is zero — kurtosis undefined.")
-    return t * k4 / (t * k2) ** 2
+    return k4 / k2**2
 
 
 def cumulant_table(process: Process, order: int = 4, t: float = 1.0) -> dict[str, float]:
@@ -67,15 +67,15 @@ def cumulant_table(process: Process, order: int = 4, t: float = 1.0) -> dict[str
     and kappa_n for n in 1..order.
     """
     order = max(order, 4)
-    kappas = process.cumulants(order=order)
+    kappas = process.cumulants_at(order=order, t=t)
     result: dict[str, float] = {}
     for n, v in kappas.items():
-        result[f"kappa_{n}"] = t * v
-    k2t = t * kappas[2]
-    result["mean"] = t * kappas[1]
+        result[f"kappa_{n}"] = v
+    k2t = kappas[2]
+    result["mean"] = kappas[1]
     result["variance"] = k2t
     result["std"] = float(np.sqrt(max(k2t, 0.0)))
     if k2t > 0:
-        result["skewness"] = t * kappas[3] / k2t**1.5
-        result["excess_kurtosis"] = t * kappas[4] / k2t**2
+        result["skewness"] = kappas[3] / k2t**1.5
+        result["excess_kurtosis"] = kappas[4] / k2t**2
     return result

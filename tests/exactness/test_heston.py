@@ -17,6 +17,7 @@ Verifies:
 """
 
 import math
+
 import numpy as np
 import pytest
 from scipy.stats import norm
@@ -122,7 +123,9 @@ class TestHestonExactness:
 
         # Integrated variance formula check
         t_eval = 2.5
-        th_int_v = h.theta * t_eval + (h.v0 - h.theta) * (1.0 - math.exp(-h.kappa * t_eval)) / h.kappa
+        th_int_v = (
+            h.theta * t_eval + (h.v0 - h.theta) * (1.0 - math.exp(-h.kappa * t_eval)) / h.kappa
+        )
         assert np.isclose(h.expected_integrated_variance(t_eval), th_int_v)
 
         with pytest.raises(ValueError, match="Time t must be non-negative"):
@@ -229,15 +232,15 @@ class TestHestonExactness:
         q = 0.0
         vol = 0.20
 
-        d1 = (math.log(S0 / K) + (r - q + 0.5 * vol ** 2) * T) / (vol * math.sqrt(T))
+        d1 = (math.log(S0 / K) + (r - q + 0.5 * vol**2) * T) / (vol * math.sqrt(T))
         d2 = d1 - vol * math.sqrt(T)
         bs_call = S0 * math.exp(-q * T) * norm.cdf(d1) - K * math.exp(-r * T) * norm.cdf(d2)
 
         # Heston model with tiny sigma_v = 1e-4
         h_bs = Heston(
-            v0=vol ** 2,
+            v0=vol**2,
             kappa=2.0,
-            theta=vol ** 2,
+            theta=vol**2,
             sigma_v=1e-4,
             rho=0.0,
             mu=r,
@@ -356,10 +359,10 @@ class TestHestonExactness:
         var_t = h.conditional_variance(1.0)
         assert var_t > 0.0
 
-        # high order cumulant (order >= 5 returns nan)
+        # Higher orders are computed from differentiated affine Riccati equations.
         k_6 = h.conditional_cumulants(order=6)
-        assert np.isnan(k_6[5])
-        assert np.isnan(k_6[6])
+        assert np.isfinite(k_6[5])
+        assert np.isfinite(k_6[6])
 
         # implied_volatility with vector of strikes
         iv_vec = h.implied_volatility(np.array([45.0, 50.0, 55.0]), T=1.0)

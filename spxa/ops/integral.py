@@ -40,9 +40,10 @@ Cambridge University Press. Chapter 4.
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
@@ -89,7 +90,7 @@ def ito_isometry_variance(
 
     s_grid = np.linspace(0, t, n_quad)
     f_sq = np.array([f(s) ** 2 for s in s_grid])
-    integral_f_sq = float(np.trapezoid(f_sq, s_grid))
+    integral_f_sq = float(trapezoid(f_sq, s_grid))
 
     return kappa2 * integral_f_sq
 
@@ -97,7 +98,7 @@ def ito_isometry_variance(
 def stochastic_convolution_char_func(
     integrator: Process,
     f: Callable[[float], float],
-    u: float | np.ndarray,
+    u: complex | float | np.ndarray,
     t: float = 1.0,
     n_quad: int = 500,
 ) -> np.ndarray:
@@ -142,7 +143,6 @@ def stochastic_convolution_char_func(
 
     u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
     s_grid = np.linspace(0, t, n_quad)
-    ds = s_grid[1] - s_grid[0]
 
     results = np.zeros(len(u_arr), dtype=complex)
     for j, uj in enumerate(u_arr):
@@ -152,10 +152,10 @@ def stochastic_convolution_char_func(
             if abs(fs) < 1e-15:
                 exponents[i] = 0.0
             else:
-                cf_val = integrator.char_func(u=uj * fs, t=1.0)
-                exponents[i] = np.log(complex(cf_val) + 1e-300)
-        integral_psi = float(np.trapezoid(exponents.real, s_grid)) + \
-                       1j * float(np.trapezoid(exponents.imag, s_grid))
+                exponents[i] = integrator.characteristic_exponent(uj * fs)
+        integral_psi = float(trapezoid(exponents.real, s_grid)) + 1j * float(
+            trapezoid(exponents.imag, s_grid)
+        )
         results[j] = np.exp(integral_psi)
 
     return results if results.shape != (1,) else results[0]
@@ -211,7 +211,19 @@ class StochasticIntegral(Process):
             SpxaDegradationWarning,
             stacklevel=2,
         )
-        super().__init__(exactness=ExactnessLevel.MOMENT_PROPAGATION, _node=node)
+        from spxa.zoo.levy.brownian import BrownianMotion
+
+        supported = (
+            isinstance(X, BrownianMotion)
+            and Y.exactness == ExactnessLevel.EXACT
+            and Y.properties.is_martingale
+        )
+        super().__init__(
+            exactness=ExactnessLevel.MOMENT_PROPAGATION
+            if supported
+            else ExactnessLevel.SIMULATION_ONLY,
+            _node=node,
+        )
 
     def _triplet(self) -> LevyTriplet:
         raise ExactnessError(
@@ -230,8 +242,7 @@ class StochasticIntegral(Process):
             has_independent_increments=False,
             is_martingale=self._Y.properties.is_martingale,
             has_finite_variance=(
-                self._X.properties.has_finite_variance
-                and self._Y.properties.has_finite_variance
+                self._X.properties.has_finite_variance and self._Y.properties.has_finite_variance
             ),
             has_finite_mean=True,
             self_similarity_index=None,
@@ -244,27 +255,14 @@ class StochasticIntegral(Process):
         )
 
     def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
-        """
-        Approximate cumulants via the Itô isometry (order ≤ 2 only).
-        Higher orders are not tractable without strong assumptions.
-        """
-        result: dict[int, float] = {}
-        if order >= 1:
-            result[1] = 0.0 if self._Y.properties.is_martingale else float("nan")
-        if order >= 2:
-            kappa2_Y = self._Y.cumulants(order=2)[2]
-            kappa2_X = self._X.cumulants(order=2)[2]
-            result[2] = kappa2_Y * kappa2_X
-        for n in range(3, order + 1):
-            result[n] = float("nan")
-        return result
+        return self.cumulants_at(order, 1.0)
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate Z_t = ∫_0^t f(X_s) dY_s via Euler–Maruyama.
@@ -283,8 +281,12 @@ class StochasticIntegral(Process):
         """
         rng = rng or np.random.default_rng()
 
-        paths_X = self._X.simulate(n_steps, n_paths, T, rng)
-        paths_Y = self._Y.simulate(n_steps, n_paths, T, rng)
+        paths_X = self._X.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        paths_Y = (
+            paths_X
+            if self._X is self._Y
+            else self._Y.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        )
         dY = np.diff(paths_Y, axis=1)
 
         paths_Z = np.zeros((n_paths, n_steps + 1))
@@ -296,3 +298,54 @@ class StochasticIntegral(Process):
 
     def __repr__(self) -> str:
         return f"StochasticIntegral(X={self._X!r}, Y={self._Y!r})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Itô isometry with Gaussian expectation and adaptive time quadrature.
+
+        Supported: Brownian X and a square-integrable Levy martingale Y,
+        with f(X_s) square-integrable. Same-object BM inputs share a path;
+        different objects are independent. Higher cumulants are unavailable.
+        Arbitrary non-Gaussian/non-martingale inputs remain simulation-only.
+        References: Applebaum (2009), Chapter 4; Protter (2005), Chapter II.
+        """
+        from scipy.integrate import quad
+        from scipy.special import roots_hermitenorm
+
+        if self.exactness == ExactnessLevel.SIMULATION_ONLY:
+            raise ExactnessError(
+                method="cumulants_at",
+                required="Gaussian integrand driver and Levy martingale integrator",
+                actual=self.exactness.name,
+                reason="No general moment formula for arbitrary f and X/Y",
+            )
+        if order < 1 or not np.isfinite(t) or t < 0:
+            raise ValueError("Positive order and finite nonnegative time required")
+
+        from spxa.zoo.levy.brownian import BrownianMotion
+
+        driver = self._X
+        assert isinstance(driver, BrownianMotion)
+
+        def expectation(s: float, nodes: int) -> float:
+            x, w = roots_hermitenorm(nodes)
+            values = [self._f(float(driver.mu * s + driver.sigma * np.sqrt(s) * v)) ** 2 for v in x]
+            return float(np.dot(w, values) / np.sqrt(2 * np.pi))
+
+        def integrand(s: float) -> float:
+            low, high = expectation(s, 64), expectation(s, 128)
+            if not np.isfinite(high) or not np.isclose(low, high, rtol=1e-6, atol=1e-9):
+                raise ValueError(
+                    "Integrand expectation did not converge; supply an integrable, "
+                    "sufficiently regular f"
+                )
+            return high
+
+        variance = (
+            self._Y.cumulants(2)[2] * quad(integrand, 0, t, epsabs=1e-8, epsrel=1e-7)[0]
+            if t
+            else 0.0
+        )
+        return {
+            n: 0.0 if n == 1 else float(variance) if n == 2 else float("nan")
+            for n in range(1, order + 1)
+        }

@@ -34,7 +34,11 @@ class ExactnessLevel(Enum):
     SIMULATION_ONLY = auto()
 
     def __le__(self, other: ExactnessLevel) -> bool:
-        order = [ExactnessLevel.EXACT, ExactnessLevel.MOMENT_PROPAGATION, ExactnessLevel.SIMULATION_ONLY]
+        order = [
+            ExactnessLevel.EXACT,
+            ExactnessLevel.MOMENT_PROPAGATION,
+            ExactnessLevel.SIMULATION_ONLY,
+        ]
         return order.index(self) <= order.index(other)
 
     def __lt__(self, other: ExactnessLevel) -> bool:
@@ -43,5 +47,9 @@ class ExactnessLevel(Enum):
     @staticmethod
     def combine(a: ExactnessLevel, b: ExactnessLevel) -> ExactnessLevel:
         """Return the minimum (most degraded) of two exactness levels."""
-        order = [ExactnessLevel.EXACT, ExactnessLevel.MOMENT_PROPAGATION, ExactnessLevel.SIMULATION_ONLY]
+        order = [
+            ExactnessLevel.EXACT,
+            ExactnessLevel.MOMENT_PROPAGATION,
+            ExactnessLevel.SIMULATION_ONLY,
+        ]
         return order[max(order.index(a), order.index(b))]

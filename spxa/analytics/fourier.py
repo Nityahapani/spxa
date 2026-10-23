@@ -11,6 +11,8 @@ Fourier transform. *Journal of Computational Finance*, 2(4), 61–73.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from spxa.core.process import Process
@@ -29,7 +31,9 @@ def european_call_price(
     """
     Price a European call option assuming X_t is the log-return process.
 
-    Uses the Carr-Madan FFT method. The log-price at time t is S0·exp(r·t + X_t).
+    Uses the Carr-Madan FFT method. The asset price is S0*exp(X_t+r*t-log(E[exp(X_t)])).
+    Thus the discounted asset is a martingale. A process whose CF already
+    contains risk-neutral log drift is unchanged by this normalization.
 
     The call price is:
       C(K) = e^{-αk}/(π) · Re[∫_0^∞ e^{-iuk} ψ(u) du]
@@ -67,6 +71,21 @@ def european_call_price(
     Carr, P. & Madan, D.B. (1999). Option valuation using the fast Fourier
     transform. *Journal of Computational Finance*, 2(4), 61–73.
     """
+    if (
+        S0 <= 0
+        or K <= 0
+        or not all(np.isfinite(v) for v in (S0, K, r, t, alpha, eta))
+        or t < 0
+        or alpha <= 0
+        or eta <= 0
+    ):
+        raise ValueError(
+            "Finite positive spot/strike/damping/spacing and nonnegative time required"
+        )
+    if not isinstance(n_points, int) or n_points < 16 or n_points & (n_points - 1):
+        raise ValueError("n_points must be a power of two >=16")
+    if t == 0:
+        return max(S0 - K, 0.0)
     lam = 2 * np.pi / (n_points * eta)
     b = n_points * lam / 2
     k = np.log(K / S0)
@@ -76,7 +95,19 @@ def european_call_price(
 
     # Use char_func_exact if the process provides it (avoids slow LK quadrature)
     cf_fn = getattr(process, "char_func_exact", None) or process.char_func
-    cf_vals = cf_fn(u=u_shifted, t=t)
+    moment = complex(cf_fn(u=-1j, t=t))
+    if (
+        not np.isfinite(moment)
+        or abs(moment.imag) > 1e-8 * max(1.0, abs(moment.real))
+        or moment.real <= 0
+    ):
+        raise ValueError("A finite positive exponential moment E[exp(X_t)] is required")
+    # S_t = S0*exp(X_t + r*t - log E[exp(X_t)]). An already
+    # risk-neutral log-return CF receives no additional correction.
+    correction = r * t - np.log(moment.real)
+    cf_vals = cf_fn(u=u_shifted, t=t) * np.exp(1j * u_shifted * correction)
+    if not np.all(np.isfinite(cf_vals)):
+        raise ValueError("Damping requires a finite (alpha+1)-th exponential moment; reduce alpha")
 
     numerator = np.exp(-r * t) * cf_vals
     denominator = alpha**2 + alpha - u_grid**2 + 1j * (2 * alpha + 1) * u_grid
@@ -97,7 +128,13 @@ def european_call_price(
     call_prices = (np.exp(-alpha * k_grid) / np.pi * fft_result).real
 
     call_price = float(np.interp(k, k_grid, call_prices)) * S0
-    return max(call_price, max(S0 - K * np.exp(-r * t), 0.0))
+    lower = max(S0 - K * np.exp(-r * t), 0.0)
+    tolerance = 1e-4 * max(S0, K)
+    if not np.isfinite(call_price) or call_price < lower - tolerance or call_price > S0 + tolerance:
+        raise ArithmeticError(
+            "FFT grid unresolved: option price violates arbitrage bounds; refine grid"
+        )
+    return float(np.clip(call_price, lower, S0))
 
 
 def european_put_price(
@@ -106,7 +143,7 @@ def european_put_price(
     K: float,
     r: float,
     t: float,
-    **kwargs: object,
+    **kwargs: Any,
 ) -> float:
     """
     Price a European put via put-call parity.
@@ -126,7 +163,7 @@ def european_put_price(
         Put price.
     """
     call = european_call_price(process=process, S0=S0, K=K, r=r, t=t, **kwargs)
-    return call - S0 + K * np.exp(-r * t)
+    return float(call - S0 + K * np.exp(-r * t))
 
 
 def implied_volatility(
@@ -160,14 +197,26 @@ def implied_volatility(
     float
         Implied volatility σ. Returns NaN if no solution found.
     """
-    from scipy.stats import norm  # type: ignore[import-untyped]
+    from scipy.stats import norm
+
+    if option_type not in ("call", "put") or min(S0, K, t, tol) <= 0 or max_iter < 1:
+        raise ValueError(
+            "Valid option type and positive spot/strike/time/tolerance/iterations required"
+        )
+    discount = K * np.exp(-r * t)
+    lower = max(S0 - discount, 0.0) if option_type == "call" else max(discount - S0, 0.0)
+    upper = S0 if option_type == "call" else discount
+    if not np.isfinite(price) or price < lower - tol or price >= upper:
+        return float("nan")
+    if abs(price - lower) <= tol:
+        return 0.0
 
     def bs_price(sigma: float) -> float:
         d1 = (np.log(S0 / K) + (r + 0.5 * sigma**2) * t) / (sigma * np.sqrt(t))
         d2 = d1 - sigma * np.sqrt(t)
         if option_type == "call":
-            return S0 * norm.cdf(d1) - K * np.exp(-r * t) * norm.cdf(d2)
-        return K * np.exp(-r * t) * norm.cdf(-d2) - S0 * norm.cdf(-d1)
+            return float(S0 * norm.cdf(d1) - K * np.exp(-r * t) * norm.cdf(d2))
+        return float(K * np.exp(-r * t) * norm.cdf(-d2) - S0 * norm.cdf(-d1))
 
     lo, hi = 1e-6, 10.0
     for _ in range(max_iter):

@@ -8,10 +8,10 @@ Not a Lévy process (no independent increments), but the stationary
 distribution is infinitely divisible with a known Lévy measure.
 
 The marginal stationary distribution has Lévy measure:
-  ν_∞(dx) = ∫_x^∞ ν_L(dy)/y  (Barndorff-Nielsen & Shephard 2001, Prop. 2.1)
+  ν_∞(dx) = ν_L((x,infinity))/x dx  (Barndorff-Nielsen & Shephard 2001, Prop. 2.1)
 
 ExactnessLevel: MOMENT_PROPAGATION for path operations.
-The stationary distribution is EXACT (known triplet).
+The stationary law is infinitely divisible; no stationary-triplet API is exposed.
 
 References
 ----------
@@ -21,8 +21,6 @@ Statistical Society B*, 63(2), 167–241.
 """
 
 from __future__ import annotations
-
-from typing import Optional
 
 import numpy as np
 
@@ -61,7 +59,7 @@ class OULevy(Process):
     Autocovariance (Barndorff-Nielsen & Shephard 2001, equation 17):
       Cov(V_t, V_{t+h}) = e^{-λh} · Var(V_∞)
 
-    where Var(V_∞) = κ_2(L_1) / (2λ) and κ_2(L_1) is the variance of the
+    where Var(V_∞) = κ_2(L_1) / 2 and κ_2(L_1) is the variance of the
     subordinator per unit time.
 
     ExactnessLevel: MOMENT_PROPAGATION.
@@ -75,7 +73,7 @@ class OULevy(Process):
     def __init__(
         self,
         lam: float,
-        subordinator: Optional[Process] = None,
+        subordinator: Process | None = None,
         v0: float = 0.0,
     ) -> None:
         if lam <= 0:
@@ -103,7 +101,7 @@ class OULevy(Process):
             name=f"OULevy(lam={lam}, subordinator={subordinator!r}, v0={v0})",
             math_note=(
                 f"dV_t = -λV_t dt + dL_{{λt}}; λ={lam}; "
-                f"Var(V_∞) = κ_2(L_1)/(2λ) = {self._sub_var/(2*lam):.4f}; "
+                f"Var(V_∞) = κ_2(L_1)/2 = {self._sub_var / 2:.4f}; "
                 f"Cov(V_t, V_{{t+h}}) = e^{{-λh}}·Var(V_∞)"
             ),
             reference="Barndorff-Nielsen & Shephard (2001), eq. (17)",
@@ -122,11 +120,11 @@ class OULevy(Process):
     @property
     def stationary_variance(self) -> float:
         """
-        Var(V_∞) = κ_2(L_1) / (2λ).
+        Var(V_∞) = κ_2(L_1) / 2.
 
         Barndorff-Nielsen & Shephard (2001), equation (16).
         """
-        return self._sub_var / (2 * self.lam)
+        return self._sub_var / 2
 
     def autocovariance(self, h: float) -> float:
         """
@@ -139,7 +137,7 @@ class OULevy(Process):
         h :
             Lag h ≥ 0.
         """
-        return np.exp(-self.lam * h) * self.stationary_variance
+        return float(np.exp(-self.lam * h) * self.stationary_variance)
 
     def _triplet(self) -> LevyTriplet:
         raise ExactnessError(
@@ -162,41 +160,36 @@ class OULevy(Process):
             has_finite_mean=True,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=True,
+            is_subordinator=False,
             hurst_index=None,
             notes=[
                 f"OU-Lévy with λ={self.lam}; driven by {self.subordinator!r}.",
-                f"Stationary distribution: mean={self.stationary_mean:.4f}, var={self.stationary_variance:.4f}.",
+                f"Stationary mean={self.stationary_mean:.4f}, "
+                f"variance={self.stationary_variance:.4f}.",
                 "Autocovariance decays exponentially: Cov(V_t, V_{t+h}) = e^{-λh}·Var(V_∞).",
             ],
         )
 
     def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
-        result: dict[int, float] = {}
-        if order >= 1:
-            result[1] = self.stationary_mean
-        if order >= 2:
-            result[2] = self.stationary_variance
-        for n in range(3, order + 1):
-            result[n] = float("nan")
-        return result
+        return self.cumulants_at(order, 1.0)
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
-        Simulate OU-Lévy paths via exact discretisation.
+        Simulate OU-Lévy paths by mean-preserving increment quadrature.
 
         For the exponential OU SDE with Lévy subordinator L:
           V_{t+Δt} = e^{-λΔt} V_t + ∫_t^{t+Δt} e^{-λ(t+Δt-s)} dL_{λs}
 
         The integral term is approximated as a Lévy increment scaled by
-        the factor (1 - e^{-λΔt})/λ, which is exact for compound Poisson
-        and Gamma subordinators in the limit of small Δt.
+        the average kernel (1-exp(-lambda*dt))/(lambda*dt). The mean is
+        exact; the path law/variance converge as dt tends to zero. This
+        is not an exact-in-distribution OU transition sampler.
 
         Parameters
         ----------
@@ -211,7 +204,7 @@ class OULevy(Process):
         rng = rng or np.random.default_rng()
         dt = T / n_steps
         decay = np.exp(-self.lam * dt)
-        jump_scale = (1 - decay) / self.lam
+        jump_scale = -np.expm1(-self.lam * dt) / (self.lam * dt) if dt else 1.0
 
         sub_increments = self.subordinator.simulate(
             n_steps=n_steps, n_paths=n_paths, T=self.lam * T, rng=rng
@@ -228,3 +221,17 @@ class OULevy(Process):
 
     def __repr__(self) -> str:
         return f"OULevy(lam={self.lam}, subordinator={self.subordinator!r}, v0={self.v0})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Transient cumulants for dV=-lambda*V dt+dL_(lambda*t).
+
+        Kappa_n(V_t)=kappa_n(L_1)*(1-exp(-n*lambda*t))/n, plus
+        v0*exp(-lambda*t) for n=1. The stationary limit is kappa_n(L_1)/n.
+        References: Barndorff-Nielsen & Shephard (2001), Section 2.
+        """
+        if order < 1 or not np.isfinite(t) or t < 0:
+            raise ValueError("Positive order and finite nonnegative horizon required")
+        k = self.subordinator.cumulants(order)
+        result = {n: float(-np.expm1(-n * self.lam * t) * k[n] / n) for n in range(1, order + 1)}
+        result[1] += self.v0 * np.exp(-self.lam * t)
+        return result

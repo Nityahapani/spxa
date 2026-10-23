@@ -1,3 +1,8 @@
+# API reference
+
+See [Numerical contracts](numerical_contracts.md) for supported cases, time conventions,
+exponential-moment strips, approximation limits and explicit unsupported requests.
+
 # spxa API Reference
 
 Complete reference for spxa v1.0.0. Every entry here was verified against
@@ -15,7 +20,7 @@ the running library. All signatures are exact.
    - [LevyMeasure hierarchy](#levymeasure-hierarchy)
    - [ProcessProperties](#processproperties)
    - [Exceptions and warnings](#exceptions-and-warnings)
-3. [Zoo — Lévy processes](#zoo--lévy-processes)
+3. [Zoo — Lévy processes](#zoo-levy-processes)
    - [BrownianMotion](#brownianmotion)
    - [GammaProcess](#gammaprocess)
    - [VarianceGamma](#variancegamma)
@@ -29,7 +34,7 @@ the running library. All signatures are exact.
    - [TemperedStable](#temperedstable)
    - [NegativeBinomialProcess](#negativebinomialprocess)
    - [MertonJumpDiffusion](#mertonjumpdiffusion)
-4. [Zoo — beyond Lévy](#zoo--beyond-lévy)
+4. [Zoo — beyond Lévy](#zoo-beyond-levy)
    - [CEVProcess](#cevprocess)
    - [CIRProcess](#cirprocess)
    - [FractionalBrownianMotion](#fractionalbrownianmotion)
@@ -38,13 +43,13 @@ the running library. All signatures are exact.
    - [HestonProcess](#hestonprocess)
    - [OrnsteinUhlenbeck](#ornsteinuhlenbeck)
    - [OULevy](#oulevy)
-5. [Zoo — multivariate](#zoo--multivariate)
+5. [Zoo — multivariate](#zoo-multivariate)
    - [MultivariateLevyTriplet](#multivariatelevytriplet)
    - [MultivariateBrownianMotion](#multivariatebrownianmotion)
    - [CorrelatedLevy](#correlatedlevy)
    - [correlated_brownian_motion](#correlated_brownian_motion)
    - [independent_levy_vector](#independent_levy_vector)
-6. [ops — operations](#ops--operations)
+6. [ops — operations](#ops-operations)
    - [addition](#addition)
    - [scaling](#scaling)
    - [subordination](#subordination)
@@ -54,11 +59,11 @@ the running library. All signatures are exact.
    - [cumulants](#cumulants-module)
    - [divergence](#divergence)
    - [fourier](#fourier)
-8. [sim — simulation backends](#sim--simulation-backends)
+8. [sim — simulation backends](#sim-simulation-backends)
    - [euler](#euler)
    - [exact samplers](#exact-samplers)
    - [bridge](#bridge)
-9. [story — derivation traces](#story--derivation-traces)
+9. [story — derivation traces](#story-derivation-traces)
 
 ---
 
@@ -69,7 +74,7 @@ Everything in this section is importable directly from `spxa`.
 ```python
 import spxa
 
-spxa.__version__          # "1.0.0"
+spxa.__version__  # "1.0.0"
 
 # Core types
 spxa.Process
@@ -137,7 +142,7 @@ All arithmetic between two processes produces the **minimum** level of its opera
 
 | Member | Meaning |
 |---|---|
-| `ExactnessLevel.EXACT` | Lévy–Khintchine triplet known in closed form. Triplet arithmetic is analytically exact. |
+| `ExactnessLevel.EXACT` | Analytical Lévy representation supported. Numerical quadrature and some samplers remain approximate. |
 | `ExactnessLevel.MOMENT_PROPAGATION` | No closed-form triplet. Finite moments tracked where computable. |
 | `ExactnessLevel.SIMULATION_ONLY` | No analytical handle. Sample paths only. |
 
@@ -164,21 +169,21 @@ All stochastic processes in spxa inherit from `Process`. Every instance is
 #### Properties
 
 ```python
-process.exactness    # → ExactnessLevel
-process.triplet      # → LevyTriplet   (raises ExactnessError if not EXACT)
-process.properties   # → ProcessProperties
+process.exactness  # → ExactnessLevel
+process.triplet  # → LevyTriplet   (raises ExactnessError if not EXACT)
+process.properties  # → ProcessProperties
 ```
 
 #### Operators
 
 ```python
-Z = X + Y            # sum of independent processes
-Z = X - Y            # X + (-1)*Y
-Z = c * X            # scalar multiplication, c ∈ ℝ \ {0}
-Z = X * c            # same as c * X
-Z = -X               # negation
-Z = X @ T            # subordination: Z_t = X_{T_t}  (T must be a subordinator)
-Z = sum([X, Y, ...]) # Python's built-in sum() works via __radd__
+Z = X + Y  # sum of independent processes
+Z = X - Y  # X + (-1)*Y
+Z = c * X  # scalar multiplication, c ∈ ℝ \ {0}
+Z = X * c  # same as c * X
+Z = -X  # negation
+Z = X @ T  # subordination: Z_t = X_{T_t}  (T must be a subordinator)
+Z = sum([X, Y, ...])  # Python's built-in sum() works via __radd__
 ```
 
 All operators propagate `ExactnessLevel` and `ProcessProperties` automatically.
@@ -189,12 +194,14 @@ mathematical reason.
 
 ```python
 process.cumulants(order: int) -> dict[int, float]
+process.cumulants_at(order: int, t: float = 1.0) -> dict[int, float]
 ```
-Return cumulants κ₁, …, κ_order of X₁ (per unit time). Available for
+Return cumulants κ₁, …, κ_order of X₁. `cumulants_at` uses the specified horizon;
+stationary/asymptotic moments are separate. Only Lévy cumulants scale linearly in time. Available for
 `EXACT` and `MOMENT_PROPAGATION`. Keys are integers 1..order, values are floats.
 
 ```python
-process.char_func(u: float | np.ndarray, t: float = 1.0) -> np.ndarray
+process.char_func(u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray
 ```
 Evaluate E[e^{iuX_t}]. Available for `EXACT`. For processes with a
 closed-form formula this delegates to `char_func_exact`; otherwise uses
@@ -225,6 +232,7 @@ MathJax-ready LaTeX derivation. Returns a `\begin{aligned}...\end{aligned}`
 block. Use in Jupyter:
 ```python
 from IPython.display import display, Math
+
 display(Math(Z.__story_latex__()))
 ```
 
@@ -357,10 +365,10 @@ includes a mathematical explanation of what is missing and why.
 
 ```python
 # Attributes
-err.method    # str — name of the method that was called
+err.method  # str — name of the method that was called
 err.required  # str — ExactnessLevel name required
-err.actual    # str — ExactnessLevel name of the process
-err.reason    # str — mathematical explanation
+err.actual  # str — ExactnessLevel name of the process
+err.reason  # str — mathematical explanation
 ```
 
 Common triggers: `.triplet` on a beyond-Lévy process; `.char_func` on
@@ -372,9 +380,10 @@ mathematical reason (which Lévy property was violated and why).
 
 ```python
 import warnings
+
 with warnings.catch_warnings(record=True) as w:
     warnings.simplefilter("always")
-    Z = fbm + bm   # emits SpxaDegradationWarning
+    Z = fbm + bm  # emits SpxaDegradationWarning
 ```
 
 ---
@@ -527,17 +536,17 @@ CGMY(C: float, G: float, M: float, Y: float)
 
 Four-parameter pure-jump process. Nests VG (Y=0) and α-stable (G=M→0).
 Controls tail heaviness, jump activity, and asymmetry independently.
-Lévy density: C·e^{−Gx}/x^{1+Y}·𝟙_{x>0} + C·e^{−M|x|}/|x|^{1+Y}·𝟙_{x<0}.
+Lévy density: C·e^{−Mx}/x^{1+Y}·𝟙_{x>0} + C·e^{−G|x|}/|x|^{1+Y}·𝟙_{x<0}.
 
 | Parameter | Constraint | Meaning |
 |---|---|---|
 | `C` | > 0 | Jump intensity |
-| `G` | ≥ 0 | Right-tail decay rate |
-| `M` | ≥ 0 | Left-tail decay rate |
+| `G` | ≥ 0 | Left-tail decay rate |
+| `M` | ≥ 0 | Right-tail decay rate |
 | `Y` | < 2 | Fine structure: Y<0 finite activity, 0≤Y<1 infinite activity finite variation, 1≤Y<2 infinite variation |
 
 **Cumulants (Carr et al. 2002, eq. 2):**
-κ_n = C·Γ(n−Y)·(M^{Y−n} + (−1)^n·G^{Y−n}) — valid for n > Y.
+κ_n = C·Γ(n−Y)·(M^{Y−n} + (−1)^n·G^{Y−n}) for n ≥ 2; κ₁ uses its finite compensated/continuous limit. With positive G and M, all marginal moments exist, including when Y≥1. Zero-tempering tails impose the usual n<Y tail criterion.
 
 **Extra methods:**
 ```python
@@ -592,7 +601,7 @@ from spxa.zoo.levy import MeixnerProcess
 MeixnerProcess(alpha: float, beta: float, delta: float, m: float = 0.0)
 ```
 
-Pure-jump process with hypergeometric characteristic function and orthogonal
+Pure-jump process with hyperbolic-cosine characteristic function and orthogonal
 polynomial structure (Meixner–Pollaczek polynomials are eigenfunctions of its generator).
 
 | Parameter | Constraint | Meaning |
@@ -606,17 +615,17 @@ polynomial structure (Meixner–Pollaczek polynomials are eigenfunctions of its 
 - κ₁ = δα·tan(β/2) + m
 - κ₂ = δα²/(2cos²(β/2))
 - κ₃ = δα³·sin(β/2)/(2cos³(β/2))
-- κ₄ = δα⁴(2+cosβ)/(8cos⁴(β/2))
+- κ₄ = δα⁴(2−cosβ)/(4cos⁴(β/2))
 
 **Extra methods:**
 ```python
 mx.char_func_exact(u, t=1.0)
-# exp(imu)·(cos(β/2)/cosh((αu−iβ)/2))^{2δt}
+# exp(imu*t)·(cos(β/2)/cosh((αu−iβ)/2))^{2δt}
 
 mx.cumulant_exact(n: int, t: float = 1.0) -> float
 ```
 
-**Simulation:** Gil-Pelaez CDF inversion.
+**Simulation:** Approximate truncated Fourier density/CDF interpolation.
 
 **Reference:** Schoutens & Teugels (1998).
 
@@ -635,11 +644,11 @@ Homogeneous Poisson process with constant jump size. Finite activity, discrete j
 | Parameter | Constraint | Meaning |
 |---|---|---|
 | `rate` | > 0 | Arrival rate λ (jumps per unit time) |
-| `jump_size` | ℝ\{0} | Size of each jump c |
+| `jump_size` | finite real | Size of each jump c; zero gives the deterministic zero law |
 
 **Cumulants:** κ_n(X_t) = λ·c^n·t for all n ≥ 1.
 
-**Properties:** is_subordinator=True iff jump_size > 0; finite activity.
+**Properties:** is_subordinator=True iff jump_size >= 0; finite activity.
 
 **Simulation:** Poisson-distributed increment counts.
 
@@ -683,14 +692,14 @@ and $\{Y_i\}$ are i.i.d. random jump sizes. Finite activity, pure jump.
 
 **Triplet:** $(b = \lambda \mathbb{E}[Y \mathbf{1}_{|Y| \le 1}], \sigma^2 = 0, \nu = \lambda F_Y)$.
 
-**Cumulants:** $\kappa_n(X_t) = \lambda t \mathbb{E}[Y^n]$ for all $n \ge 1$.
+**Cumulants:** $\kappa_n(X_t) = \lambda t \mathbb{E}[Y^n]$ where the requested jump moment is finite.
 
 **Characteristic function:** $\mathbb{E}[e^{iuX_t}] = \exp(\lambda t (\phi_Y(u) - 1))$.
 
 **Properties:**
 - `is_martingale=True` iff $\mathbb{E}[Y] = 0$.
-- `is_subordinator=True` iff jumps are strictly positive ($Y > 0$).
-- Finite activity: $\nu(\mathbb{R} \setminus \{0\}) = \lambda < \infty$.
+- `is_subordinator=True` when jumps are nonnegative almost surely ($Y \ge 0$), ignoring zero-probability support entries.
+- Finite activity: $\nu(\mathbb{R} \setminus \{0\}) = \lambda P(Y\ne0) < \infty$. Zero-size events are not Lévy atoms.
 
 **Simulation:** Exact vectorized increment simulation via Poisson thinning and jump compounding.
 
@@ -707,7 +716,7 @@ InverseGaussianProcess(mu: float, lam: float)
 ```
 
 Subordinator with independent IG-distributed increments. Fundamental in NIG
-construction. Lévy density: √(λ/2π)·x^{−3/2}·exp(−λ(x−μ)²/(2μ²x)) for x > 0.
+construction. Lévy density: √(λ/2π)·x^{−3/2}·exp(−λx/(2μ²)) for x > 0.
 
 | Parameter | Constraint | Meaning |
 |---|---|---|
@@ -715,9 +724,9 @@ construction. Lévy density: √(λ/2π)·x^{−3/2}·exp(−λ(x−μ)²/(2μ²
 | `lam` | > 0 | Shape; Var(X₁) = μ³/λ |
 
 **Cumulants (Tweedie 1957, eq. 2.5):**
-κ_n = (2n−1)!!·μ^{2n−1}/λ^{n−1}  where (2n−1)!! = 1·3·5·…·(2n−1).
+κ_n = (2n−3)!!·μ^{2n−1}/λ^{n−1}  where (2n−3)!! = 1·3·5·…·(2n−3), with (-1)!!=1.
 
-Explicitly: κ₁ = μ, κ₂ = 3μ³/λ, κ₃ = 15μ⁵/λ², κ₄ = 105μ⁷/λ³.
+Explicitly: κ₁ = μ, κ₂ = μ³/λ, κ₃ = 3μ⁵/λ², κ₄ = 15μ⁷/λ³.
 
 **Extra methods:**
 ```python
@@ -726,7 +735,7 @@ ig.char_func_exact(u, t=1.0)
 # exp(t·(λ/μ)·(1 − √(1 − 2iuμ²/λ)))
 
 ig.bernstein_function(lam: float | np.ndarray) -> np.ndarray
-# Exact: φ(s) = (λ/μ)(1 − √(1 − 2μ²s/λ))
+# Exact: φ(s) = (λ/μ)(√(1 + 2μ²s/λ) − 1)
 ```
 
 **Properties:** is_subordinator=True; infinite activity.
@@ -767,7 +776,7 @@ ts.bernstein_function(lam: float | np.ndarray) -> np.ndarray
 
 **Properties:** is_subordinator=True; infinite activity; all moments finite.
 
-**Simulation:** Gil-Pelaez CDF inversion.
+**Simulation:** Approximate truncated Fourier density/CDF interpolation.
 
 **Reference:** Rosiński (2007); Schilling et al. (2012), Example 3.8.
 
@@ -850,7 +859,11 @@ merton.cumulants(order=5)          # κ_1, ..., κ_5 in exact closed form
 merton.expected_relative_jump      # k̄ = exp(μ_J + ½σ_J²) - 1
 ```
 
-**Merton (1976) Analytical Option Pricing:**
+**Merton (1976) Numerical Poisson-Series Option Pricing:**
+
+Both ordinary and tilted Poisson omitted tails must be below `tol`. Increase
+`max_jumps` when the explicit budget is insufficient; the method raises instead
+of returning an underflowed/truncated series as a valid price.
 ```python
 # Evaluates Merton's analytical series via Poisson mixture of Black–Scholes formulas
 merton.call_price(K=100.0, T=1.0, S0=100.0, r=0.05, q=0.0)
@@ -910,24 +923,28 @@ where $\mu \in \mathbb{R}$ is the drift rate (under risk-neutral pricing $\mu = 
 - `local_volatility(S: float | np.ndarray) -> float | np.ndarray` — local percentage volatility $\sigma_{\text{loc}}(S) = \sigma S^{\gamma - 1}$
 - `absorption_probability(T: float, r: float | None = None, q: float | None = None) -> float` — analytical default/bankruptcy probability $P(S_T = 0) = 1 - F_{\chi^2}(x; 1/(1-\gamma))$ for $\gamma < 1$; $0.0$ for $\gamma \ge 1$
 
-**Exact Option Pricing (Schroder 1989 / Cox 1975)**
-- `call_price(K: float, T: float, r: float | None = None, q: float | None = None) -> float` — exact European call price via non-central chi-squared distribution
+**Closed-form option representation, numerical evaluation (Schroder 1989 / Cox 1975)**
+- `call_price(K: float, T: float, r: float | None = None, q: float | None = None) -> float` — noncentral-chi-square call; for gamma>1 this is the **fully collateralized** convention
 - `put_price(K: float, T: float, r: float | None = None, q: float | None = None) -> float` — exact European put price satisfying put-call parity $C - P = S_0 e^{-q T} - K e^{-r T}$
 - `price(K: float, T: float, option_type: str = "call", r: float | None = None, q: float | None = None) -> float` — unified option pricer
 
-**Greeks**
+For gamma>1 the call equals the discounted expected payoff plus the
+strict-local-martingale defect; the put is a discounted expected payoff.
+The displayed ordinary parity refers to that collateralized call convention.
+
+**Greeks (finite differences on immutable parameter-bump copies)**
 - `delta(K: float, T: float, option_type: str = "call", r: float | None = None, q: float | None = None, eps: float = 1e-4) -> float` — $\partial V / \partial S_0$ satisfying $\Delta_{\text{call}} - \Delta_{\text{put}} = e^{-q T}$
 - `gamma_greek(K: float, T: float, r: float | None = None, q: float | None = None, eps: float = 1e-4) -> float` — $\partial^2 V / \partial S_0^2 > 0$
 - `vega(K: float, T: float, r: float | None = None, q: float | None = None, eps: float = 1e-4) -> float` — $\partial V / \partial \sigma > 0$
 
 **Distributions & Moments**
 - `transition_cdf(k: float, T: float, r: float | None = None, q: float | None = None) -> float` — cumulative distribution function $P(S_T \le k \mid S_0)$
-- `conditional_mean(t: float, s0: float | None = None) -> float` — conditional expectation $E[S_t \mid S_0] = S_0 e^{\mu t}$
-- `conditional_variance(t: float, s0: float | None = None) -> float` — conditional variance $\text{Var}(S_t \mid S_0)$ (closed-form for $\gamma \in \{0.5, 1.0\}$, quadrature propagation for general $\gamma$)
+- `conditional_mean(t: float, s0: float | None = None) -> float` — conditional expectation; $S_0 e^{\mu t}$ only for gamma<=1; gamma>1 includes the incomplete-Gamma martingale-defect factor
+- `conditional_variance(t: float, s0: float | None = None) -> float` — conditional variance $\text{Var}(S_t \mid S_0)$ (closed-form for gamma=0, 0.5, 1; full-support centered-tail quadrature otherwise; infinite for 1<gamma<=3/2)
 - `conditional_std(t: float, s0: float | None = None) -> float` — conditional standard deviation
 
 **Simulation**
-- `simulate(n_steps: int, dt: float | None = None, time_horizon: float | None = None, n_paths: int = 1, rng: np.random.Generator | None = None, method: str = "exact") -> np.ndarray` — vectorized path simulation with absorbing boundary condition at 0
+- `simulate(n_steps: int, dt: float | None = None, time_horizon: float | None = None, n_paths: int = 1, rng: np.random.Generator | None = None, method: str = "exact", *, T: float | None = None) -> np.ndarray` — exact Bessel/gamma-mixture Markov transitions, reciprocal-Bessel or lognormal transitions; explicit Euler/Milstein methods are approximate
 
 ### CIRProcess
 
@@ -977,7 +994,10 @@ cir.conditional_cumulants(t: float, order: int = 4, r0: float | None = None) -> 
 
 # Stationary cumulants (order n >= 1)
 cir.stationary_cumulant(n: int) -> float
-cir.cumulants(order: int) -> dict[int, float]
+
+# Configured finite-time marginal, not the stationary law
+cir.cumulants(order: int) -> dict[int, float]  # t=1
+cir.cumulants_at(order: int, t: float = 1.0) -> dict[int, float]
 
 # Autocovariance and autocorrelation at lag h >= 0
 cir.autocovariance(h: float) -> float    # Var(r_∞) * exp(-κh)
@@ -1069,9 +1089,9 @@ Requires subcriticality: α < β (α/β < 1).
 
 **Extra properties (on the instance):**
 ```python
-hawkes.mean_intensity        # float: μ/(1−α/β)
+hawkes.mean_intensity  # float: μ/(1−α/β)
 hawkes.asymptotic_variance_rate  # float: λ̄·(1+α/β)/(1−α/β)²
-hawkes.fano_factor           # float: (1+α/β)/(1−α/β)² — always ≥ 1
+hawkes.fano_factor  # float: (1+α/β)/(1−α/β)² — always ≥ 1
 ```
 
 **Simulation:** Ogata's thinning algorithm.
@@ -1125,12 +1145,13 @@ heston.asset_char_func(u, t=1.0)   # E[exp(i u ln S_t)]
 
 heston.conditional_mean(t=1.0)     # E[X_t] = μ t - ½ E[∫_0^t V_s ds]
 heston.conditional_variance(t=1.0) # Var(X_t)
-heston.conditional_cumulants(t=1.0, order=4) # κ_1, κ_2, κ_3, κ_4 (leverage skew & fat tails)
+heston.conditional_cumulants(t=1.0, order=4) # differentiated Riccati ODEs, numerical
+heston.cumulants_at(order=4, t=0.7)          # explicit finite-time law; order budget 12
 ```
 
 **Option Pricing & Implied Volatility Surface:**
 ```python
-# European call & put pricing via Gil-Pelaez Fourier inversion
+# Numerical Gil-Pelaez inversion; r-q replaces the configured physical drift
 heston.call_price(K, T=1.0, r=0.05, q=0.0)
 heston.put_price(K, T=1.0, r=0.05, q=0.0)
 
@@ -1159,9 +1180,9 @@ s_paths, v_paths = heston.simulate_joint(n_steps=100, n_paths=1000, T=1.0)
 
 ```python
 from spxa import OrnsteinUhlenbeck, Vasicek
-from spxa.zoo.beyond import OrnsteinUhlenbeckProcess, VasicekProcess
+from spxa.zoo.beyond import OrnsteinUhlenbeckProcess
 
-# All four names refer to the same process class
+# All three names refer to the same process class
 ou = OrnsteinUhlenbeck(theta=1.5, mu=0.05, sigma=0.03, x0=0.02)
 ```
 
@@ -1174,7 +1195,7 @@ $$dX_t = \theta(\mu - X_t) dt + \sigma dW_t, \quad X_0 = x_0$$
 | `theta` | > 0 | Mean-reversion speed ($\theta > 0$) |
 | `mu` | real | Long-term mean / central tendency ($\mu \in \mathbb{R}$) |
 | `sigma` | > 0 | Volatility / diffusion coefficient ($\sigma > 0$) |
-| `x0` | real, default 0.0 | Initial state value ($X_0 = x_0$) |
+| `x0` | real, default mu | Initial state value ($X_0 = x_0$) |
 
 **Exactness:** `MOMENT_PROPAGATION` (conditional law is Gaussian; no Lévy triplet as increments are serially correlated).
 
@@ -1187,9 +1208,10 @@ ou.stationary_variance     # float: σ² / (2θ)
 ou.stationary_std          # float: σ / sqrt(2θ)
 ou.stationary_skewness     # float: 0.0
 ou.stationary_kurtosis     # float: 0.0 (excess)
-ou.stationary_cumulants(4) # dict[int, float]
+{n: ou.stationary_cumulant(n) for n in range(1, 5)}
 ou.stationary_density(x)   # Gaussian probability density
-ou.stationary_cdf(x)       # Gaussian cumulative distribution function
+
+# CDFs can be obtained from scipy.stats.norm with the above mean/std.
 ```
 
 **Conditional Distribution & Moments:**
@@ -1199,7 +1221,7 @@ ou.conditional_variance(t) # Var(X_t | X_0) = (σ² / (2θ)) (1 - e^{-2θ t})
 ou.conditional_std(t)      # sqrt(Var(X_t | X_0))
 ou.conditional_cumulants(t, order=4)  # exact Gaussian cumulants
 ou.transition_density(x, t)# N(mean(t), var(t)) PDF
-ou.transition_cdf(x, t)    # N(mean(t), var(t)) CDF
+ou.cumulants_at(order=4, t=t) # configured transient law, not stationary cumulants
 ou.char_func(u, t)         # E[exp(i u X_t)] exact characteristic function
 ou.laplace_transform(s, t) # E[exp(-s X_t)] exact Laplace transform
 ```
@@ -1208,8 +1230,8 @@ ou.laplace_transform(s, t) # E[exp(-s X_t)] exact Laplace transform
 ```python
 ou.autocovariance(h)       # (σ² / (2θ)) e^{-θ h}
 ou.autocorrelation(h)      # e^{-θ h}
-ou.covariance(s, t)        # (σ² / (2θ)) (e^{-θ|t-s|} - e^{-θ(t+s)})
-ou.spectral_density(omega) # σ² / (π (θ² + ω²)) Lorentzian PSD
+ou.two_time_covariance(s, t)        # (σ² / (2θ)) (e^{-θ|t-s|} - e^{-θ(t+s)})
+ou.spectral_density(omega) # σ² / (2π (θ² + ω²)) two-sided PSD
 ```
 
 **Vasicek Term Structure & Bond Pricing:**
@@ -1254,13 +1276,13 @@ dV_t = −λV_t dt + dL_{λt}. Default subordinator: GammaProcess(a=1, b=1).
 **Extra properties (on the instance):**
 ```python
 ou.stationary_mean        # float: κ₁(L₁)
-ou.stationary_variance    # float: κ₂(L₁)/(2λ)
+ou.stationary_variance    # float: κ₂(L₁)/2
 
 ou.autocovariance(h: float) -> float
 # e^{−λh}·Var(V∞)   [Barndorff-Nielsen & Shephard 2001, eq. 17]
 ```
 
-**Simulation:** Exact Euler discretisation.
+**Simulation:** Approximate, mean-preserving kernel quadrature of Lévy-clock increments.
 
 **Reference:** Barndorff-Nielsen & Shephard (2001).
 
@@ -1517,7 +1539,7 @@ bernstein_function(
 Evaluate the Laplace exponent φ(s) = −log E[e^{−sT₁}].
 Dispatches to a closed-form `bernstein_function` method on the process
 when available (GammaProcess, InverseGaussianProcess, TemperedStable),
-falling back to numerical evaluation via the characteristic function.
+falling back to the continuous characteristic exponent, not the principal log of a CF.
 
 ```python
 is_valid_subordination(parent: Process, subordinator: Process) -> tuple[bool, str]
@@ -1585,7 +1607,9 @@ Requires `EXACT` integrator.
 StochasticIntegral(X: Process, Y: Process, f: Callable[[float], float])
 ```
 Process Z_t = ∫₀ᵗ f(X_s) dY_s for random integrand f(X_s).
-Always `MOMENT_PROPAGATION`. Emits `SpxaDegradationWarning`.
+Brownian integrand drivers and square-integrable Lévy martingale integrators support
+mean/variance via Gaussian expectation and Itô isometry. General cases are
+`SIMULATION_ONLY`; higher moments are unavailable. Emits `SpxaDegradationWarning`.
 Simulation via Euler–Maruyama: Z_{t_{k+1}} ≈ Z_{t_k} + f(X_{t_k})·ΔY_k.
 
 ---
@@ -1603,7 +1627,7 @@ cumulant_table(process: Process, order: int = 4, t: float = 1.0) -> dict[str, fl
 ```
 Returns a dict with keys:
 `mean`, `variance`, `std`, `skewness`, `excess_kurtosis`, `kappa_1`, …, `kappa_order`.
-All values are for X_t (cumulants scale by t). Requires at least `MOMENT_PROPAGATION`.
+All values are for X_t via `cumulants_at(order,t)`; only Lévy cumulants scale linearly in t. Requires at least `MOMENT_PROPAGATION`.
 
 ```python
 skewness(process: Process, t: float = 1.0) -> float
@@ -1626,8 +1650,10 @@ from spxa.analytics import (
 )
 ```
 
-All divergences compare marginal distributions at time t. No Monte Carlo
-needed for L² and Hellinger — they use characteristic functions directly.
+All divergences compare marginal distributions at time t. Hellinger integrates
+density/PMF overlap; it is not a square-root characteristic-function identity.
+Known primitive marginals use SciPy adapters. Unknown smooth marginals use an
+explicitly approximate Fourier fallback; unsupported mixtures raise.
 
 ```python
 l2_char_func_distance(
@@ -1638,8 +1664,8 @@ l2_char_func_distance(
 ) -> float
 ```
 L² distance between marginals: (1/2π)·∫|φ_X(u;t) − φ_Y(u;t)|² du.
-Equal to 0 iff X_t and Y_t have the same distribution (Plancherel theorem).
-Symmetric.
+Symmetric finite-band CF comparison; equality of full CFs characterizes the law.
+The full density-L2 interpretation needs square-integrable densities and an infinite band.
 
 ```python
 hellinger_distance(
@@ -1660,8 +1686,9 @@ wasserstein2_distance(
     n_points: int = 4000,
 ) -> float
 ```
-Wasserstein-2 distance W₂(X_t, Y_t). Computed via Gil-Pelaez CDF inversion
-followed by quantile function comparison. Returns W₂ (not squared).
+Wasserstein-2 distance W₂(X_t, Y_t), from quantile-function comparison. Gaussian
+cases are analytic; known marginals use distribution quantiles. The unknown-law
+Fourier fallback is approximate. Returns W₂ (not squared).
 
 ```python
 kl_divergence_mc(
@@ -1694,7 +1721,7 @@ european_call_price(
     eta: float = 0.25,
 ) -> float
 ```
-European call price assuming S_t = S₀·exp(rt + X_t) where X is the
+European call price with S_t = S₀·exp(rt + X_t − log E[exp(X_t)]), where X is the
 log-return process. Uses the Carr-Madan (1999) FFT formula. Dispatches to
 `char_func_exact` when available (fast path for BM, VG, NIG, CGMY, etc.).
 
@@ -1736,7 +1763,12 @@ Returns `float("nan")` if no solution found in `[1e-6, 10]`.
 ### euler
 
 ```python
-from spxa.sim import euler_maruyama, euler_maruyama_autonomous, geometric_levy, convergence_order_estimate
+from spxa.sim import (
+    euler_maruyama,
+    euler_maruyama_autonomous,
+    geometric_levy,
+    convergence_order_estimate,
+)
 ```
 
 ```python
@@ -1785,7 +1817,8 @@ geometric_levy(
 ```
 Simulate S_t = s₀·exp(drift_correction·t + σ·X_t) where the drift correction
 is chosen so E[S_t] = s₀·e^{μt} (risk-neutral). Drift correction computed
-from the MGF via the characteristic function. Exact — no discretisation.
+from the actual finite MGF; absent exponential moments raise. There is no SDE
+time discretisation for an exponential law, but accuracy still depends on the driver sampler.
 Returns shape `(n_paths, n_steps+1)`.
 
 ```python
@@ -1813,9 +1846,14 @@ Use `increments_to_paths(increments, x0=0.0)` to convert to paths.
 
 ```python
 from spxa.sim import (
-    sample_brownian, sample_gamma, sample_inverse_gaussian,
-    sample_vg, sample_nig, sample_alpha_stable,
-    sample_compound_poisson, sample_tempered_stable,
+    sample_brownian,
+    sample_gamma,
+    sample_inverse_gaussian,
+    sample_vg,
+    sample_nig,
+    sample_alpha_stable,
+    sample_compound_poisson,
+    sample_tempered_stable,
     increments_to_paths,
 )
 ```
@@ -1828,8 +1866,13 @@ from spxa.sim import (
 | `sample_vg(sigma, nu, theta, dt, n_steps, n_paths, rng)` | VG(σ,ν,θ,Δt) | Gamma subordination |
 | `sample_nig(alpha, beta, delta, mu, dt, n_steps, n_paths, rng)` | NIG(α,β,δ,μ,Δt) | IG subordination |
 | `sample_alpha_stable(alpha, beta, sigma, dt, n_steps, n_paths, rng)` | S_α(σΔt^{1/α},β,0) | Chambers–Mallows–Stuck |
-| `sample_compound_poisson(rate, jump_sampler, dt, n_steps, n_paths, rng)` | CP(rate,jump_dist) | Thinning |
+| `sample_compound_poisson(rate, jump_sampler, dt, n_steps, n_paths, rng)` | CP increments | Vectorized compounding; sampler errors propagate |
 | `sample_tempered_stable(alpha, C, lam, dt, n_steps, n_paths, rng)` | TS(α,CΔt,λ) | Rejection from stable (Rosiński 2007) |
+| `sample_cir(...)` | CIR state paths | Exact noncentral chi-square, or explicit approximate Euler |
+| `sample_ou(...)` | Gaussian OU state paths | Exact Gaussian, or explicit approximate Euler |
+| `sample_heston(...)` | Heston log-return / variance paths | Approximate full-truncation or Euler |
+| `sample_merton(...)` | Merton log-return paths | Exact Gaussian plus Poisson-normal increments |
+| `sample_cev(...)` | CEV state paths | Exact killed/reciprocal Bessel or GBM; explicit approximate alternatives |
 
 ```python
 increments_to_paths(increments: np.ndarray, x0: float = 0.0) -> np.ndarray
@@ -1842,9 +1885,11 @@ increments_to_paths(increments: np.ndarray, x0: float = 0.0) -> np.ndarray
 
 ```python
 from spxa.sim import (
-    brownian_bridge, gamma_bridge,
+    brownian_bridge,
+    gamma_bridge,
     brownian_bridge_interpolate,
-    first_passage_time_bm, first_passage_time_exact_bm,
+    first_passage_time_bm,
+    first_passage_time_exact_bm,
 )
 ```
 
@@ -1946,9 +1991,9 @@ Node in the composition tree. Every `Process` carries one at `process._node`.
 ### NodeKind
 
 ```python
-NodeKind.PRIMITIVE      # leaf: a named process
-NodeKind.ADDITION       # from X + Y
-NodeKind.SCALING        # from c * X
+NodeKind.PRIMITIVE  # leaf: a named process
+NodeKind.ADDITION  # from X + Y
+NodeKind.SCALING  # from c * X
 NodeKind.SUBORDINATION  # from X @ T
 NodeKind.MOMENT_APPROX  # from non-Lévy operations
 ```
@@ -1982,5 +2027,9 @@ the composition tree (via `narrate_latex`), exactness level, and all
 
 ```python
 from IPython.display import display, Math
+
 display(Math(story_latex(Z)))
 ```
+
+See [current-upstream mathematical reconciliation](refresh_mathematics.md) for
+the CEV transition derivation, moment-existence limits and the refreshed contracts.

@@ -9,9 +9,9 @@ X = VarianceGamma(sigma=0.2, nu=0.1, theta=-0.1)
 Y = GammaProcess(a=1.0, b=2.0)
 
 Z = X + 0.5 * Y
-Z.triplet          # exact Lévy–Khintchine triplet
-Z.cumulants(4)     # exact symbolic cumulants
-Z.__story__()      # derivation trace
+Z.triplet  # exact Lévy–Khintchine triplet
+Z.cumulants(4)  # exact symbolic cumulants
+Z.__story__()  # derivation trace
 ```
 
 ## Where to start

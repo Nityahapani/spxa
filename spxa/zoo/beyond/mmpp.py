@@ -5,6 +5,7 @@ Poisson intensities. Increments are generally dependent, so no global Levy
 triplet is available. See Fischer and Meier-Hellstern (1993), The Markov-
 modulated Poisson process (MMPP) cookbook, Performance Evaluation 18, 149-171.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -25,7 +26,7 @@ def _is_positive_int(value: object) -> bool:
     return (
         isinstance(value, (int, np.integer))
         and not isinstance(value, (bool, np.bool_))
-        and value >= 1
+        and bool(value >= 1)
     )
 
 
@@ -105,7 +106,9 @@ class MarkovModulatedPoissonProcess(Process):
     def count_moments(self, t: float) -> tuple[float, float]:
         """Finite-horizon count mean and variance via matrix exponentials."""
         return count_moments(
-            self.Q, self.rates, t,
+            self.Q,
+            self.rates,
+            t,
             initial_state=self.initial_state,
             initial_probabilities=self.initial_probabilities,
         )
@@ -128,7 +131,10 @@ class MarkovModulatedPoissonProcess(Process):
         if isinstance(order, bool) or not isinstance(order, int) or order < 1:
             raise ValueError("order must be a positive integer")
         return count_cumulants(
-            self.Q, self.rates, 1.0, order,
+            self.Q,
+            self.rates,
+            1.0,
+            order,
             initial_state=self.initial_state,
             initial_probabilities=self.initial_probabilities,
         )
@@ -143,7 +149,9 @@ class MarkovModulatedPoissonProcess(Process):
     ) -> MMPPResult:
         """Return event timestamps and background-state history."""
         return simulate_mmpp(
-            self.Q, self.rates, T,
+            self.Q,
+            self.rates,
+            T,
             initial_state=self.initial_state,
             initial_probabilities=self.initial_probabilities,
             rng=rng,
@@ -163,7 +171,7 @@ class MarkovModulatedPoissonProcess(Process):
             raise ValueError("n_steps must be a positive integer")
         if not _is_positive_int(n_paths):
             raise ValueError("n_paths must be a positive integer")
-        if isinstance(T, (bool, np.bool_)) or not np.isscalar(T) or not np.isfinite(T) or T < 0:
+        if isinstance(T, (bool, np.bool_)) or np.ndim(T) != 0 or not np.isfinite(T) or T < 0:
             raise ValueError("T must be finite and nonnegative")
         if rng is not None and not isinstance(rng, np.random.Generator):
             raise TypeError("rng must be a numpy.random.Generator")
@@ -177,3 +185,14 @@ class MarkovModulatedPoissonProcess(Process):
 
     def __repr__(self) -> str:
         return f"MarkovModulatedPoissonProcess(n_states={self.rates.size})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Finite-horizon count cumulants (not linear in time in general)."""
+        return count_cumulants(
+            self.Q,
+            self.rates,
+            t,
+            order,
+            initial_state=self.initial_state,
+            initial_probabilities=self.initial_probabilities,
+        )

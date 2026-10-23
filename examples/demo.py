@@ -10,7 +10,7 @@ import spxa
 from spxa.analytics import cumulant_table, hellinger_distance, l2_char_func_distance
 from spxa.analytics.fourier import european_call_price, implied_volatility
 from spxa.zoo.beyond import FractionalBrownianMotion
-from spxa.zoo.levy import BrownianMotion, GammaProcess, NIG, VarianceGamma
+from spxa.zoo.levy import NIG, BrownianMotion, GammaProcess, VarianceGamma
 
 print("=" * 65)
 print("spxa — stochastic process algebra demo")
@@ -37,7 +37,7 @@ vg2 = VarianceGamma(sigma=0.2, nu=0.1, theta=-0.15)
 kappas = vg2.cumulants(order=4)
 print(f"  σ={vg2.sigma}, ν={vg2.nu}, θ={vg2.theta}")
 print(f"  κ₁ = {kappas[1]:.6f}  (θ = {vg2.theta})")
-print(f"  κ₂ = {kappas[2]:.6f}  (σ²+θ²ν = {vg2.sigma**2 + vg2.theta**2*vg2.nu:.6f})")
+print(f"  κ₂ = {kappas[2]:.6f}  (σ²+θ²ν = {vg2.sigma**2 + vg2.theta**2 * vg2.nu:.6f})")
 print(f"  κ₃ = {kappas[3]:.6f}")
 print(f"  κ₄ = {kappas[4]:.6f}")
 
@@ -52,18 +52,18 @@ bm_mg = BrownianMotion(mu=0.0, sigma=1.0)
 bm_dr = BrownianMotion(mu=1.0, sigma=1.0)
 g1 = GammaProcess(a=1.0, b=1.0)
 g2 = GammaProcess(a=2.0, b=1.0)
-print(f"  BM(0)+BM(0) martingale?  {(bm_mg+bm_mg).properties.is_martingale}")
-print(f"  BM(0)+BM(1) martingale?  {(bm_mg+bm_dr).properties.is_martingale}")
-print(f"  Gamma+Gamma subordinator? {(g1+g2).properties.is_subordinator}")
-print(f"  (-1)*Gamma subordinator?  {(-1.0*g1).properties.is_subordinator}")
+print(f"  BM(0)+BM(0) martingale?  {(bm_mg + bm_mg).properties.is_martingale}")
+print(f"  BM(0)+BM(1) martingale?  {(bm_mg + bm_dr).properties.is_martingale}")
+print(f"  Gamma+Gamma subordinator? {(g1 + g2).properties.is_subordinator}")
+print(f"  (-1)*Gamma subordinator?  {(-1.0 * g1).properties.is_subordinator}")
 
 # ── 6. Divergences ────────────────────────────────────────────────
 print("\n── 6. Divergences between marginals at t=1 ──")
-bm_ref  = BrownianMotion(mu=0.0, sigma=0.3)
+bm_ref = BrownianMotion(mu=0.0, sigma=0.3)
 vg_comp = VarianceGamma(sigma=0.3, nu=0.5, theta=0.0)
-nig_p   = NIG(alpha=3.0, beta=0.0, delta=1.0)
+nig_p = NIG(alpha=3.0, beta=0.0, delta=1.0)
 print(f"  L²(BM, VG)   : {l2_char_func_distance(bm_ref, vg_comp, t=1.0, u_max=30.0):.6f}")
-print(f"  L²(BM, NIG)  : {l2_char_func_distance(bm_ref, nig_p,   t=1.0, u_max=30.0):.6f}")
+print(f"  L²(BM, NIG)  : {l2_char_func_distance(bm_ref, nig_p, t=1.0, u_max=30.0):.6f}")
 print(f"  H²(BM, VG)   : {hellinger_distance(bm_ref, vg_comp, t=1.0, u_max=30.0):.6f}")
 print(f"  L²(BM, BM)   : {l2_char_func_distance(bm_ref, bm_ref, t=1.0):.2e}  (≈0)")
 
@@ -93,7 +93,7 @@ print(f"  exactness        : {fbm.exactness.name}")
 print(f"  Var(B^H_1)       : {fbm.variance(1.0):.6f}")
 print(f"  Cov(B^H_0.5,B^1) : {fbm.covariance(0.5, 1.0):.6f}")
 fp = fbm.simulate(n_steps=500, n_paths=5000, T=1.0, rng=np.random.default_rng(1))
-print(f"  MC Var(B^H_1)    : {fp[:,-1].var():.4f}  (theory: {fbm.variance(1.0):.4f})")
+print(f"  MC Var(B^H_1)    : {fp[:, -1].var():.4f}  (theory: {fbm.variance(1.0):.4f})")
 
 print("\n" + "=" * 65)
 print(f"  131 tests passing · spxa v{spxa.__version__}")

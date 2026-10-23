@@ -130,5 +130,5 @@ def linear_transform_triplet(
             "linear_transform_triplet currently supports scalar A only. "
             "For matrices, use the multidimensional extension (planned for v0.2)."
         )
-    c = float(A)
+    c = float(np.asarray(A, dtype=float))
     return {"triplet": triplet.scale(c)}

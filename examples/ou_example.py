@@ -6,7 +6,7 @@ Run with: python examples/ou_example.py
 
 import numpy as np
 
-from spxa import OrnsteinUhlenbeck, Vasicek
+from spxa import OrnsteinUhlenbeck
 
 print("=" * 65)
 print("spxa — Gaussian Ornstein–Uhlenbeck (Vasicek) Process Demo")
@@ -29,10 +29,28 @@ print(f"  Stationary Kurt  : {ou.stationary_kurtosis:.4f} (excess kurtosis)")
 t_eval = 1.0
 cond_kappas = ou.conditional_cumulants(t=t_eval, order=4)
 print(f"\n── 2. Analytical Moments at t={t_eval} vs Stationarity ──")
-print(f"  Conditional Mean (t={t_eval}) : {cond_kappas[1]:.6f} (theory: {ou.conditional_mean(t_eval):.6f})")
-print(f"  Conditional Var  (t={t_eval}) : {cond_kappas[2]:.8f} (theory: {ou.conditional_variance(t_eval):.8f})")
+print(
+    "  Conditional Mean (t="
+    f"{t_eval}"
+    ") : "
+    f"{cond_kappas[1]:.6f}"
+    " (theory: "
+    f"{ou.conditional_mean(t_eval):.6f}"
+    ")"
+)
+print(
+    "  Conditional Var  (t="
+    f"{t_eval}"
+    ") : "
+    f"{cond_kappas[2]:.8f}"
+    " (theory: "
+    f"{ou.conditional_variance(t_eval):.8f}"
+    ")"
+)
 print(f"  Conditional Std  (t={t_eval}) : {ou.conditional_std(t_eval):.6f}")
-print(f"  Cumulants κ_3, κ_4       : {cond_kappas[3]:.1f}, {cond_kappas[4]:.1f} (vanish for Gaussian)")
+print(
+    f"  Cumulants κ_3, κ_4       : {cond_kappas[3]:.1f}, {cond_kappas[4]:.1f} (vanish for Gaussian)"
+)
 
 # 3. Temporal Dependence & Power Spectral Density
 print("\n── 3. Temporal Dependence & Power Spectral Density ──")
@@ -55,7 +73,7 @@ bond_yields = ou.bond_yield(maturities)
 print(f"  Spot Rate r_0    : {ou.x0:.4f}")
 print(f"  Asymptotic Yield : {ou.asymptotic_yield:.6f} (τ → ∞)")
 print("    Maturity (yrs)     Bond Price P(τ)     Zero Yield y(τ)")
-for tau, p, y in zip(maturities, bond_prices, bond_yields):
+for tau, p, y in zip(maturities, bond_prices, bond_yields, strict=True):
     print(f"      {tau:5.2f}               {p:.6f}              {y:.6f}")
 
 # 5. Exact Simulation Check vs Theory
@@ -74,8 +92,18 @@ th_mean = ou.conditional_mean(T)
 th_var = ou.conditional_variance(T)
 
 print(f"  Simulation Method: exact Gaussian increments (N={n_paths:,}, steps={n_steps})")
-print(f"  Terminal E[X_T]  : {mc_mean:.6f}  (theory: {th_mean:.6f}, diff: {abs(mc_mean - th_mean):.6f})")
-print(f"  Terminal Var[X_T]: {mc_var:.8f}  (theory: {th_var:.8f}, diff: {abs(mc_var - th_var):.8f})")
+print(
+    "  Terminal E[X_T]  : "
+    f"{mc_mean:.6f}"
+    "  (theory: "
+    f"{th_mean:.6f}"
+    ", diff: "
+    f"{abs(mc_mean - th_mean):.6f}"
+    ")"
+)
+print(
+    f"  Terminal Var[X_T]: {mc_var:.8f}  (theory: {th_var:.8f}, diff: {abs(mc_var - th_var):.8f})"
+)
 
 # Euler scheme comparison
 paths_euler = ou.simulate(n_steps=n_steps, n_paths=n_paths, T=T, rng=rng, method="euler")

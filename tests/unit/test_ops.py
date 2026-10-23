@@ -7,16 +7,15 @@ import warnings
 import numpy as np
 import pytest
 
-from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
 from spxa.core.exactness import ExactnessLevel
-from spxa.ops.addition import add, sum_processes, triplet_add, exactness_for_addition
+from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
+from spxa.ops.addition import add, exactness_for_addition, sum_processes, triplet_add
 from spxa.ops.integral import (
     StochasticIntegral,
     ito_isometry_variance,
     stochastic_convolution_char_func,
 )
 from spxa.ops.product import (
-    ProductProcess,
     cumulants_to_raw_moments,
     multiply,
     raw_moments_to_cumulants,
@@ -28,7 +27,7 @@ from spxa.ops.subordination import (
     is_valid_subordination,
     subordinate,
 )
-from spxa.zoo.levy import BrownianMotion, GammaProcess, NIG, VarianceGamma
+from spxa.zoo.levy import BrownianMotion, GammaProcess, VarianceGamma
 
 
 class TestAddition:
@@ -69,6 +68,7 @@ class TestAddition:
 
     def test_exactness_for_addition_degrades(self) -> None:
         from spxa.zoo.beyond import FractionalBrownianMotion
+
         fbm = FractionalBrownianMotion(H=0.7)
         bm = BrownianMotion(sigma=1.0)
         level, reason = exactness_for_addition(fbm, bm)
@@ -169,7 +169,7 @@ class TestSubordination:
         assert abs(complex(cf) - 1.0) == pytest.approx(0.0, abs=1e-6)
 
     def test_char_exp_subordinated_matches_vg(self) -> None:
-        """BM@Gamma char func magnitude matches VG closed-form (loose tolerance for numerical method)."""
+        """BM@Gamma characteristic function agrees with the VG identity."""
         sigma, nu, theta = 0.2, 0.5, 0.0
         bm = BrownianMotion(mu=theta, sigma=sigma)
         g = GammaProcess(a=1.0 / nu, b=1.0 / nu)
@@ -181,8 +181,10 @@ class TestSubordination:
         cf_vg = vg.char_func_exact(u=u_vals, t=1.0)
 
         np.testing.assert_allclose(
-            np.abs(cf_sub), np.abs(cf_vg), rtol=0.15,
-            err_msg="BM@Gamma char func should approximately match VG"
+            np.abs(cf_sub),
+            np.abs(cf_vg),
+            rtol=0.15,
+            err_msg="BM@Gamma char func should approximately match VG",
         )
 
 

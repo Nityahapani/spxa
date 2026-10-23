@@ -14,7 +14,6 @@ Property propagation rules under composition are derived from:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -55,10 +54,10 @@ class ProcessProperties:
     is_martingale: bool = False
     has_finite_variance: bool = True
     has_finite_mean: bool = True
-    self_similarity_index: Optional[float] = None
-    tail_index: Optional[float] = None
+    self_similarity_index: float | None = None
+    tail_index: float | None = None
     is_subordinator: bool = False
-    hurst_index: Optional[float] = None
+    hurst_index: float | None = None
     notes: list[str] = field(default_factory=list)
 
     def add_note(self, note: str) -> ProcessProperties:
@@ -93,10 +92,12 @@ class ProcessProperties:
         """
         notes: list[str] = []
 
-        self_sim: Optional[float] = None
-        if (p.self_similarity_index is not None
-                and q.self_similarity_index is not None
-                and p.self_similarity_index == q.self_similarity_index):
+        self_sim: float | None = None
+        if (
+            p.self_similarity_index is not None
+            and q.self_similarity_index is not None
+            and p.self_similarity_index == q.self_similarity_index
+        ):
             self_sim = p.self_similarity_index
         elif p.self_similarity_index is not None or q.self_similarity_index is not None:
             notes.append(
@@ -104,7 +105,7 @@ class ProcessProperties:
                 "or asymmetric self-similarity."
             )
 
-        tail: Optional[float] = None
+        tail: float | None = None
         if p.tail_index is not None and q.tail_index is not None:
             tail = min(p.tail_index, q.tail_index)
             if tail != p.tail_index or tail != q.tail_index:
@@ -121,9 +122,7 @@ class ProcessProperties:
             notes.append("Martingale property lost: only one operand is a martingale.")
 
         return ProcessProperties(
-            has_stationary_increments=(
-                p.has_stationary_increments and q.has_stationary_increments
-            ),
+            has_stationary_increments=(p.has_stationary_increments and q.has_stationary_increments),
             has_independent_increments=(
                 p.has_independent_increments and q.has_independent_increments
             ),
@@ -182,10 +181,15 @@ class ProcessProperties:
         """
         notes: list[str] = []
 
-        if not subordinator.is_subordinator:
+        if not (
+            subordinator.is_subordinator
+            and subordinator.has_independent_increments
+            and subordinator.has_stationary_increments
+            and parent.has_independent_increments
+            and parent.has_stationary_increments
+        ):
             raise ValueError(
-                "The right operand of @ must be a subordinator "
-                "(non-decreasing Lévy process)."
+                "The right operand of @ must be a subordinator (non-decreasing Lévy process)."
             )
 
         if parent.is_martingale:
@@ -194,7 +198,7 @@ class ProcessProperties:
                 "processes; not propagated automatically."
             )
 
-        finite_var = parent.has_finite_variance and subordinator.has_finite_mean
+        finite_var = parent.has_finite_variance and subordinator.has_finite_variance
 
         return ProcessProperties(
             has_stationary_increments=True,
@@ -204,7 +208,7 @@ class ProcessProperties:
             has_finite_mean=parent.has_finite_mean and subordinator.has_finite_mean,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=False,
+            is_subordinator=parent.is_subordinator,
             hurst_index=None,
             notes=notes,
         )

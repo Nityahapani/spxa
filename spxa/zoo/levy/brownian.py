@@ -10,8 +10,6 @@ and Physics*, 2, 131–174.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
@@ -70,8 +68,8 @@ class BrownianMotion(Process):
     """
 
     def __init__(self, mu: float = 0.0, sigma: float = 1.0) -> None:
-        if sigma <= 0:
-            raise ValueError(f"sigma must be positive, got {sigma}")
+        if sigma < 0:
+            raise ValueError(f"sigma must be nonnegative, got {sigma}")
         self.mu = mu
         self.sigma = sigma
         node = CompositionNode(
@@ -92,23 +90,31 @@ class BrownianMotion(Process):
             is_martingale=(self.mu == 0.0),
             has_finite_variance=True,
             has_finite_mean=True,
-            self_similarity_index=0.5,
+            self_similarity_index=(
+                1.0
+                if self.sigma == 0 and self.mu != 0
+                else 0.5
+                if self.sigma > 0 and self.mu == 0
+                else None
+            ),
             tail_index=None,
-            is_subordinator=False,
+            is_subordinator=(self.sigma == 0 and self.mu >= 0),
             hurst_index=None,
         )
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """
         Exact characteristic function: E[e^{iuX_t}] = exp(iμtu - σ²tu²/2).
 
         Sato (1999), Example 8.3.
         """
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
         result = np.exp(1j * self.mu * t * u_arr - 0.5 * self.sigma**2 * t * u_arr**2)
         return result if result.shape != (1,) else result[0]
 
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def simulate(
@@ -116,7 +122,7 @@ class BrownianMotion(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation via Gaussian increments.
@@ -139,6 +145,8 @@ class BrownianMotion(Process):
         np.ndarray
             Shape (n_paths, n_steps + 1). paths[:, 0] == 0.
         """
+        if not np.isfinite(T) or T < 0 or n_steps < 1 or n_paths < 1:
+            raise ValueError("Finite nonnegative time and positive grid/path sizes required")
         rng = rng or np.random.default_rng()
         dt = T / n_steps
         increments = rng.normal(
@@ -152,3 +160,8 @@ class BrownianMotion(Process):
 
     def __repr__(self) -> str:
         return f"BrownianMotion(mu={self.mu}, sigma={self.sigma})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF on the continuous branch at zero."""
+        z = np.asarray(u, dtype=complex)
+        return np.asarray(1j * self.mu * z - 0.5 * self.sigma**2 * z * z)

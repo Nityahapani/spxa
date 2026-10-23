@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "setuptools-scm"]
+requires = ["setuptools>=77.0.3", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,14 +7,14 @@ name = "spxa"
 version = "1.0.0"
 description = "Stochastic processes as first-class algebraic objects"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Nityahapani", email = "nityahapani.tges@gmail.com" }]
 requires-python = ">=3.10"
 keywords = ["stochastic processes", "levy processes", "probability", "mathematics", "finance"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -31,12 +31,13 @@ dependencies = [
 dev = [
     "pytest>=7.4",
     "pytest-cov",
-    "ruff>=0.4",
+    "pytest-benchmark>=4",
+    "ruff==0.17.2",
     "mypy>=1.8",
     "pre-commit",
 ]
 docs = [
-    "mkdocs",
+    "mkdocs>=1.6,<2",
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-jupyter",
@@ -55,10 +56,14 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "ANN", "B", "SIM"]
-ignore = ["ANN101", "ANN102", "ANN401"]
+# Mathematical parameter names (X, Y, T, G, M, ...) are part of the public API.
+ignore = ["ANN401", "N803", "N806"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN"]
+"benchmarks/**" = ["ANN"]
+# Canonical notebook cells are embedded verbatim, including long code/markdown lines.
+"scripts/build_tutorials.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

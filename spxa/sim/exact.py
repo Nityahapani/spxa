@@ -33,9 +33,11 @@ Chapter 9 (Gamma), Chapter 4 (Inverse Gaussian).
 from __future__ import annotations
 
 import math
-from typing import Optional
+from collections.abc import Callable
 
 import numpy as np
+
+from spxa.core._validation import simulation_grid
 
 
 def sample_brownian(
@@ -199,71 +201,46 @@ def sample_alpha_stable(
             * (np.cos(U - alpha * (U + B)) / E) ** ((1 - alpha) / alpha)
         )
     else:
-        X = (
-            (2 / np.pi)
-            * (
-                (np.pi / 2 + beta * U) * np.tan(U)
-                - beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + beta * U))
-            )
+        X = (2 / np.pi) * (
+            (np.pi / 2 + beta * U) * np.tan(U)
+            - beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + beta * U))
         )
 
-    return sigma * (dt ** (1 / alpha)) * X
+    increments = sigma * (dt ** (1 / alpha)) * X
+    if alpha == 1:
+        increments += 2 * beta * sigma * dt * np.log(sigma * dt) / np.pi
+    return np.asarray(increments)
 
 
 def sample_compound_poisson(
     rate: float,
-    jump_sampler: callable,
+    jump_sampler: Callable[[np.random.Generator, int], np.ndarray],
     dt: float,
     n_steps: int,
     n_paths: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
+    """Vectorized Poisson compounding; sampler errors are never swallowed/retried.
+
+    The callable receives an integer count and must produce that many finite
+    real jumps. Retrying after an exception would both mask a bug and consume
+    a different random stream. This utility returns increments, not paths.
     """
-    Exact increments of a compound Poisson process via thinning.
-
-    For each interval of length Δt:
-      N ~ Poisson(rate·Δt)
-      ΔX = ∑_{i=1}^{N} J_i  where J_i ~ jump_sampler(rng, size)
-
-    Parameters
-    ----------
-    rate :
-        Jump rate λ (arrivals per unit time).
-    jump_sampler :
-        Callable (rng, size) → np.ndarray of jump sizes.
-    dt, n_steps, n_paths :
-        Standard parameters.
-    rng :
-        Generator.
-
-    Returns
-    -------
-    np.ndarray
-        Increments, shape (n_paths, n_steps).
-    """
-    jump_counts = rng.poisson(lam=rate * dt, size=(n_paths, n_steps))
-    flat_counts = jump_counts.ravel()
-    total_jumps = int(flat_counts.sum())
-
-    if total_jumps > 0:
-        try:
-            cell_ids = np.repeat(np.arange(flat_counts.size), flat_counts)
-            all_jumps = jump_sampler(rng, total_jumps)
-            all_jumps = np.asarray(all_jumps, dtype=float).ravel()
-            increments = np.bincount(
-                cell_ids, weights=all_jumps, minlength=flat_counts.size
-            ).reshape(n_paths, n_steps)
-            return increments
-        except Exception:
-            pass
-
-    increments = np.zeros((n_paths, n_steps), dtype=float)
-    for i in range(n_paths):
-        for k in range(n_steps):
-            n_jumps = jump_counts[i, k]
-            if n_jumps > 0:
-                increments[i, k] = np.sum(jump_sampler(rng, n_jumps))
-    return increments
+    dt = simulation_grid(n_steps, n_paths, dt=dt)
+    if not np.isfinite(rate) or rate < 0:
+        raise ValueError("rate must be nonnegative and finite")
+    counts = rng.poisson(rate * dt, size=(n_paths, n_steps)).ravel()
+    total = int(counts.sum())
+    if total == 0:
+        return np.zeros((n_paths, n_steps))
+    jumps = np.asarray(jump_sampler(rng, total))
+    if np.iscomplexobj(jumps):
+        raise ValueError("Jump samples must be real")
+    jumps = np.asarray(jumps, dtype=float).ravel()
+    if jumps.size != total or not np.all(np.isfinite(jumps)):
+        raise ValueError("Jump sampler must return the requested number of finite values")
+    cells = np.repeat(np.arange(counts.size), counts)
+    return np.bincount(cells, weights=jumps, minlength=counts.size).reshape(n_paths, n_steps)
 
 
 def sample_tempered_stable(
@@ -278,15 +255,15 @@ def sample_tempered_stable(
 ) -> np.ndarray:
     """
     Exact increments of a one-sided tempered stable process via rejection
-    from an α-stable proposal (Rosiński 2007, Algorithm 6.1).
+    from an α-stable proposal (exponential tilting; see Rosiński 2007).
 
     The one-sided tempered stable (also called a CGMY subordinator) has
     Lévy density k(x) = C·x^{-1-α}·exp(-λx) for x > 0.
 
-    Algorithm (Rosiński 2007):
-      1. Sample X from positive α-stable with scale σ = (CΓ(1-α))^{1/α}.
-      2. Accept with probability exp(-λ·X).
-      3. Repeat until n_steps·n_paths samples accepted.
+    Algorithm: use Laplace exponent a*s**alpha with a=C*Gamma(1-alpha)*dt/alpha.
+    Divide into m=ceil(a*lam**alpha) blocks so the acceptance probability in each
+    block is at least exp(-1). Exponentially tilt each positive-stable block
+    with exp(-lam*X), then sum the independent accepted blocks.
 
     Parameters
     ----------
@@ -297,7 +274,8 @@ def sample_tempered_stable(
     lam :
         Tempering parameter λ > 0.
     n_rejection_attempts :
-        Max attempts per sample before falling back to Gamma approximation.
+        Proposal budget per block: n_rejection_attempts*n_paths*n_steps.
+        Exhaustion raises RuntimeError; there is no approximate fallback.
 
     Returns
     -------
@@ -307,45 +285,47 @@ def sample_tempered_stable(
     References
     ----------
     Rosiński, J. (2007). *Stochastic Processes and their Applications*,
-    117(6), 677–707. Algorithm 6.1.
+    117(6), 677–707.
     """
-    if alpha >= 1:
-        raise ValueError(
-            f"Tempered stable subordinator requires alpha < 1, got {alpha}. "
-            "For alpha >= 1 use CGMY directly."
-        )
-    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+    from scipy.special import gamma
 
-    sigma_stable = (C * float(gamma_fn(1 - alpha))) ** (1 / alpha)
+    if not (0 < alpha < 1) or not all(np.isfinite(v) and v > 0 for v in (C, lam, dt)):
+        raise ValueError("Require 0<alpha<1 and finite positive C, lam and dt")
+    if n_steps < 1 or n_paths < 1 or n_rejection_attempts < 1:
+        raise ValueError("Positive sizes and proposal budget required")
+    # Untempered Laplace exponent a*s**alpha, a=C*Gamma(1-alpha)*dt/alpha.
+    a = C * float(gamma(1 - alpha)) * dt / alpha
+    pieces = max(1, int(np.ceil(a * lam**alpha)))
+    if pieces > 10000:
+        raise ValueError("Time subdivision exceeds sampling budget; use a smaller dt")
+    scale = (a / pieces) ** (1 / alpha)
     total = n_paths * n_steps
-    samples = np.zeros(total)
-    idx = 0
-
-    while idx < total:
-        needed = total - idx
-        # Propose from positive α-stable (one-sided, β=1)
-        U = rng.uniform(-np.pi / 2, np.pi / 2, size=needed * n_rejection_attempts)
-        E = rng.exponential(1.0, size=needed * n_rejection_attempts)
-        B = np.pi / (2 * alpha)
-        S_alpha = (
-            sigma_stable
-            * (dt ** (1 / alpha))
-            * np.sin(alpha * (U + B))
-            / np.cos(U) ** (1 / alpha)
-            * (np.cos(U - alpha * (U + B)) / E) ** ((1 - alpha) / alpha)
-        )
-        positive = S_alpha > 0
-        S_alpha = S_alpha[positive]
-
-        accept_prob = np.exp(-lam * S_alpha)
-        accept_mask = rng.uniform(size=len(S_alpha)) < accept_prob
-        accepted = S_alpha[accept_mask]
-
-        take = min(len(accepted), needed)
-        samples[idx : idx + take] = accepted[:take]
-        idx += take
-
-    return samples.reshape(n_paths, n_steps)
+    output = np.zeros(total)
+    for _ in range(pieces):
+        accepted_parts = []
+        remaining = total
+        budget = n_rejection_attempts * total
+        while remaining:
+            if budget <= 0:
+                raise RuntimeError(
+                    "Tempered-stable proposal budget exhausted; no approximate fallback used"
+                )
+            size = min(budget, max(remaining, min(100000, 3 * remaining)))
+            angle = rng.uniform(np.nextafter(0.0, 1.0), np.pi, size)
+            exponential = rng.exponential(size=size)
+            log_value = (
+                np.log(scale)
+                + np.log(np.sin(alpha * angle))
+                - np.log(np.sin(angle)) / alpha
+                + (1 - alpha) / alpha * (np.log(np.sin((1 - alpha) * angle)) - np.log(exponential))
+            )
+            proposed = np.exp(log_value)
+            selected = proposed[np.log(rng.uniform(size=size)) < -lam * proposed][:remaining]
+            accepted_parts.append(selected)
+            remaining -= len(selected)
+            budget -= size
+        output += np.concatenate(accepted_parts)
+    return output.reshape(n_paths, n_steps)
 
 
 def increments_to_paths(
@@ -382,7 +362,7 @@ def sample_cir(
     dt: float,
     n_steps: int,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
     method: str = "exact",
 ) -> np.ndarray:
     r"""
@@ -419,6 +399,9 @@ def sample_cir(
     np.ndarray
         Path array of shape (n_paths, n_steps + 1), with paths[:, 0] == r0.
     """
+    dt = simulation_grid(n_steps, n_paths, dt=dt)
+    if not np.all(np.isfinite([kappa, theta, sigma, r0])):
+        raise ValueError("Simulation parameters must be finite")
     if kappa <= 0 or theta <= 0 or sigma <= 0:
         raise ValueError("kappa, theta, and sigma must be strictly positive")
     if r0 < 0:
@@ -441,7 +424,7 @@ def sample_cir(
 
     if method == "exact":
         exp_k = math.exp(-kappa * dt)
-        c = 2.0 * kappa / (sigma**2 * (1.0 - exp_k))
+        c = 2.0 * kappa / (sigma**2 * (-math.expm1(-kappa * dt)))
         d = 4.0 * kappa * theta / (sigma**2)
         inv_2c = 1.0 / (2.0 * c)
         two_c_exp_k = 2.0 * c * exp_k
@@ -486,7 +469,7 @@ def sample_ou(
     dt: float,
     n_steps: int,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
     method: str = "exact",
 ) -> np.ndarray:
     r"""
@@ -522,6 +505,9 @@ def sample_ou(
     np.ndarray
         Path array of shape (n_paths, n_steps + 1), with paths[:, 0] == x0.
     """
+    dt = simulation_grid(n_steps, n_paths, dt=dt)
+    if not np.all(np.isfinite([theta, mu, sigma, x0])):
+        raise ValueError("Simulation parameters must be finite")
     if theta <= 0 or sigma <= 0:
         raise ValueError("theta and sigma must be strictly positive")
     if dt <= 0:
@@ -542,7 +528,7 @@ def sample_ou(
 
     if method == "exact":
         exp_th = math.exp(-theta * dt)
-        cond_var = (sigma**2 / (2.0 * theta)) * (1.0 - math.exp(-2.0 * theta * dt))
+        cond_var = (sigma**2 / (2.0 * theta)) * (-math.expm1(-2.0 * theta * dt))
         std_inc = math.sqrt(max(cond_var, 0.0))
 
         for k in range(n_steps):
@@ -559,8 +545,7 @@ def sample_ou(
 
     else:
         raise ValueError(
-            f"Unknown simulation method '{method}'. "
-            "Supported methods: 'exact', 'euler'."
+            f"Unknown simulation method '{method}'. Supported methods: 'exact', 'euler'."
         )
 
     return paths
@@ -574,14 +559,14 @@ def sample_heston(
     rho: float,
     mu: float = 0.0,
     s0: float = 1.0,
-    dt: Optional[float] = None,
+    dt: float | None = None,
     n_steps: int = 100,
     n_paths: int = 1,
-    T: Optional[float] = None,
-    rng: Optional[np.random.Generator] = None,
+    T: float | None = None,
+    rng: np.random.Generator | None = None,
     method: str = "full_truncation",
     return_variance: bool = False,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
     r"""
     Simulate sample paths of the Heston stochastic volatility model.
 
@@ -631,6 +616,9 @@ def sample_heston(
     np.ndarray or tuple[np.ndarray, np.ndarray]
         Path array of shape ``(n_paths, n_steps + 1)``.
     """
+    dt = simulation_grid(n_steps, n_paths, dt=dt, T=T)
+    if not np.all(np.isfinite([v0, kappa, theta, sigma_v, rho, mu, s0])):
+        raise ValueError("Simulation parameters must be finite")
     if v0 <= 0:
         raise ValueError("v0 must be strictly positive")
     if kappa <= 0 or theta <= 0 or sigma_v <= 0:
@@ -666,7 +654,7 @@ def sample_heston(
         return paths_x
 
     sqrt_dt = math.sqrt(dt)
-    sqrt_1_minus_rho2 = math.sqrt(max(0.0, 1.0 - rho ** 2))
+    sqrt_1_minus_rho2 = math.sqrt(max(0.0, 1.0 - rho**2))
 
     curr_x = np.zeros(n_paths, dtype=float)
     curr_v = np.full(n_paths, float(v0), dtype=float)
@@ -696,7 +684,9 @@ def sample_heston(
             v_pos = np.maximum(curr_v, 0.0)
             sqrt_v_pos = np.sqrt(v_pos)
 
-            curr_v = np.maximum(0.0, curr_v + kappa * (theta - v_pos) * dt + sigma_v * sqrt_v_pos * sqrt_dt * z1)
+            curr_v = np.maximum(
+                0.0, curr_v + kappa * (theta - v_pos) * dt + sigma_v * sqrt_v_pos * sqrt_dt * z1
+            )
             curr_x = curr_x + (mu - 0.5 * v_pos) * dt + sqrt_v_pos * sqrt_dt * z2
 
             paths_x[:, k + 1] = curr_x
@@ -704,8 +694,7 @@ def sample_heston(
 
     else:
         raise ValueError(
-            f"Unknown simulation method '{method}'. "
-            "Supported methods: 'full_truncation', 'euler'."
+            f"Unknown simulation method '{method}'. Supported methods: 'full_truncation', 'euler'."
         )
 
     if return_variance:
@@ -719,18 +708,19 @@ def sample_merton(
     rate: float,
     jump_mean: float,
     jump_std: float,
-    dt: Optional[float] = None,
+    dt: float | None = None,
     n_steps: int = 100,
     n_paths: int = 1,
-    T: Optional[float] = None,
-    rng: Optional[np.random.Generator] = None,
+    T: float | None = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     r"""
     Simulate exact sample paths of the Merton (1976) jump-diffusion process.
 
     .. math::
 
-        X_t = \mu t + \sigma W_t + \sum_{i=1}^{N_t} Y_i, \quad Y_i \sim \mathcal{N}(\mu_J, \sigma_J^2)
+        X_t = \mu t + \sigma W_t + \sum_{i=1}^{N_t} Y_i, \quad Y_i \sim \mathcal{N}(\mu_J,
+        \sigma_J^2)
 
     Exact simulation with zero time discretization error for any step size :math:`\Delta t`.
 
@@ -762,6 +752,9 @@ def sample_merton(
     np.ndarray
         Path array of shape ``(n_paths, n_steps + 1)`` with ``paths[:, 0] == 0.0``.
     """
+    dt = simulation_grid(n_steps, n_paths, dt=dt, T=T)
+    if not np.all(np.isfinite([drift, sigma, rate, jump_mean, jump_std])):
+        raise ValueError("Simulation parameters must be finite")
     if sigma <= 0:
         raise ValueError("sigma must be strictly positive")
     if rate <= 0:
@@ -807,122 +800,97 @@ def sample_cev(
     sigma: float,
     gamma: float,
     s0: float = 100.0,
-    dt: Optional[float] = None,
+    dt: float | None = None,
     n_steps: int = 100,
     n_paths: int = 1,
-    T: Optional[float] = None,
-    rng: Optional[np.random.Generator] = None,
+    T: float | None = None,
+    rng: np.random.Generator | None = None,
     method: str = "exact",
 ) -> np.ndarray:
-    r"""
-    Simulate Constant Elasticity of Variance (CEV) diffusion paths.
+    """CEV paths: exact Markov transitions or explicitly approximate Euler/Milstein.
 
-    .. math::
+    Set a=1-gamma, tau=integral_0^dt exp(-2*mu*a*s)ds and c=sigma²*a²*tau.
+    For a>0, the absorbing squared-Bessel kernel has gamma-mixture weights
+      w_k = exp(-q)*q**(k+nu)/Gamma(k+nu+1), q=S**(2a)/(2c), nu=1/(2a).
+    These weights result by drawing H~Gamma(nu,1), absorbing if H>=q,
+    and otherwise drawing K~Poisson(q-H), Z~Gamma(K+1,1). Then
+      S_next=exp(mu*dt)*(2c*Z)**(1/(2a)).
+    This directly samples the absorbing atom as well as the continuous law.
+    For a<0, the reciprocal-Bessel transition is a standard noncentral chi-square;
+    gamma=1 uses the exact lognormal law. No Milstein fallback is labeled exact.
 
-        dS_t = \mu S_t dt + \sigma S_t^\gamma dW_t, \quad S_0 = s_0 \ge 0
-
-    For :math:`\gamma < 1`, zero is an absorbing boundary: once a path reaches
-    zero, it remains at zero indefinitely.
-
-    Parameters
-    ----------
-    mu : float
-        Drift rate :math:`\mu`.
-    sigma : float
-        Volatility scale parameter :math:`\sigma > 0`.
-    gamma : float
-        Elasticity power exponent :math:`\gamma \ge 0`.
-    s0 : float, default 100.0
-        Initial asset price :math:`s_0 \ge 0`.
-    dt : float, optional
-        Time step size :math:`\Delta t > 0`.
-    n_steps : int, default 100
-        Number of simulation time steps.
-    n_paths : int, default 1
-        Number of independent sample paths.
-    T : float, optional
-        Terminal time horizon :math:`T > 0`.
-    rng : np.random.Generator, optional
-        Random number generator.
-    method : {"exact", "milstein", "euler", "absorbed_euler"}, default "exact"
-        Simulation scheme:
-        - "exact": Exact geometric Brownian motion when :math:`\gamma = 1`;
-          second-order Milstein scheme with exact absorbing zero boundary when :math:`\gamma \ne 1`.
-        - "milstein": Milstein scheme with absorbing zero boundary.
-        - "euler" / "absorbed_euler": Euler–Maruyama scheme with absorbing zero boundary.
-
-    Returns
-    -------
-    np.ndarray
-        Path array of shape ``(n_paths, n_steps + 1)`` with ``paths[:, 0] == s0``.
+    Kernel: Revuz & Yor (1999), Ch. XI; Schroder (1989). The mixture follows
+    by expanding I_nu and a beta-integral; derivation in theory/refresh contracts.
+    NumPy floating-point/random-generator parameter limits still apply.
     """
+    dt = simulation_grid(n_steps, n_paths, dt=dt, T=T)
+    if not np.all(np.isfinite([mu, sigma, gamma, s0])):
+        raise ValueError("CEV simulation parameters must be finite")
     if sigma <= 0:
         raise ValueError("sigma must be strictly positive")
     if gamma < 0:
         raise ValueError("gamma must be non-negative")
     if s0 < 0:
         raise ValueError("s0 must be non-negative")
-    if n_steps < 0:
-        raise ValueError("n_steps must be non-negative")
-    if n_paths < 1:
-        raise ValueError("n_paths must be >= 1")
-
-    if dt is None:
-        if T is not None:
-            if T <= 0:
-                raise ValueError("T must be strictly positive")
-            dt = T / n_steps if n_steps > 0 else 1.0
-        else:
-            dt = 1.0 / n_steps if n_steps > 0 else 1.0
-    else:
-        if dt <= 0:
-            raise ValueError("dt must be strictly positive")
-
-    valid_methods = ("exact", "milstein", "euler", "absorbed_euler")
-    if method not in valid_methods:
-        raise ValueError(f"method must be one of {valid_methods}, got {method}")
-
+    valid = ("exact", "milstein", "euler", "absorbed_euler")
+    if method not in valid:
+        raise ValueError(f"method must be one of {valid}, got {method}")
     rng = rng or np.random.default_rng()
-    paths = np.zeros((n_paths, n_steps + 1), dtype=float)
-    paths[:, 0] = float(s0)
-
-    if n_steps == 0 or s0 == 0.0:
+    paths = np.zeros((n_paths, n_steps + 1))
+    paths[:, 0] = s0
+    if n_steps == 0 or s0 == 0:
         return paths
-
-    # Case 1: Exact geometric Brownian motion when gamma == 1
-    if abs(gamma - 1.0) < 1e-7 or (method == "exact" and abs(gamma - 1.0) < 1e-7):
-        z = rng.standard_normal((n_paths, n_steps))
-        log_inc = (mu - 0.5 * sigma**2) * dt + sigma * math.sqrt(dt) * z
-        paths[:, 1:] = s0 * np.exp(np.cumsum(log_inc, axis=1))
+    if method == "exact" and gamma == 1:
+        increments = (mu - 0.5 * sigma * sigma) * dt + sigma * math.sqrt(dt) * rng.standard_normal(
+            (n_paths, n_steps)
+        )
+        paths[:, 1:] = s0 * np.exp(np.cumsum(increments, axis=1))
         return paths
-
-    # Step-by-step simulation with absorption at 0
-    curr = np.full(n_paths, float(s0), dtype=float)
-    sqrt_dt = math.sqrt(dt)
-    use_milstein = (method in ("exact", "milstein"))
-
+    current = np.full(n_paths, float(s0), dtype=float)
+    if method == "exact":
+        a = 1 - gamma
+        rate = -2 * mu * a
+        tau = math.expm1(rate * dt) / rate if rate != 0 else dt
+        scale = sigma * sigma * a * a * tau
+        if not np.isfinite(scale) or scale <= 0:
+            raise ValueError("CEV exact transition exceeds numerical range")
+        for step in range(1, n_steps + 1):
+            alive = current > 0
+            if not np.any(alive):
+                break
+            previous = current[alive]
+            power = previous ** (2 * a) / scale
+            if not np.all(np.isfinite(power)):
+                raise ValueError("CEV transition noncentrality exceeds numerical range")
+            if a > 0:
+                q = power / 2
+                hitting = rng.gamma(shape=1 / (2 * a), scale=1, size=previous.size)
+                survives = hitting < q
+                next_state = np.zeros_like(previous)
+                if np.any(survives):
+                    count = rng.poisson(q[survives] - hitting[survives])
+                    z = rng.gamma(shape=count + 1, scale=1)
+                    next_state[survives] = math.exp(mu * dt) * (2 * scale * z) ** (1 / (2 * a))
+            else:
+                z = rng.noncentral_chisquare(df=2 - 1 / a, nonc=power)
+                next_state = math.exp(mu * dt) * (scale * z) ** (1 / (2 * a))
+            if not np.all(np.isfinite(next_state)):
+                raise ValueError("CEV transition state exceeds numerical range")
+            current[alive] = next_state
+            paths[:, step] = current
+        return paths
+    # These schemes have discretization/boundary bias. Zero remains absorbing.
     for step in range(1, n_steps + 1):
-        pos = curr > 0.0
-        if not np.any(pos):
-            # All paths absorbed at 0
+        alive = current > 0
+        if not np.any(alive):
             break
-
-        z = rng.standard_normal(n_paths)
-        s_pos = curr[pos]
-        z_pos = z[pos]
-
-        drift = mu * s_pos * dt
-        diff = sigma * (s_pos**gamma) * sqrt_dt * z_pos
-
-        if use_milstein and gamma > 0.0:
-            mil = 0.5 * gamma * (sigma**2) * (s_pos ** (2.0 * gamma - 1.0)) * dt * (z_pos**2 - 1.0)
-            s_next = s_pos + drift + diff + mil
-        else:
-            s_next = s_pos + drift + diff
-
-        # Absorbing boundary at 0
-        curr[pos] = np.maximum(s_next, 0.0)
-        paths[:, step] = curr
-
+        previous = current[alive]
+        z = rng.standard_normal(previous.size)
+        next_state = previous + mu * previous * dt + sigma * previous**gamma * math.sqrt(dt) * z
+        if method == "milstein" and gamma > 0:
+            next_state += (
+                0.5 * gamma * sigma * sigma * previous ** (2 * gamma - 1) * dt * (z * z - 1)
+            )
+        current[alive] = np.maximum(next_state, 0)
+        paths[:, step] = current
     return paths
-

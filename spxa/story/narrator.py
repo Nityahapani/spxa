@@ -8,9 +8,13 @@ derivation of the process's distributional properties.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Optional
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from spxa.core.process import Process
 
 
 class NodeKind(Enum):
@@ -21,7 +25,7 @@ class NodeKind(Enum):
     MOMENT_APPROX = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class CompositionNode:
     """
     A node in the composition tree of a process.
@@ -43,9 +47,12 @@ class CompositionNode:
 
     kind: NodeKind
     name: str
-    children: list[CompositionNode] = field(default_factory=list)
+    children: Sequence[CompositionNode] = field(default_factory=tuple)
     math_note: str = ""
     reference: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "children", tuple(self.children))
 
 
 def narrate(node: CompositionNode, depth: int = 0) -> str:
@@ -72,10 +79,7 @@ def narrate(node: CompositionNode, depth: int = 0) -> str:
     elif node.kind == NodeKind.ADDITION:
         left, right = node.children[0], node.children[1]
         lines.append(f"{indent}[Addition] {node.name}")
-        lines.append(
-            f"{indent}  Rule: (b_X+b_Y, σ²_X+σ²_Y, ν_X+ν_Y) "
-            f"[Sato 1999, Prop. 11.10]"
-        )
+        lines.append(f"{indent}  Rule: (b_X+b_Y, σ²_X+σ²_Y, ν_X+ν_Y) [Sato 1999, Prop. 11.10]")
         if node.math_note:
             lines.append(f"{indent}  {node.math_note}")
         lines.append(f"{indent}  Left operand:")
@@ -87,8 +91,7 @@ def narrate(node: CompositionNode, depth: int = 0) -> str:
         child = node.children[0]
         lines.append(f"{indent}[Scaling] {node.name}")
         lines.append(
-            f"{indent}  Rule: (cb + drift_correction, c²σ², ν(·/c)) "
-            f"[Sato 1999, Prop. 11.10]"
+            f"{indent}  Rule: (cb + drift_correction, c²σ², ν(·/c)) [Sato 1999, Prop. 11.10]"
         )
         if node.math_note:
             lines.append(f"{indent}  {node.math_note}")
@@ -194,7 +197,7 @@ def narrate_latex(node: CompositionNode, depth: int = 0) -> str:
     return "\n".join(lines)
 
 
-def story_latex(process: object) -> str:
+def story_latex(process: Process) -> str:
     """
     Return a full LaTeX derivation string for a process.
 
@@ -214,7 +217,7 @@ def story_latex(process: object) -> str:
     # Import here to avoid circular at module load time
     node = getattr(process, "_node", None)
     exactness = getattr(process, "exactness", None)
-    props = process.properties  # type: ignore[union-attr]
+    props = process.properties
 
     lines = [
         r"\begin{aligned}",

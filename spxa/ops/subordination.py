@@ -43,16 +43,10 @@ Chapman & Hall/CRC. Proposition 4.4.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.exceptions import ExactnessError
 from spxa.core.process import Process
-from spxa.core.properties import ProcessProperties
-from spxa.core.triplet import LevyTriplet
-from spxa.story.narrator import CompositionNode, NodeKind
 
 
 def subordinate(parent: Process, subordinator: Process) -> Process:
@@ -90,7 +84,7 @@ def subordinate(parent: Process, subordinator: Process) -> Process:
 def char_exp_subordinated(
     parent: Process,
     subordinator: Process,
-    u: float | np.ndarray,
+    u: complex | float | np.ndarray,
     t: float = 1.0,
 ) -> np.ndarray:
     """
@@ -129,31 +123,13 @@ def char_exp_subordinated(
     ----------
     Sato (1999), Theorem 30.1, equation (30.2).
     """
-    if not subordinator.properties.is_subordinator:
-        raise ValueError(
-            f"{type(subordinator).__name__} is not a subordinator."
-        )
-
-    u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-
-    # ψ_X(u): characteristic exponent of parent at time 1
-    # φ_X(u; 1) = exp(ψ_X(u)) → ψ_X(u) = log(φ_X(u; 1))
-    cf_X = parent.char_func(u=u_arr, t=1.0)
-    psi_X = np.log(cf_X + 1e-300)  # ψ_X(u)
-
-    # Laplace exponent of T: φ_T(λ) = -log E[e^{-λ T_1}]
-    # E[e^{-λ T_1}] = char_func of T at u = -iλ
-    # For λ = -ψ_X(u), we need E[e^{ψ_X(u) T_1}]
-    # = char_func_T(-i·ψ_X(u)/i ... more carefully:
-    # char_func_T(u_T; 1) = E[e^{i u_T T_1}]
-    # We want E[e^{-λ T_1}] = char_func_T(u_T=iλ; 1)
-    # λ = -ψ_X(u) so u_T = -i·ψ_X(u)
-    u_T = -1j * psi_X
-    cf_T_laplace = subordinator.char_func(u=u_T, t=1.0)
-
-    # φ_Z(u; t) = exp(-t · φ_T(-ψ_X(u))) = (E[e^{ψ_X(u) T_1}])^t
-    result = cf_T_laplace ** t
-    return result if result.shape != (1,) else result[0]
+    valid, reason = is_valid_subordination(parent, subordinator)
+    if not valid:
+        raise ValueError(reason)
+    if not np.isfinite(t) or t < 0:
+        raise ValueError("Time must be finite and nonnegative")
+    psi = parent.characteristic_exponent(u)
+    return np.exp(t * subordinator.characteristic_exponent(-1j * psi))
 
 
 def bernstein_function(subordinator: Process, lam: float | np.ndarray) -> np.ndarray:
@@ -187,7 +163,7 @@ def bernstein_function(subordinator: Process, lam: float | np.ndarray) -> np.nda
     # Use closed-form method if the process provides one
     if hasattr(subordinator, "bernstein_function"):
         lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
-        result = subordinator.bernstein_function(lam_arr)
+        result = np.real_if_close(subordinator.bernstein_function(lam_arr))
         return result if np.asarray(result).shape != (1,) else np.asarray(result)[0]
 
     lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
@@ -219,7 +195,14 @@ def is_valid_subordination(parent: Process, subordinator: Process) -> tuple[bool
         valid is True iff the subordination is well-defined.
         reason is empty string if valid, otherwise an explanation.
     """
-    if not subordinator.properties.is_subordinator:
+    if not (
+        subordinator.properties.is_subordinator
+        and subordinator.properties.has_independent_increments
+        and subordinator.properties.has_stationary_increments
+        and parent.properties.has_independent_increments
+        and parent.exactness == ExactnessLevel.EXACT
+        and subordinator.exactness == ExactnessLevel.EXACT
+    ):
         return False, (
             f"{type(subordinator).__name__} is not a subordinator "
             "(paths are not non-decreasing). "

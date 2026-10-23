@@ -28,11 +28,11 @@ Emanuel, D.C. & MacBeth, J.D. (1982). Further results of the constant elasticity
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 from scipy import stats
 
-import spxa
 from spxa import CEV, CEVProcess, ConstantElasticityOfVariance
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError
@@ -160,8 +160,12 @@ class TestCEVExactness:
             # Standard Black-Scholes formula
             d1 = (math.log(s0 / K) + (r - q + 0.5 * sigma**2) * T) / (sigma * math.sqrt(T))
             d2 = d1 - sigma * math.sqrt(T)
-            bs_call = s0 * math.exp(-q * T) * stats.norm.cdf(d1) - K * math.exp(-r * T) * stats.norm.cdf(d2)
-            bs_put = K * math.exp(-r * T) * stats.norm.cdf(-d2) - s0 * math.exp(-q * T) * stats.norm.cdf(-d1)
+            bs_call = s0 * math.exp(-q * T) * stats.norm.cdf(d1) - K * math.exp(
+                -r * T
+            ) * stats.norm.cdf(d2)
+            bs_put = K * math.exp(-r * T) * stats.norm.cdf(-d2) - s0 * math.exp(
+                -q * T
+            ) * stats.norm.cdf(-d1)
 
             cev_call = cev.call_price(K=K, T=T)
             cev_put = cev.put_price(K=K, T=T)
@@ -394,5 +398,3 @@ class TestCEVExactness:
         cev_10 = CEVProcess(mu=0.05, sigma=0.2, gamma=1.0, s0=100.0)
         d_gbm = (math.log(110.0 / 100.0) - (0.05 - 0.5 * 0.04) * 1.0) / (0.2 * 1.0)
         assert cev_10.transition_cdf(110.0, 1.0) == pytest.approx(stats.norm.cdf(d_gbm), abs=1e-10)
-
-

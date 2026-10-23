@@ -1,4 +1,5 @@
 """SPXA-facing contract tests for finite-state MMPP."""
+
 import numpy as np
 import pytest
 

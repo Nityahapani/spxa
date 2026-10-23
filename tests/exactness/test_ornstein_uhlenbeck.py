@@ -19,6 +19,7 @@ Vasicek, O. (1977). *Journal of Financial Economics*, 5(2), 177–188.
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 import scipy.integrate as integrate
@@ -163,9 +164,7 @@ class TestOrnsteinUhlenbeckExactness:
             assert ou.conditional_std(t=t) == pytest.approx(math.sqrt(expected), rel=1e-12)
 
         # As t -> inf converges to stationary variance σ² / (2θ)
-        assert ou.conditional_variance(t=100.0) == pytest.approx(
-            ou.stationary_variance, rel=1e-10
-        )
+        assert ou.conditional_variance(t=100.0) == pytest.approx(ou.stationary_variance, rel=1e-10)
 
     @pytest.mark.exactness
     def test_ou_conditional_cumulants(self) -> None:
@@ -203,7 +202,8 @@ class TestOrnsteinUhlenbeckExactness:
         assert ou.stationary_cumulant(3) == 0.0
         assert ou.stationary_cumulant(4) == 0.0
 
-        stat_kappas = ou.cumulants(order=4)
+        stat_kappas = {n: ou.stationary_cumulant(n) for n in range(1, 5)}
+        assert ou.cumulants(2)[2] == pytest.approx(ou.conditional_variance(1.0))
         assert stat_kappas[1] == pytest.approx(mu, rel=1e-12)
         assert stat_kappas[2] == pytest.approx(var_inf, rel=1e-12)
         assert stat_kappas[3] == 0.0
@@ -244,12 +244,14 @@ class TestOrnsteinUhlenbeckExactness:
         # Two-time covariance at s = t matches conditional variance
         t = 0.8
         assert ou.two_time_covariance(t, t) == pytest.approx(ou.conditional_variance(t), rel=1e-12)
-        assert ou.two_time_covariance(0.3, 0.8) == pytest.approx(ou.two_time_covariance(0.8, 0.3), rel=1e-12)
+        assert ou.two_time_covariance(0.3, 0.8) == pytest.approx(
+            ou.two_time_covariance(0.8, 0.3), rel=1e-12
+        )
 
-        # Spectral density: S(0) = σ² / (π θ²); S(θ) = 0.5 * S(0) (half-power at cutoff)
+        # Spectral density: S(0) = σ² / (2π θ²); S(θ) = 0.5 * S(0) (half-power at cutoff)
         s0 = ou.spectral_density(0.0)
         s_cutoff = ou.spectral_density(theta)
-        assert s0 == pytest.approx(sigma**2 / (math.pi * theta**2), rel=1e-12)
+        assert s0 == pytest.approx(sigma**2 / (2 * math.pi * theta**2), rel=1e-12)
         assert s_cutoff == pytest.approx(0.5 * s0, rel=1e-12)
 
         # Vectorized array input for spectral density
@@ -279,7 +281,7 @@ class TestOrnsteinUhlenbeckExactness:
         for u in [0.5, 1.5, 3.0]:
             formula_val = ou.laplace_transform(u=u, t=t)
 
-            def integrand(y: float) -> float:
+            def integrand(y: float, u: float = u) -> float:
                 return float(math.exp(-u * y) * ou.transition_density(y, t=t))
 
             num_val, _ = integrate.quad(integrand, -2.0, 2.0, epsabs=1e-10)
@@ -391,7 +393,8 @@ class TestOrnsteinUhlenbeckExactness:
     @pytest.mark.exactness
     def test_ou_exact_simulation_moments(self) -> None:
         """
-        Simulated paths via exact Gaussian increments match theoretical conditional mean and variance.
+        Simulated paths via exact Gaussian increments match theoretical conditional mean and
+        variance.
         """
         theta, mu, sigma, x0 = 1.8, 0.06, 0.04, 0.02
         ou = OrnsteinUhlenbeck(theta=theta, mu=mu, sigma=sigma, x0=x0)

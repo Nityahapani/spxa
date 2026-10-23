@@ -2,17 +2,18 @@
 Poisson process.
 
 A pure-jump Lévy process with rate λ. The canonical finite-activity process.
-Triplet (0, 0, λ·δ_1) under the convention of unit jumps, or more generally
-(0, 0, λ·δ_c) for jump size c.
+Triplet (λ, 0, λ·δ_1) under the convention of unit jumps, or more generally
+(λc*1_{|c|<=1}, 0, λ·δ_c) for jump size c.
 
 Reference: Kingman, J.F.C. (1993). *Poisson Processes*. Oxford University Press.
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from collections.abc import Callable
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import LevyMeasure
@@ -34,22 +35,33 @@ class _PoissonLevyMeasure(LevyMeasure):
         self.rate = rate
         self.jump_size = jump_size
 
-    def density(self, x: np.ndarray) -> np.ndarray:
+    def density(self, x: ArrayLike) -> np.ndarray:
         raise NotImplementedError(
             "The Poisson Lévy measure λ·δ_c is a discrete measure and has no density. "
             "Use total_mass(), tail(), or moment() instead."
         )
 
     def total_mass(self) -> float:
-        return self.rate
+        return self.rate if self.jump_size != 0 else 0.0
 
     def tail(self, x: float) -> float:
-        if x < self.jump_size:
+        if self.jump_size != 0 and x < self.jump_size:
             return self.rate
         return 0.0
 
     def moment(self, n: int) -> float:
         return self.rate * (self.jump_size**n)
+
+    def integrate(
+        self, f: Callable[[float], float], lower: float = -np.inf, upper: float = np.inf
+    ) -> float:
+        if lower > upper:
+            raise ValueError("Integration bounds must be ordered")
+        return (
+            float(self.rate * f(self.jump_size))
+            if self.jump_size != 0 and lower <= self.jump_size <= upper
+            else 0.0
+        )
 
 
 class PoissonProcess(Process):
@@ -59,8 +71,7 @@ class PoissonProcess(Process):
     X_t counts the number of jumps of size c up to time t.
     N(t) ~ Poisson(λt) so X_t = c · N(t).
 
-    Lévy–Khintchine triplet: (0, 0, λ·δ_c) for c ≤ 1,
-    or (-λc, 0, λ·δ_c) for c > 1 (truncation function adjustment).
+    Lévy–Khintchine triplet: (λc*1_{|c|<=1}, 0, λ·δ_c).
 
     Parameters
     ----------
@@ -97,40 +108,40 @@ class PoissonProcess(Process):
     def _triplet(self) -> LevyTriplet:
         c = self.jump_size
         nu = _PoissonLevyMeasure(rate=self.rate, jump_size=c)
-        b = -self.rate * c if abs(c) > 1 else 0.0
+        b = self.rate * c if abs(c) <= 1 else 0.0
         return LevyTriplet(b=b, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
             has_independent_increments=True,
-            is_martingale=False,
+            is_martingale=(self.jump_size == 0),
             has_finite_variance=True,
             has_finite_mean=True,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=(self.jump_size > 0),
+            is_subordinator=(self.jump_size >= 0),
         )
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """φ(u;t) = exp(λt(e^{icu}-1)). Characteristic function of a Poisson process."""
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
         result = np.exp(self.rate * t * (np.exp(1j * self.jump_size * u_arr) - 1))
         return result if result.shape != (1,) else result[0]
 
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def cumulants(self, order: int) -> dict[int, float]:
-        """κ_n(X_t) = λ·c^n for all n ≥ 1. All cumulants of a Poisson distribution are equal to the mean."""
-        return {n: self.rate * (self.jump_size ** n) for n in range(1, order + 1)}
+        """κ_n(X_1)=rate*jump_size**n; equal cumulants for unit jumps."""
+        return {n: self.rate * (self.jump_size**n) for n in range(1, order + 1)}
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation: increments are Poisson(λ·Δt) independently.
@@ -161,3 +172,8 @@ class PoissonProcess(Process):
 
     def __repr__(self) -> str:
         return f"PoissonProcess(rate={self.rate}, jump_size={self.jump_size})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF on the continuous branch at zero."""
+        z = np.asarray(u, dtype=complex)
+        return self.rate * np.expm1(1j * self.jump_size * z)

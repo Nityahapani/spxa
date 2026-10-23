@@ -34,8 +34,6 @@ derivative pricing. *Journal of Computational Finance*, 10(2), 79–99.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 
@@ -47,7 +45,7 @@ def brownian_bridge(
     sigma: float = 1.0,
     n_points: int = 100,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Sample paths of a Brownian bridge conditioned on X(t_start)=x_start,
@@ -88,9 +86,18 @@ def brownian_bridge(
     ----------
     Glasserman (2003), Section 3.2.1.
     """
+    if (
+        t_end <= t_start
+        or sigma < 0
+        or n_points < 0
+        or n_paths < 1
+        or not all(np.isfinite(v) for v in (t_start, t_end, x_start, x_end, sigma))
+    ):
+        raise ValueError(
+            "Ordered finite times/endpoints, nonnegative sigma/points "
+            "and positive paths are required"
+        )
     rng = rng or np.random.default_rng()
-    T_total = t_end - t_start
-
     time_grid = np.linspace(t_start, t_end, n_points + 2)
     paths = np.zeros((n_paths, n_points + 2))
     paths[:, 0] = x_start
@@ -115,10 +122,10 @@ def gamma_bridge(
     a: float,
     b: float,
     T: float = 1.0,
-    x_end: Optional[float] = None,
+    x_end: float | None = None,
     n_points: int = 100,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Sample paths of a Gamma process bridge conditioned on G(T) = x_end.
@@ -168,15 +175,10 @@ def gamma_bridge(
     paths[:, 0] = 0.0
     paths[:, -1] = g_T
 
-    for i in range(1, n_points + 1):
-        t = time_grid[i]
-        alpha_beta = a * t / b
-        alpha_rest = a * (T - t) / b
-        beta_samples = rng.beta(alpha_beta, alpha_rest, size=n_paths)
-        paths[:, i] = g_T * beta_samples
-
-    paths = np.sort(paths, axis=1)
-    paths[:, 0] = 0.0
+    if a <= 0 or b <= 0 or T <= 0 or n_points < 0 or np.any(g_T < 0):
+        raise ValueError("Positive Gamma parameters/horizon and nonnegative endpoint required")
+    weights = rng.dirichlet(a * np.diff(time_grid), size=n_paths)
+    paths[:, 1:] = g_T[:, None] * np.cumsum(weights, axis=1)
     paths[:, -1] = g_T
 
     return time_grid, paths
@@ -187,7 +189,7 @@ def brownian_bridge_interpolate(
     coarse_times: np.ndarray,
     fine_times: np.ndarray,
     sigma: float = 1.0,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Refine coarse Brownian paths to a finer time grid using bridge interpolation.
@@ -216,29 +218,43 @@ def brownian_bridge_interpolate(
         Shape (n_paths, n_fine + 1). Refined paths.
     """
     rng = rng or np.random.default_rng()
-    n_paths = coarse_paths.shape[0]
-    fine_paths = np.zeros((n_paths, len(fine_times)))
-
-    for i, t in enumerate(fine_times):
-        idx_coarse = np.searchsorted(coarse_times, t)
-        if idx_coarse == 0:
-            fine_paths[:, i] = coarse_paths[:, 0]
-        elif idx_coarse >= len(coarse_times):
-            fine_paths[:, i] = coarse_paths[:, -1]
-        elif np.isclose(t, coarse_times[idx_coarse]):
-            fine_paths[:, i] = coarse_paths[:, idx_coarse]
-        elif np.isclose(t, coarse_times[idx_coarse - 1]):
-            fine_paths[:, i] = coarse_paths[:, idx_coarse - 1]
-        else:
-            t_left = coarse_times[idx_coarse - 1]
-            t_right = coarse_times[idx_coarse]
-            x_left = coarse_paths[:, idx_coarse - 1]
-            x_right = coarse_paths[:, idx_coarse]
-            frac = (t - t_left) / (t_right - t_left)
-            mu_cond = x_left + (x_right - x_left) * frac
-            var_cond = sigma**2 * (t - t_left) * (t_right - t) / (t_right - t_left)
-            fine_paths[:, i] = mu_cond + np.sqrt(var_cond) * rng.standard_normal(n_paths)
-
+    coarse_times = np.asarray(coarse_times, dtype=float)
+    fine_times = np.asarray(fine_times, dtype=float)
+    coarse_paths = np.asarray(coarse_paths, dtype=float)
+    if (
+        coarse_times.ndim != 1
+        or fine_times.ndim != 1
+        or len(coarse_times) < 2
+        or np.any(np.diff(coarse_times) <= 0)
+        or np.any(np.diff(fine_times) <= 0)
+        or coarse_paths.ndim != 2
+        or coarse_paths.shape[1] != len(coarse_times)
+        or not np.all(np.isfinite(coarse_times))
+        or not np.all(np.isfinite(fine_times))
+        or not np.all(np.isfinite(coarse_paths))
+        or sigma < 0
+        or not np.all(np.isin(coarse_times, fine_times))
+        or fine_times[0] != coarse_times[0]
+        or fine_times[-1] != coarse_times[-1]
+    ):
+        raise ValueError(
+            "Ordered finite grids with all coarse knots and matching path shape required"
+        )
+    fine_paths = np.empty((len(coarse_paths), len(fine_times)))
+    for interval in range(len(coarse_times) - 1):
+        left, right = coarse_times[interval : interval + 2]
+        previous = coarse_paths[:, interval].copy()
+        previous_t = left
+        end = coarse_paths[:, interval + 1]
+        fine_paths[:, np.searchsorted(fine_times, left)] = previous
+        for k in np.flatnonzero((fine_times > left) & (fine_times < right)):
+            t = fine_times[k]
+            mean = previous + (end - previous) * (t - previous_t) / (right - previous_t)
+            variance = sigma * sigma * (t - previous_t) * (right - t) / (right - previous_t)
+            previous = mean + np.sqrt(variance) * rng.standard_normal(len(coarse_paths))
+            previous_t = t
+            fine_paths[:, k] = previous
+        fine_paths[:, np.searchsorted(fine_times, right)] = end
     return fine_paths
 
 
@@ -249,7 +265,7 @@ def first_passage_time_bm(
     T_max: float = 10.0,
     n_steps: int = 10000,
     n_paths: int = 1000,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Estimate first passage times of BM(μ, σ) to a level via simulation.
@@ -306,7 +322,7 @@ def first_passage_time_exact_bm(
     level: float,
     sigma: float = 1.0,
     n_samples: int = 10000,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Exact samples of the first passage time of standard BM to a level.
@@ -338,9 +354,15 @@ def first_passage_time_exact_bm(
     Karatzas, I. & Shreve, S.E. (1991). *Brownian Motion and Stochastic
     Calculus*, 2nd ed. Springer. Proposition 2.8.2.
     """
-    from scipy.stats import norm  # type: ignore[import-untyped]
+    from scipy.stats import norm
 
-    if level <= 0:
+    if (
+        not np.isfinite(level)
+        or not np.isfinite(sigma)
+        or level <= 0
+        or sigma <= 0
+        or n_samples < 1
+    ):
         raise ValueError(f"level must be positive, got {level}")
 
     rng = rng or np.random.default_rng()
@@ -352,4 +374,4 @@ def first_passage_time_exact_bm(
     # → τ = (level / (σ · |Φ⁻¹(u/2)|))²
     z = norm.ppf(u / 2)
     tau = (level / (sigma * np.abs(z))) ** 2
-    return tau
+    return np.asarray(tau)

@@ -1,6 +1,6 @@
 <p align="center">
 <img width="870" height="808" alt="Image 27-09-26 at 12 12 PM" src="https://github.com/user-attachments/assets/4bbf9e5b-d578-42f8-8c12-b467f6e015cf" />
-  
+
 </p>
 
 <p align="center">
@@ -27,16 +27,16 @@ from spxa.zoo.beyond import FractionalBrownianMotion
 X = VarianceGamma(sigma=0.2, nu=0.1, theta=-0.1)
 Y = GammaProcess(a=1.0, b=2.0)
 
-Z = X + 0.5 * Y          # exact: triplets add
-W = X @ Y                 # exact: subordination via Bernstein functions
+Z = X + 0.5 * Y  # exact: triplets add
+W = X @ Y  # exact: subordination via Bernstein functions
 
-Z.triplet                 # LevyTriplet(b=..., sigma=..., nu=...)
-Z.cumulants(order=4)      # exact symbolic cumulants
-Z.char_func(u=1.0)        # characteristic function E[e^{iuZ_t}]
-Z.__story__()             # human-readable derivation of Z's properties
+Z.triplet  # LevyTriplet(b=..., sigma=..., nu=...)
+Z.cumulants(order=4)  # exact symbolic cumulants
+Z.char_func(u=1.0)  # characteristic function E[e^{iuZ_t}]
+Z.__story__()  # human-readable derivation of Z's properties
 ```
 
-Write `Z = X + c*Y`, get back a new process with its Lévy–Khintchine triplet computed exactly, cumulants derived symbolically, and a property lattice tracking what remains true (stationarity of increments, martingale property, tail class, self-similarity index) and what was invalidated by the operation. The library is loudly honest when you leave the Lévy regime, degrading gracefully to moment propagation rather than silently lying.
+Write `Z = X + c*Y`, get back a new process with its Lévy–Khintchine triplet computed exactly, cumulants from analytical formulas or numerical measure integration, and a property lattice tracking what remains true (stationarity of increments, martingale property, tail class, self-similarity index) and what was invalidated by the operation. The library is loudly honest when you leave the Lévy regime, degrading gracefully to moment propagation rather than silently lying.
 
 ## Why spxa
 
@@ -85,3 +85,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Contribution tiers:
 ## License
 
 MIT
+
+## Numerical guarantees
+
+Analytical capability is distinct from numerical simulation accuracy. See
+[`docs/numerical_contracts.md`](docs/numerical_contracts.md) for time-aware cumulants,
+CGMY/Meixner/OU approximation limits, moment-domain errors and supported composition cases.
+Core repairs are a local proposal under [`docs/rfcs/0001-correctness-contracts.md`](docs/rfcs/0001-correctness-contracts.md).

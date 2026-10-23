@@ -40,8 +40,10 @@ markdown_extensions:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+hooks:
+  - scripts/docs_hooks.py
 
 plugins:
   - search
@@ -65,7 +67,14 @@ nav:
       - First composition: tutorials/01_first_composition.ipynb
       - Finance models: tutorials/02_finance_models.ipynb
       - Physics applications: tutorials/03_physics_applications.ipynb
-  - API reference: api/
+  - API reference: api.md
+  - Numerical contracts: numerical_contracts.md
+  - Current-upstream mathematics: refresh_mathematics.md
+  - Correctness RFC: rfcs/0001-correctness-contracts.md
   - Process registry: process_registry.md
   - Contributing: contributing.md
   - Changelog: changelog.md
+
+validation:
+  links:
+    anchors: warn

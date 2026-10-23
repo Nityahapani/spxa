@@ -11,9 +11,9 @@ from spxa.zoo.beyond import (
     Heston,
     HestonProcess,
     MarkovModulatedPoissonProcess,
-    OULevy,
     OrnsteinUhlenbeck,
     OrnsteinUhlenbeckProcess,
+    OULevy,
     Vasicek,
     VasicekProcess,
 )

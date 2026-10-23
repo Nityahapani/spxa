@@ -27,7 +27,7 @@ Euler method for Lévy driven stochastic differential equations.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import numpy as np
 
@@ -42,7 +42,7 @@ def euler_maruyama(
     T: float = 1.0,
     n_steps: int = 1000,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Euler–Maruyama scheme for dZ_t = a(Z_t,t) dt + b(Z_t,t) dX_t.
@@ -107,7 +107,7 @@ def euler_maruyama_autonomous(
     T: float = 1.0,
     n_steps: int = 1000,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Euler–Maruyama for the constant-coefficient SDE dZ_t = a dt + b dX_t.
@@ -149,7 +149,7 @@ def geometric_levy(
     T: float = 1.0,
     n_steps: int = 1000,
     n_paths: int = 1,
-    rng: Optional[np.random.Generator] = None,
+    rng: np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Simulate the geometric Lévy process S_t = S_0 · exp((μ - σ²/2)t + σ·X_t).
@@ -186,17 +186,19 @@ def geometric_levy(
     # Risk-neutral drift correction: ensures E[S_t] = S_0 * exp(mu * t)
     # For a general Lévy process X, E[exp(sigma*X_1)] = phi_X(-i*sigma; 1)
     # The log of this is the cumulant generating function at sigma.
-    # Drift correction: log(E[exp(sigma*X_1)]) must equal mu*t for S_t = S_0*exp((mu+drift)*t + sigma*X_t)
+    # Normalize the exponential Levy noise: S_t = S0*exp((mu+drift)*t + sigma*X_t).
     # So drift_correction = mu - log(phi_X(-i*sigma; 1))
-    try:
-        mgf_val = complex(driver.char_func(u=-1j * sigma, t=1.0))
-        drift_correction = mu - np.log(abs(mgf_val) + 1e-300).real
-    except Exception:
-        kappas = driver.cumulants(order=2)
-        drift_correction = mu - 0.5 * sigma**2 * kappas[2]
+    mgf_val = complex(driver.char_func(u=-1j * sigma, t=1.0))
+    if (
+        not np.isfinite(mgf_val)
+        or mgf_val.real <= 0
+        or abs(mgf_val.imag) > 1e-8 * max(1.0, mgf_val.real)
+    ):
+        raise ValueError("A finite positive exponential moment is required")
+    drift_correction = mu - np.log(mgf_val.real)
 
     log_paths = drift_correction * time_grid[np.newaxis, :] + sigma * driver_paths
-    return s0 * np.exp(log_paths)
+    return np.asarray(s0 * np.exp(log_paths))
 
 
 def convergence_order_estimate(
@@ -236,24 +238,31 @@ def convergence_order_estimate(
     dict with keys: 'errors' (list of mean errors), 'dt_values',
     'estimated_order' (float), 'log_log_slope'.
     """
-    n_ref = max(step_sizes) * 8
-    rng = np.random.default_rng(rng_seed)
-    ref_paths = euler_maruyama(
-        driver, drift, diffusion, z0=z0, T=T,
-        n_steps=n_ref, n_paths=n_paths_ref, rng=rng,
-    )
-    z_ref = ref_paths[:, -1]
+    from math import lcm
 
+    if len(step_sizes) < 2 or any(n < 1 for n in step_sizes) or T <= 0 or n_paths_ref < 1:
+        raise ValueError("At least two positive grids, positive horizon/path count required")
+    n_ref = lcm(*step_sizes) * 8
+    if n_ref > 1_000_000:
+        raise ValueError("Grid least common multiple exceeds reference-step budget")
+    driving = driver.simulate(n_ref, n_paths=n_paths_ref, T=T, rng=np.random.default_rng(rng_seed))
+    fine_increments = np.diff(driving, axis=1)
+
+    def terminal(increments: np.ndarray) -> np.ndarray:
+        n = increments.shape[1]
+        values = np.full(n_paths_ref, z0, dtype=float)
+        for k in range(n):
+            d = np.array([drift(float(v), k * T / n) for v in values])
+            g = np.array([diffusion(float(v), k * T / n) for v in values])
+            values += d * T / n + g * increments[:, k]
+        return values
+
+    reference = terminal(fine_increments)
     errors = []
     dt_values = []
     for n in step_sizes:
-        rng_n = np.random.default_rng(rng_seed)
-        approx = euler_maruyama(
-            driver, drift, diffusion, z0=z0, T=T,
-            n_steps=n, n_paths=n_paths_ref, rng=rng_n,
-        )
-        err = float(np.mean(np.abs(approx[:, -1] - z_ref)))
-        errors.append(err)
+        increments = fine_increments.reshape(n_paths_ref, n, n_ref // n).sum(axis=2)
+        errors.append(float(np.mean(np.abs(terminal(increments) - reference))))
         dt_values.append(T / n)
 
     log_dt = np.log(dt_values)

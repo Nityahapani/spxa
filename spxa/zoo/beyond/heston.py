@@ -4,7 +4,7 @@ Heston stochastic volatility model.
 The Heston (1993) model couples a continuous log-price diffusion with a
 Cox–Ingersoll–Ross (CIR) square-root instantaneous variance process:
 
-    dS_t = (μ - q) S_t dt + √V_t S_t dW_t^S
+    dS_t = μ S_t dt + √V_t S_t dW_t^S
     dV_t = κ(θ - V_t) dt + σ_v √V_t dW_t^V
 
 with correlation:
@@ -37,14 +37,16 @@ volatility models. *Finance and Stochastics*, 11(1), 29–53.
 
 from __future__ import annotations
 
-import warnings
-from typing import Optional, Tuple, Union
+import math
+from functools import lru_cache
+from typing import Any
 
 import numpy as np
-from scipy.integrate import quad
+from scipy.integrate import quad, solve_ivp
 from scipy.optimize import brentq
 from scipy.stats import norm
 
+from spxa.core._validation import validate_order, validate_time
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError
 from spxa.core.process import Process
@@ -52,6 +54,39 @@ from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
 from spxa.sim.exact import sample_heston
 from spxa.story.narrator import CompositionNode, NodeKind
+
+
+@lru_cache(maxsize=128)
+def _heston_cumulants(
+    v0: float, kappa: float, theta: float, sigma: float, rho: float, mu: float, t: float, order: int
+) -> tuple[float, ...]:
+    def rhs(_time: float, values: np.ndarray) -> np.ndarray:
+        derivatives = np.zeros_like(values)
+        for j in range(order):
+            n = j + 1
+            derivatives[j] = -kappa * values[j]
+            if n > 1:
+                derivatives[j] += rho * sigma * n * values[j - 1]
+            derivatives[j] += (
+                0.5
+                * sigma
+                * sigma
+                * sum(math.comb(n, k) * values[k - 1] * values[n - k - 1] for k in range(1, n))
+            )
+            if n == 1:
+                derivatives[j] -= 0.5
+            elif n == 2:
+                derivatives[j] += 1
+            derivatives[order + j] = kappa * theta * values[j]
+        return derivatives
+
+    solution = solve_ivp(rhs, (0, t), np.zeros(2 * order), method="DOP853", rtol=2e-12, atol=2e-14)
+    if not solution.success or not np.all(np.isfinite(solution.y[:, -1])):
+        raise ArithmeticError("Heston cumulant ODE failed to converge")
+    D, C = solution.y[:order, -1], solution.y[order:, -1]
+    result = C + v0 * D
+    result[0] += mu * t
+    return tuple(float(x) for x in result)
 
 
 class HestonProcess(Process):
@@ -93,11 +128,11 @@ class HestonProcess(Process):
         v0: float = 0.04,
         kappa: float = 2.0,
         theta: float = 0.04,
-        sigma_v: Optional[float] = None,
+        sigma_v: float | None = None,
         rho: float = -0.7,
         mu: float = 0.0,
         s0: float = 1.0,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if sigma_v is None:
             if "sigma" in kwargs:
@@ -119,6 +154,8 @@ class HestonProcess(Process):
         mu_f = float(mu)
         s0_f = float(s0)
 
+        if not np.all(np.isfinite([v0_f, kappa_f, theta_f, sigma_v_f, rho_f, mu_f, s0_f])):
+            raise ValueError("Heston parameters must be finite")
         if v0_f <= 0.0:
             raise ValueError(f"Initial variance v0 must be strictly positive, got {v0_f}")
         if kappa_f <= 0.0:
@@ -126,7 +163,9 @@ class HestonProcess(Process):
         if theta_f <= 0.0:
             raise ValueError(f"Long-term variance theta must be strictly positive, got {theta_f}")
         if sigma_v_f <= 0.0:
-            raise ValueError(f"Volatility of variance sigma_v must be strictly positive, got {sigma_v_f}")
+            raise ValueError(
+                f"Volatility of variance sigma_v must be strictly positive, got {sigma_v_f}"
+            )
         if not (-1.0 <= rho_f <= 1.0):
             raise ValueError(f"Correlation rho must be in [-1, 1], got {rho_f}")
         if s0_f <= 0.0:
@@ -140,10 +179,26 @@ class HestonProcess(Process):
         self._mu = mu_f
         self._s0 = s0_f
 
-        feller_ratio = (2.0 * kappa_f * theta_f) / (sigma_v_f ** 2)
+        feller_ratio = (2.0 * kappa_f * theta_f) / (sigma_v_f**2)
         node = CompositionNode(
             kind=NodeKind.PRIMITIVE,
-            name=f"Heston(v0={v0_f}, kappa={kappa_f}, theta={theta_f}, sigma_v={sigma_v_f}, rho={rho_f}, mu={mu_f}, s0={s0_f})",
+            name=(
+                "Heston(v0="
+                f"{v0_f}"
+                ", kappa="
+                f"{kappa_f}"
+                ", theta="
+                f"{theta_f}"
+                ", sigma_v="
+                f"{sigma_v_f}"
+                ", rho="
+                f"{rho_f}"
+                ", mu="
+                f"{mu_f}"
+                ", s0="
+                f"{s0_f}"
+                ")"
+            ),
             math_note=(
                 f"Heston stochastic volatility model: dX_t = (μ - ½V_t)dt + √V_t dW_t^S; "
                 f"dV_t = κ(θ - V_t)dt + σ_v √V_t dW_t^V; ρ={rho_f}; Feller ratio={feller_ratio:.3f}"
@@ -198,12 +253,12 @@ class HestonProcess(Process):
     @property
     def feller_ratio(self) -> float:
         r"""The Feller condition ratio :math:`\frac{2\kappa\theta}{\sigma_v^2}`."""
-        return (2.0 * self._kappa * self._theta) / (self._sigma_v ** 2)
+        return (2.0 * self._kappa * self._theta) / (self._sigma_v**2)
 
     @property
     def is_feller_satisfied(self) -> bool:
         r"""True if :math:`2\kappa\theta > \sigma_v^2` (variance strictly positive)."""
-        return self.feller_ratio > 1.0
+        return self.feller_ratio >= 1.0
 
     # ------------------------------------------------------------------
     # Variance Process Moments (CIR variance)
@@ -211,17 +266,23 @@ class HestonProcess(Process):
 
     def variance_mean(self, t: float) -> float:
         r"""Expected variance :math:`\mathbb{E}[V_t \mid V_0 = v_0]`."""
-        if t < 0.0:
+        if not np.isfinite(t) or t < 0.0:
             raise ValueError(f"Time t must be non-negative, got {t}")
-        return self._theta + (self._v0 - self._theta) * np.exp(-self._kappa * t)
+        return float(
+            self._v0 * np.exp(-self._kappa * t) + self._theta * (-np.expm1(-self._kappa * t))
+        )
 
     def variance_var(self, t: float) -> float:
         r"""Variance of variance :math:`\mathrm{Var}(V_t \mid V_0 = v_0)`."""
-        if t < 0.0:
+        if not np.isfinite(t) or t < 0.0:
             raise ValueError(f"Time t must be non-negative, got {t}")
         exp_kt = np.exp(-self._kappa * t)
-        c1 = self._v0 * (self._sigma_v ** 2 / self._kappa) * (exp_kt - exp_kt ** 2)
-        c2 = self._theta * (self._sigma_v ** 2 / (2.0 * self._kappa)) * ((1.0 - exp_kt) ** 2)
+        c1 = self._v0 * (self._sigma_v**2 / self._kappa) * (exp_kt * (-np.expm1(-self._kappa * t)))
+        c2 = (
+            self._theta
+            * (self._sigma_v**2 / (2.0 * self._kappa))
+            * ((-np.expm1(-self._kappa * t)) ** 2)
+        )
         return float(c1 + c2)
 
     @property
@@ -232,7 +293,7 @@ class HestonProcess(Process):
     @property
     def stationary_variance_var(self) -> float:
         r"""Stationary variance of variance :math:`\frac{\theta \sigma_v^2}{2\kappa}`."""
-        return float((self._theta * self._sigma_v ** 2) / (2.0 * self._kappa))
+        return float((self._theta * self._sigma_v**2) / (2.0 * self._kappa))
 
     def expected_integrated_variance(self, t: float) -> float:
         r"""
@@ -240,92 +301,95 @@ class HestonProcess(Process):
 
         .. math::
 
-            \mathbb{E}\left[\int_0^t V_s \, ds\right] = \theta t + (v_0 - \theta) \frac{1 - e^{-\kappa t}}{\kappa}
+            \mathbb{E}\left[\int_0^t V_s \, ds\right] = \theta t + (v_0 - \theta) \frac{1 -
+            e^{-\kappa t}}{\kappa}
         """
-        if t < 0.0:
+        if not np.isfinite(t) or t < 0.0:
             raise ValueError(f"Time t must be non-negative, got {t}")
         if t == 0.0:
             return 0.0
-        exp_kt = np.exp(-self._kappa * t)
-        return float(self._theta * t + (self._v0 - self._theta) * (1.0 - exp_kt) / self._kappa)
+        return float(
+            self._theta * t + (self._v0 - self._theta) * (-np.expm1(-self._kappa * t)) / self._kappa
+        )
 
     # ------------------------------------------------------------------
     # Characteristic Function (Albrecher et al. 2007)
     # ------------------------------------------------------------------
 
-    def char_func(self, u: Union[float, np.ndarray], t: float = 1.0) -> Union[complex, np.ndarray]:
-        r"""
-        Characteristic function of log-return :math:`X_t = \ln(S_t / S_0)`.
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray:
+        """Affine CF, including the finite complex-moment strip.
 
-        Evaluates :math:`\phi(u, t) = \mathbb{E}\left[e^{i u X_t}\right]` using the
-        continuous Albrecher et al. (2007) formulation that guarantees numerical
-        stability and avoids branch-cut discontinuities.
-
-        Parameters
-        ----------
-        u :
-            Real or complex frequency parameter (scalar or numpy array).
-        t :
-            Evaluation horizon :math:`t > 0`. Default 1.0.
-
-        Returns
-        -------
-        complex or np.ndarray
+        A divided-exponential Riccati form avoids the g-ratio singularity at
+        u=-i when kappa-rho*sigma_v <= 0 and cancellation as sigma_v tends to zero.
+        Heston (1993); Albrecher et al. (2007). This is not a path-sampler claim.
         """
-        if t < 0.0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        if t == 0.0:
-            if np.isscalar(u):
-                return 1.0 + 0.0j
-            return np.ones_like(u, dtype=complex)
+        validate_time(t)
+        z = np.asarray(u, dtype=complex)
+        if not np.all(np.isfinite(z)):
+            raise ValueError("Frequencies must be finite")
+        if t == 0:
+            result = np.ones_like(z)
+            return complex(result) if z.ndim == 0 else result
+        # Riccati blow-up time for E[exp(p X_t)], p=-Im(u).
+        for moment in np.unique(-z.imag):
+            if 0 <= moment <= 1:
+                continue
+            b = self._rho * self._sigma_v * moment - self._kappa
+            discriminant = b * b - self._sigma_v**2 * (moment * moment - moment)
+            critical = np.inf
+            if discriminant < 0:
+                d_imag = math.sqrt(-discriminant)
+                critical = 2 / d_imag * (math.pi / 2 - math.atan(b / d_imag))
+            elif b > 0:
+                d_real = math.sqrt(discriminant)
+                critical = 2 / b if d_real == 0 else math.log1p(2 * d_real / (b - d_real)) / d_real
+            if t >= critical:
+                raise ValueError("Heston exponential moment does not exist at this horizon")
+        # At 0 and -i the solution D=C=0 is known without a limiting division.
+        safe = np.where((z == 0) | (z == -1j), 0j, z)
+        q = safe * safe + 1j * safe
+        a = self._kappa - 1j * self._rho * self._sigma_v * safe
+        sig2 = self._sigma_v**2
+        d = np.sqrt(a * a + sig2 * q)
+        difference = np.asarray(a - d)
+        np.divide(
+            -sig2 * q,
+            a + d,
+            out=difference,
+            where=np.abs(a + d) > 1e-12 * (1 + np.abs(a) + np.abs(d)),
+        )
+        h = np.full_like(d, t)
+        np.divide(-np.expm1(-d * t), d, out=h, where=d != 0)
+        denominator = 2 + difference * h
+        D = -q * h / denominator
+        w = difference * h / 2
+        logarithm = np.asarray(np.log1p(w))
+        small = np.abs(w) < 0.01
+        ws = w[small]
+        logarithm[small] = 0.5 * np.log1p(2 * ws.real + np.abs(ws) ** 2) + 1j * np.arctan2(
+            ws.imag, 1 + ws.real
+        )
+        C = self._kappa * self._theta / sig2 * (difference * t - 2 * logarithm)
+        result = np.exp(C + D * self._v0 + 1j * z * self._mu * t)
+        if not np.all(np.isfinite(result)):
+            raise ValueError("Heston CF exceeds numerical range or moment domain")
+        return complex(result) if z.ndim == 0 else np.asarray(result)
 
-        u_arr = np.asarray(u)
-        is_scalar = u_arr.ndim == 0
-
-        # Albrecher et al. (2007) formulation:
-        # d = sqrt((kappa - i * rho * sigma_v * u)^2 + sigma_v^2 * (u^2 + i * u))
-        # g = (kappa - i * rho * sigma_v * u - d) / (kappa - i * rho * sigma_v * u + d)
-        # D = ((kappa - i * rho * sigma_v * u - d) / sigma_v^2) * ((1 - exp(-d * t)) / (1 - g * exp(-d * t)))
-        # C = (kappa * theta / sigma_v^2) * [(kappa - i * rho * sigma_v * u - d)*t - 2 * ln((1 - g * exp(-d * t)) / (1 - g))]
-        # phi = exp(C + D * v0 + i * u * mu * t)
-
-        i = 1j
-        k = self._kappa
-        th = self._theta
-        sig = self._sigma_v
-        rho = self._rho
-        sig2 = sig ** 2
-
-        term1 = k - i * rho * sig * u_arr
-        d = np.sqrt(term1 ** 2 + sig2 * (u_arr ** 2 + i * u_arr))
-        g = (term1 - d) / (term1 + d)
-
-        exp_dt = np.exp(-d * t)
-        one_minus_g_exp = 1.0 - g * exp_dt
-        one_minus_g = 1.0 - g
-
-        D = ((term1 - d) / sig2) * ((1.0 - exp_dt) / one_minus_g_exp)
-        log_term = np.log(one_minus_g_exp / one_minus_g)
-        C = (k * th / sig2) * ((term1 - d) * t - 2.0 * log_term)
-
-        cf_val = np.exp(C + D * self._v0 + i * u_arr * self._mu * t)
-
-        if is_scalar:
-            return complex(cf_val)
-        return cf_val
-
-    def asset_char_func(self, u: Union[float, np.ndarray], t: float = 1.0) -> Union[complex, np.ndarray]:
+    def asset_char_func(
+        self, u: complex | float | np.ndarray, t: float = 1.0
+    ) -> complex | np.ndarray:
         r"""
         Characteristic function of log-price :math:`\ln S_t = \ln S_0 + X_t`.
 
         .. math::
 
-            \mathbb{E}\left[e^{i u \ln S_t}\right] = e^{i u \ln S_0} \mathbb{E}\left[e^{i u X_t}\right]
+            \mathbb{E}\left[e^{i u \ln S_t}\right] = e^{i u \ln S_0} \mathbb{E}\left[e^{i u
+            X_t}\right]
         """
         u_arr = np.asarray(u)
         phase = np.exp(1j * u_arr * np.log(self._s0))
         cf_x = self.char_func(u, t=t)
-        return phase * cf_x
+        return np.asarray(phase * cf_x)
 
     # ------------------------------------------------------------------
     # Moments & Cumulants of Log-Return X_t
@@ -333,56 +397,30 @@ class HestonProcess(Process):
 
     def conditional_mean(self, t: float = 1.0) -> float:
         r"""
-        Expected log-return :math:`\mathbb{E}[X_t] = \mu t - \frac{1}{2}\mathbb{E}\left[\int_0^t V_s \, ds\right]`.
+        Expected log-return :math:`\mathbb{E}[X_t] = \mu t -
+        \frac{1}{2}\mathbb{E}\left[\int_0^t V_s \, ds\right]`.
         """
-        if t < 0.0:
+        if not np.isfinite(t) or t < 0.0:
             raise ValueError(f"Time t must be non-negative, got {t}")
         return float(self._mu * t - 0.5 * self.expected_integrated_variance(t))
 
     def conditional_cumulants(self, t: float = 1.0, order: int = 4) -> dict[int, float]:
-        r"""
-        High-precision cumulants :math:`\kappa_1(t), \dots, \kappa_{\mathrm{order}}(t)` of :math:`X_t`.
+        """Finite-time log-return cumulants from differentiated affine Riccati ODEs.
 
-        Computed by numerical differentiation of :math:`\ln \phi(u, t)` at :math:`u = 0`
-        with order-optimised step sizes to prevent floating point roundoff error.
+        No unstable finite differences or fabricated NaNs above order four.
+        DOP853 integration is numerical; MOMENT_PROPAGATION is retained.
+        The explicit order budget is twelve.
         """
-        if order < 1:
-            raise ValueError(f"Cumulant order must be at least 1, got {order}")
-        if t <= 0.0:
+        validate_order(order)
+        validate_time(t)
+        if order > 12:
+            raise NotImplementedError("Heston cumulant ODE order budget is twelve")
+        if t == 0:
             return {n: 0.0 for n in range(1, order + 1)}
-
-        def log_cf(u_val: float) -> complex:
-            return np.log(self.char_func(u_val, t=t))
-
-        kappas: dict[int, float] = {}
-
-        # kappa_1 = (1/i) * d/du log_cf(0) with h = 1e-5
-        h1 = 1e-5
-        d1 = (log_cf(h1) - log_cf(-h1)) / (2.0 * h1)
-        kappas[1] = float(np.real(d1 / 1j))
-
-        if order >= 2:
-            # kappa_2 = - d^2/du^2 log_cf(0) with h = 1e-4
-            h2 = 1e-4
-            d2 = (log_cf(h2) - 2.0 * log_cf(0.0) + log_cf(-h2)) / (h2 ** 2)
-            kappas[2] = float(np.real(-d2))
-
-        if order >= 3:
-            # kappa_3 = i * d^3/du^3 log_cf(0) with h = 5e-3
-            h3 = 5e-3
-            d3 = (log_cf(2 * h3) - 2 * log_cf(h3) + 2 * log_cf(-h3) - log_cf(-2 * h3)) / (2.0 * h3 ** 3)
-            kappas[3] = float(np.real(1j * d3))
-
-        if order >= 4:
-            # kappa_4 = d^4/du^4 log_cf(0) with h = 1.5e-2
-            h4 = 1.5e-2
-            d4 = (log_cf(2 * h4) - 4 * log_cf(h4) + 6 * log_cf(0.0) - 4 * log_cf(-h4) + log_cf(-2 * h4)) / (h4 ** 4)
-            kappas[4] = float(np.real(d4))
-
-        for n in range(5, order + 1):
-            kappas[n] = float(np.nan)
-
-        return kappas
+        values = _heston_cumulants(
+            self._v0, self._kappa, self._theta, self._sigma_v, self._rho, self._mu, t, order
+        )
+        return {n: values[n - 1] for n in range(1, order + 1)}
 
     def conditional_variance(self, t: float = 1.0) -> float:
         r"""Variance :math:`\mathrm{Var}(X_t)` of the log-return."""
@@ -398,11 +436,11 @@ class HestonProcess(Process):
 
     def call_price(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
         European call option price :math:`C(S_0, K, T)` via Gil-Pelaez Fourier inversion.
 
@@ -414,7 +452,8 @@ class HestonProcess(Process):
 
         .. math::
 
-            P_j = \frac{1}{2} + \frac{1}{\pi} \int_0^\infty \operatorname{Re}\left( \frac{e^{-i u \ln(K / S_0)} \psi_j(u, T)}{i u} \right) du
+            P_j = \frac{1}{2} + \frac{1}{\pi} \int_0^\infty \operatorname{Re}\left(
+            \frac{e^{-i u \ln(K / S_0)} \psi_j(u, T)}{i u} \right) du
 
         with :math:`\psi_2(u) = \phi(u)` and :math:`\psi_1(u) = e^{-\mu T} \phi(u - i)`.
 
@@ -437,9 +476,15 @@ class HestonProcess(Process):
             raise ValueError(f"Maturity T must be strictly positive, got {T}")
         r_val = float(self._mu) if r is None else float(r)
         q_val = float(q)
+        if not np.all(np.isfinite([T, r_val, q_val])):
+            raise ValueError("Pricing time and rates must be finite")
+
+        def pricing_cf(u: complex) -> complex:
+            shift = r_val - q_val - self._mu
+            return complex(np.exp(1j * u * shift * T) * self.char_func(u, t=T))
 
         def _price_single(strike: float) -> float:
-            if strike <= 0.0:
+            if not np.isfinite(strike) or strike <= 0.0:
                 raise ValueError(f"Strike K must be strictly positive, got {strike}")
 
             ln_k_s0 = np.log(strike / self._s0)
@@ -447,19 +492,19 @@ class HestonProcess(Process):
             def integrand1(u: float) -> float:
                 if u < 1e-12:
                     return 0.0
-                cf1 = np.exp(-self._mu * T) * self.char_func(u - 1j, t=T)
+                cf1 = np.exp(-(r_val - q_val) * T) * pricing_cf(u - 1j)
                 val = np.exp(-1j * u * ln_k_s0) * cf1 / (1j * u)
                 return float(np.real(val))
 
             def integrand2(u: float) -> float:
                 if u < 1e-12:
                     return 0.0
-                cf2 = self.char_func(u, t=T)
+                cf2 = pricing_cf(complex(u))
                 val = np.exp(-1j * u * ln_k_s0) * cf2 / (1j * u)
                 return float(np.real(val))
 
-            p1_int, _ = quad(integrand1, 1e-8, 100.0, limit=200)
-            p2_int, _ = quad(integrand2, 1e-8, 100.0, limit=200)
+            p1_int, _ = quad(integrand1, 0.0, np.inf, limit=400, epsabs=1e-9)
+            p2_int, _ = quad(integrand2, 0.0, np.inf, limit=400, epsabs=1e-9)
 
             P1 = float(np.clip(0.5 + (1.0 / np.pi) * p1_int, 0.0, 1.0))
             P2 = float(np.clip(0.5 + (1.0 / np.pi) * p2_int, 0.0, 1.0))
@@ -475,11 +520,11 @@ class HestonProcess(Process):
 
     def put_price(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
         European put option price :math:`P(S_0, K, T)` via Put-Call parity.
 
@@ -492,17 +537,18 @@ class HestonProcess(Process):
         K_arr = np.asarray(K, dtype=float)
         puts = calls - self._s0 * np.exp(-q * T) + K_arr * np.exp(-r_val * T)
         intrinsic = np.maximum(0.0, K_arr * np.exp(-r_val * T) - self._s0 * np.exp(-q * T))
-        return np.maximum(puts, intrinsic)
+        return np.asarray(np.maximum(puts, intrinsic))
 
     def implied_volatility(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
-        Black-Scholes implied volatility :math:`\sigma_{\mathrm{BS}}(K, T)` inverted from Heston call price.
+        Black-Scholes implied volatility :math:`\sigma_{\mathrm{BS}}(K, T)` inverted from
+        Heston call price.
         """
         r_val = float(self._mu) if r is None else float(r)
         q_val = float(q)
@@ -510,7 +556,7 @@ class HestonProcess(Process):
         def _bs_call(s: float, k: float, t: float, rate: float, div: float, vol: float) -> float:
             if vol <= 1e-8:
                 return float(max(0.0, s * np.exp(-div * t) - k * np.exp(-rate * t)))
-            d1 = (np.log(s / k) + (rate - div + 0.5 * vol ** 2) * t) / (vol * np.sqrt(t))
+            d1 = (np.log(s / k) + (rate - div + 0.5 * vol**2) * t) / (vol * np.sqrt(t))
             d2 = d1 - vol * np.sqrt(t)
             return float(s * np.exp(-div * t) * norm.cdf(d1) - k * np.exp(-rate * t) * norm.cdf(d2))
 
@@ -538,13 +584,13 @@ class HestonProcess(Process):
 
     def implied_vol_smile(
         self,
-        strikes: Union[list[float], np.ndarray],
+        strikes: list[float] | np.ndarray,
         T: float = 1.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
     ) -> np.ndarray:
         r"""Compute the Black-Scholes implied volatility smile across an array of strikes."""
-        return self.implied_volatility(strikes, T=T, r=r, q=q)
+        return np.asarray(self.implied_volatility(np.asarray(strikes, dtype=float), T=T, r=r, q=q))
 
     # ------------------------------------------------------------------
     # Simulation
@@ -555,7 +601,7 @@ class HestonProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
         method: str = "full_truncation",
         return_price: bool = False,
     ) -> np.ndarray:
@@ -601,8 +647,9 @@ class HestonProcess(Process):
             method=method,
             return_variance=False,
         )
+        assert isinstance(paths_x, np.ndarray)
         if return_price:
-            return self._s0 * np.exp(paths_x)
+            return np.asarray(self._s0 * np.exp(paths_x))
         return paths_x
 
     def simulate_joint(
@@ -610,9 +657,9 @@ class HestonProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
         method: str = "full_truncation",
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         r"""
         Simulate joint sample paths of asset price :math:`S_t` and variance :math:`V_t`.
 
@@ -621,7 +668,7 @@ class HestonProcess(Process):
         tuple[np.ndarray, np.ndarray]
             ``(S_paths, V_paths)`` each of shape ``(n_paths, n_steps + 1)``.
         """
-        paths_x, paths_v = sample_heston(
+        joint = sample_heston(
             v0=self._v0,
             kappa=self._kappa,
             theta=self._theta,
@@ -636,6 +683,8 @@ class HestonProcess(Process):
             method=method,
             return_variance=True,
         )
+        assert isinstance(joint, tuple)
+        paths_x, paths_v = joint
         paths_s = self._s0 * np.exp(paths_x)
         return paths_s, paths_v
 
@@ -676,7 +725,10 @@ class HestonProcess(Process):
                     f"({'satisfied' if self.is_feller_satisfied else 'violated'})."
                 ),
                 "Affine characteristic function is exact via Albrecher et al. (2007) formulation.",
-                "HestonProcess has state-dependent stochastic volatility and serially correlated increments.",
+                (
+                    "HestonProcess has state-dependent stochastic volatility and "
+                    "serially correlated increments."
+                ),
             ],
         )
 
@@ -687,7 +739,22 @@ class HestonProcess(Process):
         )
 
     def __str__(self) -> str:
-        return f"Heston(v0={self._v0}, kappa={self._kappa}, theta={self._theta}, sigma_v={self._sigma_v}, rho={self._rho})"
+        return (
+            "Heston(v0="
+            f"{self._v0}"
+            ", kappa="
+            f"{self._kappa}"
+            ", theta="
+            f"{self._theta}"
+            ", sigma_v="
+            f"{self._sigma_v}"
+            ", rho="
+            f"{self._rho}"
+            ")"
+        )
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        return self.conditional_cumulants(t=t, order=order)
 
 
 # Canonical alias
