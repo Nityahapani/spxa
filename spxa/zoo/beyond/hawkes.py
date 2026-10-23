@@ -20,8 +20,6 @@ Ogata, Y. (1981). On Lewis' simulation method for point processes.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
@@ -76,14 +74,14 @@ class HawkesProcess(Process):
     def __init__(self, mu: float, alpha: float, beta: float) -> None:
         if mu <= 0:
             raise ValueError(f"mu must be positive, got {mu}")
-        if alpha <= 0:
-            raise ValueError(f"alpha must be positive, got {alpha}")
+        if alpha < 0:
+            raise ValueError(f"alpha must be nonnegative, got {alpha}")
         if beta <= 0:
             raise ValueError(f"beta must be positive, got {beta}")
         if alpha >= beta:
             raise ValueError(
                 f"Process is supercritical: requires alpha < beta (α/β < 1), "
-                f"got alpha={alpha}, beta={beta}, ratio={alpha/beta:.3f}"
+                f"got alpha={alpha}, beta={beta}, ratio={alpha / beta:.3f}"
             )
 
         self.mu = mu
@@ -115,23 +113,23 @@ class HawkesProcess(Process):
     @property
     def asymptotic_variance_rate(self) -> float:
         """
-        Asymptotic variance rate: Var(N_t)/t → λ̄·(1+α/β)/(1-α/β)² as t→∞.
+        Asymptotic variance rate: Var(N_t)/t → λ̄/(1-α/β)² as t→∞.
 
         Hawkes & Oakes (1974), Theorem 1.
         """
         r = self._branching_ratio
-        return self.mean_intensity * (1 + r) / (1 - r) ** 2
+        return self.mean_intensity / (1 - r) ** 2
 
     @property
     def fano_factor(self) -> float:
         """
-        Asymptotic Fano factor F = Var(N_t)/E[N_t] → (1+α/β)/(1-α/β)².
+        Asymptotic Fano factor F = Var(N_t)/E[N_t] → 1/(1-α/β)².
 
         Always ≥ 1 for Hawkes processes (they are always overdispersed).
         Hawkes & Oakes (1974).
         """
         r = self._branching_ratio
-        return (1 + r) / (1 - r) ** 2
+        return 1 / (1 - r) ** 2
 
     def _triplet(self) -> LevyTriplet:
         raise ExactnessError(
@@ -154,35 +152,24 @@ class HawkesProcess(Process):
             has_finite_mean=True,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=True,
+            is_subordinator=False,
             hurst_index=None,
             notes=[
-                f"Hawkes process: branching ratio α/β={self._branching_ratio:.4f} < 1 (subcritical).",
+                f"Hawkes branching ratio α/β={self._branching_ratio:.4f} < 1 (subcritical).",
                 "Increments are positively correlated — not a Lévy process.",
-                f"Fano factor F={(1+self._branching_ratio)/(1-self._branching_ratio)**2:.4f} > 1 (overdispersed).",
+                f"Asymptotic Fano factor F={self.fano_factor:.4f} (overdispersed).",
             ],
         )
 
     def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
-        """
-        Return the asymptotic cumulants of N_t/t as t→∞.
-        Only the first two are tracked analytically.
-        """
-        result: dict[int, float] = {}
-        if order >= 1:
-            result[1] = self.mean_intensity
-        if order >= 2:
-            result[2] = self.asymptotic_variance_rate
-        for n in range(3, order + 1):
-            result[n] = float("nan")
-        return result
+        return self.cumulants_at(order, 1.0)
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate Hawkes process paths via Ogata's thinning algorithm.
@@ -245,3 +232,39 @@ class HawkesProcess(Process):
 
     def __repr__(self) -> str:
         return f"HawkesProcess(mu={self.mu}, alpha={self.alpha}, beta={self.beta})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Finite-horizon cumulants with empty history (lambda_0=mu).
+
+        Apply the Markov generator to monomials N^p lambda^q:
+        A f=-beta*(lambda-mu)*d_lambda f
+            +lambda*(f(N+1,lambda+alpha)-f(N,lambda)).
+        Polynomial moments close by total degree; solve by matrix exponential.
+        References: Hawkes (1971); polynomial generator/Dynkin moment identity.
+        """
+        from math import comb
+
+        from scipy.linalg import expm
+
+        from spxa.ops.product import raw_moments_to_cumulants
+
+        if not isinstance(order, int) or order < 1 or order > 8 or not np.isfinite(t) or t < 0:
+            raise ValueError("Require order 1..8 and finite nonnegative time")
+        basis = [
+            (p, q) for degree in range(order + 1) for p in range(degree + 1) for q in [degree - p]
+        ]
+        index = {key: i for i, key in enumerate(basis)}
+        matrix = np.zeros((len(basis), len(basis)))
+        for row, (p, q) in enumerate(basis):
+            matrix[row, row] -= self.beta * q
+            if q:
+                matrix[row, index[p, q - 1]] += self.beta * self.mu * q
+            for i in range(p + 1):
+                for j in range(q + 1):
+                    if (i, j) != (p, q):
+                        matrix[row, index[i, j + 1]] += (
+                            comb(p, i) * comb(q, j) * self.alpha ** (q - j)
+                        )
+        initial = np.array([self.mu**q if p == 0 else 0.0 for p, q in basis])
+        moments = expm(t * matrix) @ initial
+        return raw_moments_to_cumulants({n: float(moments[index[n, 0]]) for n in range(order + 1)})

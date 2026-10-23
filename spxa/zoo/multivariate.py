@@ -37,11 +37,13 @@ Chapter 4.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
+from numpy.typing import ArrayLike
 
+from spxa.core._immutable import Immutable
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import CompoundLevyMeasure, LevyMeasure
 from spxa.core.process import Process
@@ -50,8 +52,60 @@ from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
+class _DirectionalLevyMeasure(LevyMeasure):
+    """Jump measure carried by finitely many vector directions, not a scalar sum.
+
+    nu(B)=sum_i integral 1_B(direction_i*x) nu_i(dx).
+    References: Sato (1999), Theorem 11.3 and linear image measures.
+    """
+
+    def __init__(self, directions: np.ndarray, measures: Sequence[LevyMeasure]) -> None:
+        self.directions = np.asarray(directions, dtype=float)
+        self.measures = tuple(measures)
+
+    def density(self, x: ArrayLike) -> np.ndarray:
+        raise NotImplementedError(
+            "Directional jump measures need not have a multivariate Lebesgue density"
+        )
+
+    def total_mass(self) -> float:
+        return float(
+            sum(
+                m.total_mass()
+                for v, m in zip(self.directions, self.measures, strict=True)
+                if np.any(v)
+            )
+        )
+
+    def tail(self, x: float) -> float:
+        raise NotImplementedError("Choose a projection before requesting a scalar tail")
+
+    def moment(self, n: int) -> float:
+        raise NotImplementedError("Choose a projection before requesting scalar jump moments")
+
+    def project(self, direction: np.ndarray) -> LevyMeasure:
+        from spxa.core.levy_measure import ScaledLevyMeasure
+
+        return CompoundLevyMeasure(
+            [
+                ScaledLevyMeasure(m, float(direction @ v))
+                for v, m in zip(self.directions, self.measures, strict=True)
+                if direction @ v != 0
+            ]
+        )
+
+    def __add__(self, other: LevyMeasure) -> LevyMeasure:
+        if isinstance(other, _DirectionalLevyMeasure):
+            return _DirectionalLevyMeasure(
+                np.vstack((self.directions, other.directions)), self.measures + other.measures
+            )
+        if other.total_mass() == 0:
+            return self
+        raise NotImplementedError("Cannot infer directions for a scalar measure")
+
+
 @dataclass(frozen=True)
-class MultivariateLevyTriplet:
+class MultivariateLevyTriplet(Immutable):
     r"""
     d-dimensional Lévy–Khintchine characteristic triplet (b, Σ, ν).
 
@@ -87,6 +141,12 @@ class MultivariateLevyTriplet:
             raise ValueError("sigma must be symmetric")
         if np.any(np.linalg.eigvalsh(s) < -1e-10):
             raise ValueError("sigma must be positive semidefinite")
+        if not np.all(np.isfinite(b)) or not np.all(np.isfinite(s)):
+            raise ValueError("Triplet arrays must be finite")
+        for name, value in (("b", b), ("sigma", s)):
+            array = np.frombuffer(value.astype(float).tobytes(), dtype=float).reshape(value.shape)
+            object.__setattr__(self, name, array)
+        object.__setattr__(self, "_sealed", True)
 
     def __add__(self, other: MultivariateLevyTriplet) -> MultivariateLevyTriplet:
         """
@@ -103,57 +163,56 @@ class MultivariateLevyTriplet:
         )
 
     def transform(self, A: np.ndarray) -> MultivariateLevyTriplet:
+        """Linear image with the Euclidean unit-ball truncation correction.
+
+        b_new=A*b+integral A*x*(1_{||A*x||<=1}-1_{||x||<=1}) nu(dx).
+        Directional measures retain their actual image directions.
+        References: Sato (1999), Theorem 11.3.
         """
-        Apply linear map A: ℝᵈ → ℝᵏ to the triplet.
+        A = np.asarray(A, dtype=float)
+        if A.ndim != 2 or A.shape[1] != self.dim or not np.all(np.isfinite(A)):
+            raise ValueError("A must be a finite matrix with dim columns")
+        drift = A @ self.b
+        if isinstance(self.nu, _DirectionalLevyMeasure):
+            old = self.nu.directions
+            new = old @ A.T
+            for v, w, measure in zip(old, new, self.nu.measures, strict=True):
+                r, q = float(np.linalg.norm(v)), float(np.linalg.norm(w))
+                if r == 0 or q == 0 or r == q:
+                    continue
+                lo, hi = sorted((1 / r, 1 / q))
 
-        Result has:
-          b_new   = A·b  (+ drift correction, omitted for simplicity)
-          Σ_new   = A·Σ·Aᵀ
-          ν_new   = ν ∘ A⁻¹  (image measure)
+                def correction(x: float, q: float = float(q), r: float = float(r)) -> float:
+                    return x * (int(q * abs(x) <= 1) - int(r * abs(x) <= 1))
 
-        Sato (1999), Theorem 11.3.
-        """
-        A = np.asarray(A)
-        k = A.shape[0]
-        from spxa.core.levy_measure import DensityLevyMeasure
-
-        def image_density(x: np.ndarray) -> np.ndarray:
+                drift += w * (
+                    measure.integrate(correction, lo, hi) + measure.integrate(correction, -hi, -lo)
+                )
+            nu: LevyMeasure = _DirectionalLevyMeasure(new, self.nu.measures)
+        elif self.nu.total_mass() == 0:
+            nu = self.nu
+        else:
             raise NotImplementedError(
-                "Image measure density not implemented for general A. "
-                "Use numeric simulation."
+                "General vector jump transforms require a directional measure"
             )
-
-        image_nu = DensityLevyMeasure(
-            _density_fn=image_density,
-            _total_mass=self.nu.total_mass(),
-        )
-        return MultivariateLevyTriplet(
-            b=A @ np.asarray(self.b),
-            sigma=A @ np.asarray(self.sigma) @ A.T,
-            nu=image_nu,
-            dim=k,
-        )
+        return MultivariateLevyTriplet(drift, A @ self.sigma @ A.T, nu, A.shape[0])
 
     def cumulant(self, n: int, direction: np.ndarray) -> float:
-        """
-        Return the n-th cumulant of ⟨direction, X₁⟩ (a projection onto a 1-d process).
+        """Cumulant of the actual scalar projection <direction,X_1>."""
+        return self.project(direction).cumulant(n)
 
-        Parameters
-        ----------
-        n :
-            Cumulant order ≥ 1.
-        direction :
-            Unit vector in ℝᵈ.
-        """
+    def project(self, direction: np.ndarray) -> LevyTriplet:
+        """Scalar projected triplet with the correct projected cutoff."""
         d = np.asarray(direction, dtype=float)
-        b_proj = float(d @ np.asarray(self.b))
-        sigma_proj = float(d @ np.asarray(self.sigma) @ d)
-
-        if n == 1:
-            return b_proj
-        if n == 2:
-            return sigma_proj + self.nu.moment(2)
-        return self.nu.moment(n)
+        if d.shape != (self.dim,) or not np.all(np.isfinite(d)):
+            raise ValueError("Projection direction must be a finite vector of length dim")
+        projected = self.transform(d[None, :])
+        nu = (
+            projected.nu.project(np.ones(1))
+            if isinstance(projected.nu, _DirectionalLevyMeasure)
+            else projected.nu
+        )
+        return LevyTriplet(float(projected.b[0]), float(projected.sigma[0, 0]), nu)
 
 
 class MultivariateBrownianMotion(Process):
@@ -183,8 +242,8 @@ class MultivariateBrownianMotion(Process):
 
     def __init__(
         self,
-        mu: Optional[np.ndarray] = None,
-        sigma: Optional[np.ndarray] = None,
+        mu: np.ndarray | None = None,
+        sigma: np.ndarray | None = None,
         dim: int = 2,
     ) -> None:
         if sigma is None:
@@ -216,17 +275,14 @@ class MultivariateBrownianMotion(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from spxa.zoo.levy.brownian import _ZeroLevyMeasure
-        # Return 1-d projection triplet (trace of Σ as effective scalar)
-        return LevyTriplet(
-            b=float(np.sum(self.mu)),
-            sigma_sq=float(np.trace(self.sigma_mat)),
-            nu=_ZeroLevyMeasure(),
+        raise NotImplementedError(
+            "A vector process has no scalar triplet; use multivariate_triplet().project(direction)"
         )
 
     def multivariate_triplet(self) -> MultivariateLevyTriplet:
         """Return the full d-dimensional characteristic triplet."""
         from spxa.zoo.levy.brownian import _ZeroLevyMeasure
+
         return MultivariateLevyTriplet(
             b=self.mu.copy(),
             sigma=self.sigma_mat.copy(),
@@ -251,7 +307,7 @@ class MultivariateBrownianMotion(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation via Cholesky decomposition of Σ.
@@ -290,6 +346,17 @@ class MultivariateBrownianMotion(Process):
     def __repr__(self) -> str:
         return f"MultivariateBrownianMotion(dim={self.dim}, mu={self.mu.tolist()})"
 
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        z = np.asarray(u, dtype=complex)
+        if z.ndim < 1 or z.shape[-1] != self.dim or t < 0:
+            raise ValueError("Frequency vectors must have last dimension dim and t>=0")
+        return np.asarray(
+            np.exp(
+                t
+                * (1j * (z @ self.mu) - 0.5 * np.einsum("...i,ij,...j->...", z, self.sigma_mat, z))
+            )
+        )
+
 
 class CorrelatedLevy(Process):
     """
@@ -322,9 +389,7 @@ class CorrelatedLevy(Process):
     def __init__(self, processes: list[Process], A: np.ndarray) -> None:
         A = np.atleast_2d(np.asarray(A, dtype=float))
         if A.shape[1] != len(processes):
-            raise ValueError(
-                f"A has {A.shape[1]} columns but {len(processes)} processes supplied."
-            )
+            raise ValueError(f"A has {A.shape[1]} columns but {len(processes)} processes supplied.")
         self.processes = processes
         self.A = A
         self.dim_in = len(processes)
@@ -349,26 +414,25 @@ class CorrelatedLevy(Process):
         )
 
     def multivariate_triplet(self) -> MultivariateLevyTriplet:
-        """
-        Return the d-dimensional characteristic triplet (b, Σ, ν) of Z = A·X.
-
-        b_Z = A · (b_X¹, …, b_Xᵈ)
-        Σ_Z = A · diag(σ²_X¹, …, σ²_Xᵈ) · Aᵀ
-        ν_Z = image of ν_joint under A (numeric only)
-        """
-        b_vec = np.array([p._triplet().b for p in self.processes])
-        sigma_diag = np.diag([p._triplet().sigma_sq for p in self.processes])
-        b_Z = self.A @ b_vec
-        sigma_Z = self.A @ sigma_diag @ self.A.T
-        nu_Z = CompoundLevyMeasure([p._triplet().nu for p in self.processes])
-        return MultivariateLevyTriplet(
-            b=b_Z, sigma=sigma_Z, nu=nu_Z, dim=self.dim_out
+        """Independent scalar jump measures embedded on coordinate axes, then mixed."""
+        triplets = [p.triplet for p in self.processes]
+        nu = _DirectionalLevyMeasure(np.eye(self.dim_in), [p.nu for p in triplets])
+        joint = MultivariateLevyTriplet(
+            np.array([p.b for p in triplets]),
+            np.diag([p.sigma_sq for p in triplets]),
+            nu,
+            self.dim_in,
         )
+        return joint.transform(self.A)
 
     def _properties(self) -> ProcessProperties:
         combined = ProcessProperties(
-            has_stationary_increments=all(p.properties.has_stationary_increments for p in self.processes),
-            has_independent_increments=all(p.properties.has_independent_increments for p in self.processes),
+            has_stationary_increments=all(
+                p.properties.has_stationary_increments for p in self.processes
+            ),
+            has_independent_increments=all(
+                p.properties.has_independent_increments for p in self.processes
+            ),
             is_martingale=all(p.properties.is_martingale for p in self.processes),
             has_finite_variance=all(p.properties.has_finite_variance for p in self.processes),
             has_finite_mean=all(p.properties.has_finite_mean for p in self.processes),
@@ -380,7 +444,7 @@ class CorrelatedLevy(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate the correlated process by simulating each component
@@ -393,21 +457,30 @@ class CorrelatedLevy(Process):
         """
         rng = rng or np.random.default_rng()
         component_paths = np.stack(
-            [p.simulate(n_steps, n_paths, T, rng) for p in self.processes],
+            [p.simulate(n_steps, n_paths=n_paths, T=T, rng=rng) for p in self.processes],
             axis=-1,
         )
-        return component_paths @ self.A.T
+        return np.asarray(component_paths @ self.A.T)
 
     def __repr__(self) -> str:
         return (
-            f"CorrelatedLevy(processes={[repr(p) for p in self.processes]}, "
-            f"A_shape={self.A.shape})"
+            f"CorrelatedLevy(processes={[repr(p) for p in self.processes]}, A_shape={self.A.shape})"
         )
+
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        z = np.asarray(u, dtype=complex)
+        if z.ndim < 1 or z.shape[-1] != self.dim_out or t < 0:
+            raise ValueError("Frequency vectors must have last dimension dim_out and t>=0")
+        arguments = z @ self.A
+        result = np.ones(z.shape[:-1], dtype=complex)
+        for i, process in enumerate(self.processes):
+            result *= process.char_func(arguments[..., i], t)
+        return result
 
 
 def correlated_brownian_motion(
     sigma_matrix: np.ndarray,
-    mu: Optional[np.ndarray] = None,
+    mu: np.ndarray | None = None,
 ) -> MultivariateBrownianMotion:
     """
     Construct a multivariate BM with given covariance matrix Σ.

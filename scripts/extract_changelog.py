@@ -1,25 +1,29 @@
-"""
-Extracts the changelog entry for a given version from CHANGELOG.md.
-Used by the release workflow to populate GitHub release notes.
-Usage: python scripts/extract_changelog.py 0.1.0
-"""
+"""Extract an actual version section; missing entries fail instead of fabricating notes."""
 
 import re
 import sys
 from pathlib import Path
 
 
-def extract(version: str) -> str:
-    text = Path("CHANGELOG.md").read_text()
-    pattern = rf"## {re.escape(version)}.*?\n(.*?)(?=\n## |\Z)"
-    match = re.search(pattern, text, re.DOTALL)
-    if not match:
-        return f"Release {version}"
-    return match.group(1).strip()
+def extract(version: str, changelog: Path = Path("CHANGELOG.md")) -> str:
+    text = changelog.read_text()
+    version = version.removeprefix("v")
+    heading = rf"^##\s+\[?v?{re.escape(version)}\]?(?:[ \t]+[^\n]*)?$"
+    match = re.search(heading, text, re.MULTILINE)
+    if match is None:
+        raise ValueError(f"No changelog section for {version}")
+    rest = text[match.end() :]
+    following = re.search(r"^##\s+", rest, re.MULTILINE)
+    entry = rest[: following.start()] if following else rest
+    if not entry.strip():
+        raise ValueError(f"Empty changelog section for {version}")
+    return entry.strip()
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: extract_changelog.py <version>")
-        sys.exit(1)
-    print(extract(sys.argv[1]))
+        sys.exit("Usage: extract_changelog.py <version>")
+    try:
+        print(extract(sys.argv[1]))
+    except ValueError as error:
+        sys.exit(str(error))

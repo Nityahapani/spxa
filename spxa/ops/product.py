@@ -20,7 +20,6 @@ Statistics*, Vol. 1. Chapter 3 (cumulant-moment relations).
 from __future__ import annotations
 
 import warnings
-from typing import Optional
 
 import numpy as np
 
@@ -58,6 +57,7 @@ def cumulants_to_raw_moments(kappas: dict[int, float]) -> dict[int, float]:
     Vol. 1. Section 3.14.
     """
     from math import comb
+
     n_max = max(kappas.keys())
     moments: dict[int, float] = {0: 1.0}
     for n in range(1, n_max + 1):
@@ -90,6 +90,7 @@ def raw_moments_to_cumulants(moments: dict[int, float]) -> dict[int, float]:
     Stuart & Ord (1994), Section 3.14.
     """
     from math import comb
+
     n_max = max(moments.keys())
     mu = {0: 1.0, **moments}
     kappas: dict[int, float] = {}
@@ -130,7 +131,7 @@ class ProductProcess(Process):
             children=[X._node, Y._node],
             math_note=(
                 "Product process Z_t = X_t · Y_t; "
-                "E[Z_t^n] = ∑_{k=0}^{n} C(n,k) E[X_t^k] E[Y_t^{n-k}] (independence); "
+                "E[Z_t^n] = E[X_t^n] E[Y_t^n] (independence); "
                 "ExactnessLevel: MOMENT_PROPAGATION"
             ),
             reference="Stuart & Ord (1994), Kendall's Advanced Theory of Statistics, §3.14",
@@ -143,7 +144,12 @@ class ProductProcess(Process):
             SpxaDegradationWarning,
             stacklevel=2,
         )
-        super().__init__(exactness=ExactnessLevel.MOMENT_PROPAGATION, _node=node)
+        super().__init__(
+            exactness=ExactnessLevel.combine(
+                ExactnessLevel.MOMENT_PROPAGATION, ExactnessLevel.combine(X.exactness, Y.exactness)
+            ),
+            _node=node,
+        )
 
     def _triplet(self) -> LevyTriplet:
         raise ExactnessError(
@@ -204,7 +210,7 @@ class ProductProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate Z_t = X_t · Y_t by simulating X and Y independently
@@ -221,12 +227,20 @@ class ProductProcess(Process):
             Shape (n_paths, n_steps + 1).
         """
         rng = rng or np.random.default_rng()
-        paths_X = self._X.simulate(n_steps, n_paths, T, rng)
-        paths_Y = self._Y.simulate(n_steps, n_paths, T, rng)
-        return paths_X * paths_Y
+        paths_X = self._X.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        paths_Y = self._Y.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        return np.asarray(paths_X * paths_Y)
 
     def __repr__(self) -> str:
         return f"ProductProcess({self._X!r}, {self._Y!r})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Independent product moments at time t, then moment-to-cumulant conversion."""
+        if order > self._max_order:
+            raise ValueError("Requested order exceeds max_moment_order")
+        mx = cumulants_to_raw_moments(self._X.cumulants_at(order, t))
+        my = cumulants_to_raw_moments(self._Y.cumulants_at(order, t))
+        return raw_moments_to_cumulants({n: mx[n] * my[n] for n in range(1, order + 1)})
 
 
 def multiply(X: Process, Y: Process, max_moment_order: int = 4) -> ProductProcess:

@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import Optional
+from copy import deepcopy
+from math import comb
 
 import numpy as np
 
+from spxa.core._immutable import Immutable, ImmutableMeta
+from spxa.core._validation import validate_order
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
 from spxa.core.properties import ProcessProperties
@@ -29,7 +32,7 @@ from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind, narrate
 
 
-class Process(ABC):
+class Process(Immutable, ABC, metaclass=ImmutableMeta):
     """
     Abstract base class for all stochastic processes in spxa.
 
@@ -49,7 +52,7 @@ class Process(ABC):
     def __init__(
         self,
         exactness: ExactnessLevel = ExactnessLevel.EXACT,
-        _node: Optional[CompositionNode] = None,
+        _node: CompositionNode | None = None,
     ) -> None:
         self._exactness = exactness
         self._node = _node or CompositionNode(kind=NodeKind.PRIMITIVE, name=type(self).__name__)
@@ -83,7 +86,7 @@ class Process(ABC):
     @property
     def properties(self) -> ProcessProperties:
         """The property lattice of this process."""
-        return self._properties()
+        return deepcopy(self._properties())
 
     @abstractmethod
     def _triplet(self) -> LevyTriplet:
@@ -97,9 +100,10 @@ class Process(ABC):
     def simulate(
         self,
         n_steps: int,
+        *,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate sample paths.
@@ -118,7 +122,9 @@ class Process(ABC):
         Returns
         -------
         np.ndarray
-            Shape (n_paths, n_steps + 1). paths[:, 0] == 0 always.
+            Shape (n_paths, n_steps + 1). The first column is the configured
+            initial state (zero for the Lévy increment processes). Pass
+            n_paths, T and rng by keyword for portability across subclasses.
         """
 
     def cumulants(self, order: int) -> dict[int, float]:
@@ -133,6 +139,8 @@ class Process(ABC):
         order :
             Highest cumulant order to compute.
         """
+        if isinstance(order, bool) or not isinstance(order, (int, np.integer)) or order < 1:
+            raise ValueError("order must be a positive integer")
         if self._exactness == ExactnessLevel.SIMULATION_ONLY:
             raise ExactnessError(
                 method="cumulants",
@@ -145,7 +153,7 @@ class Process(ABC):
             return {n: t.cumulant(n) for n in range(1, order + 1)}
         return self._moment_propagation_cumulants(order)
 
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray:
         """
         Evaluate the characteristic function E[e^{iuX_t}] at frequency u.
 
@@ -229,6 +237,7 @@ class Process(ABC):
         spxa.story.story_latex : Standalone function.
         """
         from spxa.story.narrator import story_latex
+
         return story_latex(self)
 
     def _degradation_reason(self) -> str:
@@ -319,13 +328,29 @@ class Process(ABC):
 
         Reference: Sato (1999), Theorem 30.1.
         """
-        if not subordinator._properties().is_subordinator:
+        if (
+            not subordinator.properties.is_subordinator
+            or not subordinator.properties.has_independent_increments
+            or not subordinator.properties.has_stationary_increments
+            or subordinator.exactness != ExactnessLevel.EXACT
+            or self.exactness != ExactnessLevel.EXACT
+        ):
             raise ValueError(
                 f"{type(subordinator).__name__} is not a subordinator. "
                 "The right operand of @ must be a non-decreasing Lévy process."
             )
 
-        new_exactness = ExactnessLevel.combine(self._exactness, subordinator._exactness)
+        analytic = _canonical_subordination(self, subordinator)
+        new_exactness = (
+            ExactnessLevel.EXACT if analytic is not None else ExactnessLevel.MOMENT_PROPAGATION
+        )
+        if analytic is None:
+            warnings.warn(
+                "Generic subordination has an exact CF and moment composition, but an explicit "
+                "triplet is not implemented; retaining MOMENT_PROPAGATION capability.",
+                SpxaDegradationWarning,
+                stacklevel=2,
+            )
         new_props = ProcessProperties.combine_subordination(
             self._properties(), subordinator._properties()
         )
@@ -347,6 +372,32 @@ class Process(ABC):
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(exactness={self._exactness.name})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Continuous unit-time log CF for a Levy process (Sato, Theorem 8.1)."""
+        return self.triplet.characteristic_exponent(u)
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Cumulants at a specified horizon; non-Levy subclasses must override.
+
+        Linear time scaling is valid only for Levy processes. Unknown
+        time dependence is rejected rather than silently assumed linear.
+        """
+        validate_order(order)
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Positive order and finite nonnegative time required")
+        if self.exactness == ExactnessLevel.EXACT:
+            if t == 0:
+                return {n: 0.0 for n in range(1, order + 1)}
+            return {n: t * k for n, k in self.cumulants(order).items()}
+        if t == 1:
+            return self.cumulants(order)
+        raise ExactnessError(
+            method="cumulants_at",
+            required="time-aware moment implementation",
+            actual=self.exactness.name,
+            reason="Non-Levy cumulants need an explicit time law",
+        )
 
 
 class _ScaledProcess(Process):
@@ -376,13 +427,25 @@ class _ScaledProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
-        paths = self._base.simulate(n_steps, n_paths, T, rng)
+        paths = self._base.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
         return self._scale * paths
 
     def __repr__(self) -> str:
         return f"{self._scale} * {self._base!r}"
+
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray:
+        return self._base.char_func(np.asarray(u) * self._scale, t)
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        return self._base.characteristic_exponent(np.asarray(u) * self._scale)
+
+    def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
+        return {n: self._scale**n * k for n, k in self._base.cumulants(order).items()}
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        return {n: self._scale**n * k for n, k in self._base.cumulants_at(order, t).items()}
 
 
 class _ComposedProcess(Process):
@@ -402,62 +465,94 @@ class _ComposedProcess(Process):
         self._right = right
         self._operation = operation
         self._props = props
+        self._analytic = _canonical_subordination(left, right) if operation == "@" else None
 
     def _triplet(self) -> LevyTriplet:
         if self._operation == "+":
-            return self._left._triplet() + self._right._triplet()
+            return self._left.triplet + self._right.triplet
+        if self._analytic is not None:
+            return self._analytic.triplet
         raise ExactnessError(
-            method="_triplet",
+            method="triplet",
             required="EXACT",
-            actual=self._exactness.name,
-            reason="Subordinated processes do not have a simple triplet addition rule; "
-                   "use char_func() or simulate().",
+            actual=self.exactness.name,
+            reason="Generic subordination exposes CFs and cumulants, not an explicit triplet",
         )
 
     def _properties(self) -> ProcessProperties:
         return self._props
 
     def simulate(
-        self,
-        n_steps: int,
-        n_paths: int = 1,
-        T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        self, n_steps: int, n_paths: int = 1, T: float = 1.0, rng: np.random.Generator | None = None
     ) -> np.ndarray:
+        rng = rng or np.random.default_rng()
+        if n_steps < 1 or n_paths < 1 or not np.isfinite(T) or T < 0:
+            raise ValueError("Positive grid/path counts and finite nonnegative horizon required")
         if self._operation == "+":
-            return (
-                self._left.simulate(n_steps, n_paths, T, rng)
-                + self._right.simulate(n_steps, n_paths, T, rng)
+            return np.asarray(
+                self._left.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+                + self._right.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
             )
-        if self._operation == "@":
-            # Subordination: Z_t = X_{T_t}
-            # Simulate the subordinator to get random time changes,
-            # then simulate the parent process at those random times.
-            # Uses a path-by-path approach: for each path, simulate the
-            # subordinator time grid, then interpolate the parent process.
-            rng = rng or np.random.default_rng()
-            time_grid = np.linspace(0, T, n_steps + 1)
-
-            # Simulate subordinator paths on a fine grid
-            sub_paths = self._right.simulate(n_steps, n_paths, T, rng)
-            # sub_paths[:, k] = T_k (random time at step k)
-
-            # For each path, simulate parent at fine resolution and interpolate
-            # We simulate the parent on a finer grid covering [0, max(T_T)]
-            max_time = float(sub_paths[:, -1].max()) * 1.5 + 1e-6
-            fine_steps = max(n_steps * 4, 500)
-            parent_paths = self._left.simulate(fine_steps, n_paths, max_time, rng)
-            fine_grid = np.linspace(0, max_time, fine_steps + 1)
-
-            paths = np.zeros((n_paths, n_steps + 1))
-            for i in range(n_paths):
-                paths[i] = np.interp(sub_paths[i], fine_grid, parent_paths[i])
-
-            return paths
-        raise NotImplementedError(f"Simulation not implemented for operation '{self._operation}'.")
+        if self._analytic is not None:
+            return self._analytic.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        # Draw independent parent increments at the actual random clock lengths.
+        # No interpolated fine-grid approximation or artificial clock horizon.
+        clock = self._right.simulate(n_steps, n_paths=n_paths, T=T, rng=rng)
+        delta = np.diff(clock, axis=1)
+        if np.any(delta < 0):
+            raise ValueError("Clock produced negative increments")
+        increments = np.zeros_like(delta)
+        for i, k in np.ndindex(delta.shape):
+            if delta[i, k] > 0:
+                increments[i, k] = self._left.simulate(1, n_paths=1, T=float(delta[i, k]), rng=rng)[
+                    0, -1
+                ]
+        return np.column_stack((np.zeros(n_paths), np.cumsum(increments, axis=1)))
 
     def __repr__(self) -> str:
         return f"({self._left!r} {self._operation} {self._right!r})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        if self._operation == "+":
+            return np.asarray(
+                self._left.characteristic_exponent(u) + self._right.characteristic_exponent(u)
+            )
+        return self._right.characteristic_exponent(-1j * self._left.characteristic_exponent(u))
+
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray:
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        if self._operation == "+":
+            return np.asarray(self._left.char_func(u, t) * self._right.char_func(u, t))
+        return np.exp(t * self.characteristic_exponent(u))
+
+    def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
+        return self.cumulants_at(order, 1.0)
+
+    def cumulants(self, order: int) -> dict[int, float]:
+        if self.exactness == ExactnessLevel.SIMULATION_ONLY:
+            return super().cumulants(order)
+        return self.cumulants_at(order, 1.0)
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        validate_order(order)
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Positive order and finite nonnegative time required")
+        if self._operation == "+":
+            a, b = self._left.cumulants_at(order, t), self._right.cumulants_at(order, t)
+            return {n: a[n] + b[n] for n in range(1, order + 1)}
+        if t == 0:
+            return {n: 0.0 for n in range(1, order + 1)}
+        # Partial exponential Bell polynomials: K_Z = K_T composed with K_X.
+        a, b = self._left.cumulants(order), self._right.cumulants_at(order, t)
+        bell = {(0, 0): 1.0}
+        for n in range(1, order + 1):
+            for k in range(1, n + 1):
+                bell[n, k] = sum(
+                    comb(n - 1, j - 1) * a[j] * bell.get((n - j, k - 1), 0.0)
+                    for j in range(1, n - k + 2)
+                )
+        return {n: sum(b[k] * bell[n, k] for k in range(1, n + 1)) for n in range(1, order + 1)}
 
 
 def _make_scaled(base: Process, c: float) -> _ScaledProcess:
@@ -477,3 +572,33 @@ def _make_scaled(base: Process, c: float) -> _ScaledProcess:
         props=new_props,
         node=node,
     )
+
+
+def _canonical_subordination(parent: Process, clock: Process) -> Process | None:
+    """Known Bochner identities (Cont & Tankov, Chapter 4)."""
+    from spxa.zoo.levy.brownian import BrownianMotion
+    from spxa.zoo.levy.gamma import GammaProcess
+    from spxa.zoo.levy.inverse_gaussian import InverseGaussianProcess
+    from spxa.zoo.levy.nig import NIG
+    from spxa.zoo.levy.vg import VarianceGamma
+
+    if not isinstance(parent, BrownianMotion):
+        return None
+    if parent.sigma == 0:
+        return parent if parent.mu == 0 else parent.mu * clock
+    if isinstance(clock, BrownianMotion) and clock.sigma == 0:
+        return BrownianMotion(mu=parent.mu * clock.mu, sigma=parent.sigma * np.sqrt(clock.mu))
+    if isinstance(clock, GammaProcess):
+        return VarianceGamma(
+            sigma=parent.sigma * np.sqrt(clock.a / clock.b),
+            nu=1 / clock.a,
+            theta=parent.mu * clock.a / clock.b,
+        )
+    if isinstance(clock, InverseGaussianProcess):
+        beta = parent.mu / parent.sigma**2
+        return NIG(
+            alpha=np.sqrt(clock.lam / (clock.mu**2 * parent.sigma**2) + beta**2),
+            beta=beta,
+            delta=parent.sigma * np.sqrt(clock.lam),
+        )
+    return None

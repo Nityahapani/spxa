@@ -14,7 +14,7 @@ The characteristic exponent (Zolotarev parametrisation, type S):
   ψ(u) = -σ^α |u|^α (1 - iβ sign(u) tan(πα/2)) + iμu   α ≠ 1
   ψ(u) = -σ|u|(1 + iβ (2/π) sign(u) log|u|) + iμu        α = 1
 
-Parameters follow the S₀ convention of Nolan (2020).
+Parameters follow the S₁ convention of Nolan (2020).
 
 References
 ----------
@@ -29,8 +29,6 @@ stable random variables. *Journal of the American Statistical Association*,
 """
 
 from __future__ import annotations
-
-from typing import Optional
 
 import numpy as np
 
@@ -48,16 +46,16 @@ def _stable_levy_measure(alpha: float, beta: float, sigma: float) -> DensityLevy
 
     ν(dx) = (c₊ x^{-α-1} 𝟙_{x>0} + c₋ |x|^{-α-1} 𝟙_{x<0}) dx
 
-    where c₊ = σ^α · (1+β)/2 · Γ(α+1)sin(πα/2)/π
-          c₋ = σ^α · (1-β)/2 · Γ(α+1)sin(πα/2)/π
+    where c₊ = σ^α · (1+β) · Γ(α+1)sin(πα/2)/π
+          c₋ = σ^α · (1-β) · Γ(α+1)sin(πα/2)/π
 
     Samorodnitsky & Taqqu (1994), Property 1.2.15.
     """
-    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+    from scipy.special import gamma as gamma_fn
 
     factor = sigma**alpha * gamma_fn(alpha + 1) * np.sin(np.pi * alpha / 2) / np.pi
-    c_plus = factor * (1 + beta) / 2
-    c_minus = factor * (1 - beta) / 2
+    c_plus = factor * (1 + beta)
+    c_minus = factor * (1 - beta)
 
     def density(x: np.ndarray) -> np.ndarray:
         out = np.zeros_like(x, dtype=float)
@@ -72,19 +70,21 @@ def _stable_levy_measure(alpha: float, beta: float, sigma: float) -> DensityLevy
     def tail(xv: float) -> float:
         if c_plus <= 0 or xv <= 0:
             return 0.0
-        return c_plus * xv ** (-alpha) / alpha
+        return float(c_plus * xv ** (-alpha) / alpha)
 
     return DensityLevyMeasure(
         _density_fn=density,
         _total_mass=np.inf,
         _tail_fn=tail,
         _moment_fns={},
+        _tail_moment_test=lambda n: n < alpha,
+        _minimum_moment_order=2 if alpha >= 1 else 1,
     )
 
 
 class AlphaStable(Process):
     """
-    α-stable Lévy process (Lévy–Khintchine parametrisation, S₀ convention).
+    α-stable Lévy process (Lévy–Khintchine parametrisation, S₁ convention).
 
     The only non-trivial class of Lévy processes stable under addition and
     scaling. For α < 2, moments of order ≥ α do not exist; for α = 2 this
@@ -162,10 +162,24 @@ class AlphaStable(Process):
     def _triplet(self) -> LevyTriplet:
         if self.alpha == 2.0:
             from spxa.zoo.levy.brownian import _ZeroLevyMeasure
+
             return LevyTriplet(b=self.mu, sigma_sq=2 * self.sigma**2, nu=_ZeroLevyMeasure())
 
         nu = _stable_levy_measure(self.alpha, self.beta, self.sigma)
-        return LevyTriplet(b=self.mu, sigma_sq=0.0, nu=nu)
+        from scipy.special import gamma as gamma_fn
+
+        difference = (
+            2
+            * self.sigma**self.alpha
+            * gamma_fn(self.alpha + 1)
+            * np.sin(np.pi * self.alpha / 2)
+            * self.beta
+            / np.pi
+        )
+        correction = (
+            difference / (1 - self.alpha) if self.alpha != 1 else difference * (np.euler_gamma - 1)
+        )
+        return LevyTriplet(b=self.mu + correction, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -174,50 +188,20 @@ class AlphaStable(Process):
             is_martingale=False,
             has_finite_variance=(self.alpha == 2.0),
             has_finite_mean=(self.alpha > 1.0),
-            self_similarity_index=1.0 / self.alpha,
+            self_similarity_index=1.0 / self.alpha
+            if self.mu == 0 and (self.alpha != 1 or self.beta == 0)
+            else None,
             tail_index=self.alpha if self.alpha < 2 else None,
             is_subordinator=False,
         )
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
-        Exact characteristic function of α-stable process.
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """S1 characteristic function; complex arguments require finite exponential moments."""
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        return np.exp(t * self.characteristic_exponent(u))
 
-        For α ≠ 1 (Nolan 2020, Definition 1.6):
-          φ(u; t) = exp(t·(-σ^α|u|^α(1 - iβ·sign(u)·tan(πα/2)) + iμu))
-
-        For α = 1:
-          φ(u; t) = exp(t·(-σ|u|(1 + iβ·(2/π)·sign(u)·log|u|) + iμu))
-
-        Parameters
-        ----------
-        u :
-            Frequency argument(s).
-        t :
-            Time.
-        """
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        abs_u = np.abs(u_arr.real)
-        sign_u = np.sign(u_arr.real)
-
-        if abs(self.alpha - 1.0) > 1e-12:
-            exponent = (
-                -(self.sigma**self.alpha) * (abs_u**self.alpha)
-                * (1 - 1j * self.beta * sign_u * np.tan(np.pi * self.alpha / 2))
-                + 1j * self.mu * u_arr
-            )
-        else:
-            log_abs_u = np.where(abs_u > 0, np.log(abs_u), 0.0)
-            exponent = (
-                -self.sigma * abs_u
-                * (1 + 1j * self.beta * (2 / np.pi) * sign_u * log_abs_u)
-                + 1j * self.mu * u_arr
-            )
-
-        result = np.exp(t * exponent)
-        return result if result.shape != (1,) else result[0]
-
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def simulate(
@@ -225,7 +209,7 @@ class AlphaStable(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation via Chambers–Mallows–Stuck (1976) algorithm.
@@ -267,13 +251,15 @@ class AlphaStable(Process):
                 * (np.cos(U - self.alpha * (U + B)) / E) ** ((1 - self.alpha) / self.alpha)
             )
         else:
-            increments = (
-                (2 / np.pi)
-                * ((np.pi / 2 + self.beta * U) * np.tan(U)
-                   - self.beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + self.beta * U)))
+            increments = (2 / np.pi) * (
+                (np.pi / 2 + self.beta * U) * np.tan(U)
+                - self.beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + self.beta * U))
             )
 
         increments = self.sigma * (dt ** (1 / self.alpha)) * increments + self.mu * dt
+        if self.alpha == 1:
+            # S1 scaling adds -2*beta*sigma*dt*log(dt)/pi to the location.
+            increments += 2 * self.beta * self.sigma * dt * np.log(self.sigma * dt) / np.pi
 
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
@@ -281,6 +267,43 @@ class AlphaStable(Process):
 
     def __repr__(self) -> str:
         return (
-            f"AlphaStable(alpha={self.alpha}, beta={self.beta}, "
-            f"sigma={self.sigma}, mu={self.mu})"
+            f"AlphaStable(alpha={self.alpha}, beta={self.beta}, sigma={self.sigma}, mu={self.mu})"
         )
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """S1 continuous log CF (Nolan, 2020, Definition 1.6)."""
+        z = np.asarray(u, dtype=complex)
+        if self.alpha == 2:
+            return np.asarray(1j * self.mu * z - self.sigma**2 * z * z)
+        if np.any(z.imag != 0):
+            raise ValueError(
+                "General stable laws do not have exponential moments; use real frequencies"
+            )
+        absolute = np.abs(z.real)
+        if self.alpha == 1:
+            logarithm = np.log(np.where(absolute == 0, 1.0, absolute))
+            return np.asarray(
+                -self.sigma
+                * absolute
+                * (1 + 1j * self.beta * 2 / np.pi * np.sign(z.real) * logarithm)
+                + 1j * self.mu * z
+            )
+        return np.asarray(
+            -(self.sigma**self.alpha)
+            * absolute**self.alpha
+            * (1 - 1j * self.beta * np.sign(z.real) * np.tan(np.pi * self.alpha / 2))
+            + 1j * self.mu * z
+        )
+
+    def cumulants(self, order: int) -> dict[int, float]:
+        """Return existing cumulants; infinite stable moments are not quadrature artifacts."""
+        if order < 1:
+            raise ValueError("Cumulant order must be positive")
+        if self.alpha == 2:
+            return {
+                n: self.mu if n == 1 else 2 * self.sigma**2 if n == 2 else 0.0
+                for n in range(1, order + 1)
+            }
+        if order >= self.alpha:
+            raise ValueError("Requested stable cumulant does not exist (tail moment criterion)")
+        return {1: self.mu}

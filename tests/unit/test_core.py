@@ -1,13 +1,10 @@
 """Unit tests for core algebraic engine."""
 
-import warnings
-
 import numpy as np
 import pytest
 
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
-from spxa.zoo.levy import BrownianMotion, GammaProcess, VarianceGamma
+from spxa.zoo.levy import BrownianMotion, GammaProcess
 
 
 class TestExactnessLevel:
@@ -17,17 +14,22 @@ class TestExactnessLevel:
         assert not (ExactnessLevel.EXACT > ExactnessLevel.MOMENT_PROPAGATION)
 
     def test_combine_returns_minimum(self) -> None:
-        assert ExactnessLevel.combine(
-            ExactnessLevel.EXACT, ExactnessLevel.MOMENT_PROPAGATION
-        ) == ExactnessLevel.MOMENT_PROPAGATION
+        assert (
+            ExactnessLevel.combine(ExactnessLevel.EXACT, ExactnessLevel.MOMENT_PROPAGATION)
+            == ExactnessLevel.MOMENT_PROPAGATION
+        )
 
-        assert ExactnessLevel.combine(
-            ExactnessLevel.EXACT, ExactnessLevel.EXACT
-        ) == ExactnessLevel.EXACT
+        assert (
+            ExactnessLevel.combine(ExactnessLevel.EXACT, ExactnessLevel.EXACT)
+            == ExactnessLevel.EXACT
+        )
 
-        assert ExactnessLevel.combine(
-            ExactnessLevel.SIMULATION_ONLY, ExactnessLevel.MOMENT_PROPAGATION
-        ) == ExactnessLevel.SIMULATION_ONLY
+        assert (
+            ExactnessLevel.combine(
+                ExactnessLevel.SIMULATION_ONLY, ExactnessLevel.MOMENT_PROPAGATION
+            )
+            == ExactnessLevel.SIMULATION_ONLY
+        )
 
 
 class TestLevyTripletArithmetic:
@@ -97,12 +99,11 @@ class TestProcessComposition:
         assert z.properties.has_stationary_increments is True
         assert z.properties.has_independent_increments is True
 
-    def test_triplet_unavailable_after_subordination(self) -> None:
+    def test_known_subordination_exposes_triplet(self) -> None:
         bm = BrownianMotion(mu=0.0, sigma=1.0)
-        g = GammaProcess(a=1.0, b=1.0)
-        z = bm @ g
-        with pytest.raises(ExactnessError, match="triplet"):
-            _ = z.triplet
+        z = bm @ GammaProcess(a=1.0, b=1.0)
+        assert z.triplet.sigma_sq == 0
+        assert complex(z.triplet.char_exp(1.0)) == pytest.approx(2 / 3)
 
 
 class TestPropertyPropagation:
@@ -120,6 +121,7 @@ class TestPropertyPropagation:
 
     def test_tail_index_takes_minimum(self) -> None:
         from spxa.core.properties import ProcessProperties
+
         p1 = ProcessProperties(tail_index=1.5)
         p2 = ProcessProperties(tail_index=2.0)
         combined = ProcessProperties.combine_addition(p1, p2)

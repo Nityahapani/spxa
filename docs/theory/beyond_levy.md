@@ -57,9 +57,12 @@ A Hawkes process does not have stationary increments (conditional on the history
 **What spxa tracks for Hawkes processes:**
 
 - The mean intensity: $\bar{\lambda} = \mu / (1 - \|h\|_1)$ where $\|h\|_1 = \int_0^\infty h(s)\, ds$
-- The variance of $N_t$: $\text{Var}(N_t) \approx \bar{\lambda} t \cdot (1 - \|h\|_1)^{-1}$ for large $t$ (asymptotic result, Hawkes & Oakes 1974)
+- The variance of $N_t$: $\text{Var}(N_t) \approx \bar{\lambda} t \cdot (1 - \|h\|_1)^{-2}$ for large $t$ (asymptotic result, Hawkes & Oakes 1974)
 - The Fano factor: $F = \text{Var}(N_t) / \mathbb{E}[N_t]$, which is always $\geq 1$, measuring burstiness
 - Stationarity of the intensity in the stationary regime (when $t \to \infty$)
+
+Finite-horizon count cumulants start with an empty history and use moment ODEs (orders 1–8).
+They are not the stationary/asymptotic expressions above. Alpha=0 is the Poisson limit.
 
 **spxa's exactness for Hawkes:** `MOMENT_PROPAGATION`. Simulation uses Ogata's thinning algorithm.
 
@@ -73,16 +76,16 @@ with $\lambda > 0$ and $L$ a subordinator (non-decreasing Lévy process). The so
 
 $$V_t = e^{-\lambda t} V_0 + \int_0^t e^{-\lambda(t-s)}\, dL_{\lambda s}$$
 
-Unlike a Lévy process, $V$ does not have independent increments (the decay structure creates serial dependence). However, it does have a **stationary distribution** which is infinitely divisible, with a known Lévy–Khintchine triplet. The stationary distribution of $V$ has Lévy measure $\nu_V(dx) = \int_x^\infty \nu_L(dy)/y$ (Barndorff-Nielsen & Shephard 2001, Proposition 2.1).
+Unlike a Lévy process, $V$ does not have independent increments (the decay structure creates serial dependence). However, it does have a **stationary distribution** which is infinitely divisible, with a known Lévy–Khintchine triplet. The stationary distribution of $V$ has Lévy measure $\nu_V(dx) = \nu_L((x,\infty))\,dx/x$ (Barndorff-Nielsen & Shephard 2001, Proposition 2.1).
 
 **What spxa tracks for OU-Lévy:**
 
-- The stationary distribution exactly (triplet is known)
+- Stationary mean `kappa1(L1)` and variance `kappa2(L1)/2`; no stationary-triplet API
 - The autocovariance: $\text{Cov}(V_t, V_{t+h}) = e^{-\lambda h} \text{Var}(V_\infty)$
 - The mean reversion rate $\lambda$
-- The marginal moments exactly from the stationary distribution's triplet
+- Transient cumulants: `kappa_n(V_t)=kappa_n(L1)*(1-exp(-n*lam*t))/n`, plus `v0*exp(-lam*t)` for n=1
 
-**spxa's exactness for OU-Lévy:** `MOMENT_PROPAGATION` for path-level operations; the stationary distribution is `EXACT`.
+**spxa's exactness for OU-Lévy:** `MOMENT_PROPAGATION`; its kernel-quadrature path sampler is approximate.
 
 ## Degradation policy
 

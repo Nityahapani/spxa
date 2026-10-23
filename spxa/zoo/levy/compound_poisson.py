@@ -12,14 +12,14 @@ i.i.d. jump sizes drawn from probability law F_Y.
 
 Lévy measure:
   ν(dx) = λ · F_Y(dx)
-with finite total mass ν(ℝ \ {0}) = λ (finite activity).
+with finite total mass ν(ℝ \ {0}) = λ P(Y≠0) (finite activity). Zero-size events are excluded.
 
 Characteristic exponent:
   ψ(u) = λ · (E[e^{iuY}] - 1)
 yielding characteristic function:
   E[e^{iuX_t}] = exp(λt · (φ_Y(u) - 1))
 
-Exact Lévy–Khintchine triplet (b, σ², ν) under canonical truncation h(x) = 𝟙_{|x|≤1}:
+Exact Lévy–Khintchine triplet (b, σ², ν) under canonical truncation h(x) = x·𝟙_{|x|≤1}:
   b = λ · E[Y · 𝟙_{|Y|≤1}]
   σ² = 0
   ν(dx) = λ · F_Y(dx)
@@ -40,13 +40,15 @@ from __future__ import annotations
 
 import abc
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy import special, stats
 
+from spxa.core._immutable import Immutable, ImmutableMeta
+from spxa.core._validation import simulation_grid, validate_order, validate_time
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import LevyMeasure
 from spxa.core.process import Process
@@ -56,7 +58,7 @@ from spxa.sim.exact import sample_compound_poisson
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
-class JumpDistribution(abc.ABC):
+class JumpDistribution(Immutable, abc.ABC, metaclass=ImmutableMeta):
     r"""
     Abstract base class for jump size distributions in compound Poisson processes.
 
@@ -66,7 +68,7 @@ class JumpDistribution(abc.ABC):
     """
 
     @abc.abstractmethod
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
         r"""Characteristic function of the jump size: \phi_Y(u) = E[e^{iuY}]."""
 
     @abc.abstractmethod
@@ -95,7 +97,7 @@ class JumpDistribution(abc.ABC):
 
     @property
     def is_positive(self) -> bool:
-        """Return True if jump support is strictly positive (yielding a subordinator)."""
+        """Return True if jump support is nonnegative (yielding a subordinator)."""
         return False
 
     @property
@@ -113,6 +115,10 @@ class JumpDistribution(abc.ABC):
         """Heavy-tail index alpha if P(Y > x) ~ x^{-alpha}, else None."""
         return None
 
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Stable increment of the jump CF; custom laws may override the fallback."""
+        return np.asarray(self.char_func(u) - 1)
+
 
 class NormalJump(JumpDistribution):
     r"""
@@ -127,17 +133,21 @@ class NormalJump(JumpDistribution):
     """
 
     def __init__(self, mean: float = 0.0, std: float = 1.0) -> None:
-        if std <= 0:
+        if not np.isfinite(std) or std <= 0:
             raise ValueError(f"std must be positive, got {std}")
+        if not np.isfinite(mean):
+            raise ValueError("mean must be finite")
         self.mean = float(mean)
         self.std = float(std)
 
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
         u_arr = np.asarray(u, dtype=complex)
+        if not np.all(np.isfinite(u_arr)):
+            raise ValueError("Frequencies must be finite")
         return np.exp(1j * self.mean * u_arr - 0.5 * (self.std**2) * (u_arr**2))
 
     def moment(self, n: int) -> float:
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError("Moment order must be >= 1")
         # E[Y^n] for Y = mu + sigma*Z, Z ~ N(0,1)
         res = 0.0
@@ -148,6 +158,10 @@ class NormalJump(JumpDistribution):
 
     def truncation_mean(self, cutoff: float = 1.0) -> float:
         c = float(cutoff)
+        if np.isnan(c):
+            raise ValueError("cutoff must not be NaN")
+        if c <= 0:
+            return 0.0
         z1 = (-c - self.mean) / self.std
         z2 = (c - self.mean) / self.std
         phi1 = stats.norm.pdf(z1)
@@ -158,7 +172,7 @@ class NormalJump(JumpDistribution):
 
     def density(self, x: ArrayLike) -> np.ndarray:
         x_arr = np.asarray(x, dtype=float)
-        return stats.norm.pdf(x_arr, loc=self.mean, scale=self.std)
+        return np.asarray(stats.norm.pdf(x_arr, loc=self.mean, scale=self.std))
 
     def tail(self, x: float) -> float:
         # P(Y > x) = 1 - Phi((x - mu) / sigma) = Phi((mu - x) / sigma)
@@ -174,6 +188,11 @@ class NormalJump(JumpDistribution):
     def __repr__(self) -> str:
         return f"NormalJump(mean={self.mean}, std={self.std})"
 
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        self.char_func(u)  # Validate the same frequency domain as the public method.
+        z = np.asarray(u, dtype=complex)
+        return np.asarray(np.expm1(1j * self.mean * z - 0.5 * self.std**2 * z * z))
+
 
 class ExponentialJump(JumpDistribution):
     r"""
@@ -186,16 +205,20 @@ class ExponentialJump(JumpDistribution):
     """
 
     def __init__(self, rate: float = 1.0) -> None:
-        if rate <= 0:
+        if not np.isfinite(rate) or rate <= 0:
             raise ValueError(f"rate must be positive, got {rate}")
         self.rate = float(rate)
 
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
         u_arr = np.asarray(u, dtype=complex)
-        return self.rate / (self.rate - 1j * u_arr)
+        if not np.all(np.isfinite(u_arr)):
+            raise ValueError("Frequencies must be finite")
+        if np.any(u_arr.imag <= -self.rate):
+            raise ValueError("Exponential jump MGF requires p < rate")
+        return np.asarray(self.rate / (self.rate - 1j * u_arr))
 
     def moment(self, n: int) -> float:
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError("Moment order must be >= 1")
         return float(math.factorial(n) / (self.rate**n))
 
@@ -228,6 +251,10 @@ class ExponentialJump(JumpDistribution):
     def __repr__(self) -> str:
         return f"ExponentialJump(rate={self.rate})"
 
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        value = self.char_func(u)
+        return np.asarray(1j * np.asarray(u, dtype=complex) * value / self.rate)
+
 
 class DoubleExponentialJump(JumpDistribution):
     r"""
@@ -248,22 +275,31 @@ class DoubleExponentialJump(JumpDistribution):
     def __init__(self, p: float = 0.5, eta1: float = 1.0, eta2: float = 1.0) -> None:
         if not (0.0 <= p <= 1.0):
             raise ValueError(f"p must be in [0, 1], got {p}")
-        if eta1 <= 0:
+        if not np.isfinite(eta1) or eta1 <= 0:
             raise ValueError(f"eta1 must be positive, got {eta1}")
-        if eta2 <= 0:
+        if not np.isfinite(eta2) or eta2 <= 0:
             raise ValueError(f"eta2 must be positive, got {eta2}")
         self.p = float(p)
         self.eta1 = float(eta1)
         self.eta2 = float(eta2)
 
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
         u_arr = np.asarray(u, dtype=complex)
-        pos_term = self.p * self.eta1 / (self.eta1 - 1j * u_arr)
-        neg_term = (1.0 - self.p) * self.eta2 / (self.eta2 + 1j * u_arr)
-        return pos_term + neg_term
+        if not np.all(np.isfinite(u_arr)):
+            raise ValueError("Frequencies must be finite")
+        if (self.p > 0 and np.any(u_arr.imag <= -self.eta1)) or (
+            self.p < 1 and np.any(u_arr.imag >= self.eta2)
+        ):
+            raise ValueError("Double-exponential jump MGF is outside its finite strip")
+        result = np.zeros_like(u_arr)
+        if self.p > 0:
+            result += self.p * self.eta1 / (self.eta1 - 1j * u_arr)
+        if self.p < 1:
+            result += (1 - self.p) * self.eta2 / (self.eta2 + 1j * u_arr)
+        return result
 
     def moment(self, n: int) -> float:
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError("Moment order must be >= 1")
         fact = math.factorial(n)
         pos = self.p / (self.eta1**n)
@@ -311,6 +347,16 @@ class DoubleExponentialJump(JumpDistribution):
     def __repr__(self) -> str:
         return f"DoubleExponentialJump(p={self.p}, eta1={self.eta1}, eta2={self.eta2})"
 
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        self.char_func(u)
+        z = np.asarray(u, dtype=complex)
+        result = np.zeros_like(z)
+        if self.p > 0:
+            result += self.p * 1j * z / (self.eta1 - 1j * z)
+        if self.p < 1:
+            result -= (1 - self.p) * 1j * z / (self.eta2 + 1j * z)
+        return result
+
 
 class UniformJump(JumpDistribution):
     r"""
@@ -325,28 +371,30 @@ class UniformJump(JumpDistribution):
     """
 
     def __init__(self, low: float = -1.0, high: float = 1.0) -> None:
-        if low >= high:
+        if not np.isfinite(low) or not np.isfinite(high) or low >= high:
             raise ValueError(f"low must be < high, got low={low}, high={high}")
         self.low = float(low)
         self.high = float(high)
 
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Centered sinc avoids declaring small nonzero frequencies to be zero."""
         u_arr = np.asarray(u, dtype=complex)
-        res = np.empty_like(u_arr)
-        zero_mask = np.isclose(u_arr, 0.0)
-        res[zero_mask] = 1.0 + 0j
-        nz = ~zero_mask
-        diff = self.high - self.low
-        res[nz] = (np.exp(1j * u_arr[nz] * self.high) - np.exp(1j * u_arr[nz] * self.low)) / (
-            1j * u_arr[nz] * diff
-        )
-        return res
+        if not np.all(np.isfinite(u_arr)):
+            raise ValueError("Frequencies must be finite")
+        width = self.high - self.low
+        midpoint = self.low + width / 2
+        return np.asarray(np.exp(1j * u_arr * midpoint) * np.sinc(u_arr * width / (2 * np.pi)))
 
     def moment(self, n: int) -> float:
-        if n < 1:
-            raise ValueError("Moment order must be >= 1")
-        diff = self.high - self.low
-        return float((self.high ** (n + 1) - self.low ** (n + 1)) / ((n + 1) * diff))
+        validate_order(n)
+        half = (self.high - self.low) / 2
+        midpoint = self.low + half
+        return float(
+            sum(
+                math.comb(n, k) * midpoint ** (n - k) * half**k / (k + 1)
+                for k in range(0, n + 1, 2)
+            )
+        )
 
     def truncation_mean(self, cutoff: float = 1.0) -> float:
         c = float(cutoff)
@@ -355,7 +403,7 @@ class UniformJump(JumpDistribution):
         if left_bound >= right_bound:
             return 0.0
         diff = self.high - self.low
-        return float((right_bound**2 - left_bound**2) / (2.0 * diff))
+        return float((right_bound - left_bound) * (right_bound + left_bound) / (2.0 * diff))
 
     def density(self, x: ArrayLike) -> np.ndarray:
         x_arr = np.asarray(x, dtype=float)
@@ -381,6 +429,18 @@ class UniformJump(JumpDistribution):
     def __repr__(self) -> str:
         return f"UniformJump(low={self.low}, high={self.high})"
 
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        self.char_func(u)
+        z = np.asarray(u, dtype=complex)
+        half = (self.high - self.low) / 2
+        w = z * half
+        difference = np.asarray(np.sinc(w / np.pi) - 1)
+        small = np.abs(w) < 0.01
+        v = w[small]
+        difference[small] = -v * v / 6 + v**4 / 120 - v**6 / 5040 + v**8 / 362880
+        phase = np.expm1(1j * z * (self.low + half))
+        return np.asarray(phase * (1 + difference) + difference)
+
 
 class DiscreteJump(JumpDistribution):
     """
@@ -396,6 +456,8 @@ class DiscreteJump(JumpDistribution):
 
     def __init__(self, values: Sequence[float], probs: Sequence[float] | None = None) -> None:
         val_arr = np.asarray(values, dtype=float)
+        if val_arr.ndim != 1 or not np.all(np.isfinite(val_arr)):
+            raise ValueError("values must be a finite one-dimensional sequence")
         if val_arr.size == 0:
             raise ValueError("values cannot be empty")
         if probs is None:
@@ -404,7 +466,7 @@ class DiscreteJump(JumpDistribution):
             prob_arr = np.asarray(probs, dtype=float)
             if prob_arr.shape != val_arr.shape:
                 raise ValueError("probs and values must have the same length")
-            if np.any(prob_arr < 0):
+            if not np.all(np.isfinite(prob_arr)) or np.any(prob_arr < 0):
                 raise ValueError("probabilities must be non-negative")
             total = float(prob_arr.sum())
             if not np.isclose(total, 1.0, atol=1e-6):
@@ -414,16 +476,18 @@ class DiscreteJump(JumpDistribution):
         self.values = val_arr
         self.probs = prob_arr
 
-    def char_func(self, u: float | np.ndarray) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray) -> np.ndarray:
         u_arr = np.asarray(u, dtype=complex)
+        if not np.all(np.isfinite(u_arr)):
+            raise ValueError("Frequencies must be finite")
         # sum p_k * exp(i u v_k)
         # shape broadcasting: u_arr.shape + (len(values),)
         u_expanded = np.expand_dims(u_arr, axis=-1)
         phase = np.exp(1j * u_expanded * self.values)
-        return np.sum(phase * self.probs, axis=-1)
+        return np.asarray(np.sum(phase * self.probs, axis=-1))
 
     def moment(self, n: int) -> float:
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError("Moment order must be >= 1")
         return float(np.sum(self.probs * (self.values**n)))
 
@@ -446,12 +510,19 @@ class DiscreteJump(JumpDistribution):
 
     @property
     def is_positive(self) -> bool:
-        return bool(np.all(self.values > 0.0))
+        return bool(np.all(self.values[self.probs > 0] >= 0.0))
 
     def __repr__(self) -> str:
         vals = list(np.round(self.values, 4))
         probs = list(np.round(self.probs, 4))
         return f"DiscreteJump(values={vals}, probs={probs})"
+
+    def _cf_minus_one(self, u: complex | float | np.ndarray) -> np.ndarray:
+        self.char_func(u)
+        z = np.asarray(u, dtype=complex)
+        return np.asarray(
+            np.sum(self.probs * np.expm1(1j * np.expand_dims(z, -1) * self.values), axis=-1)
+        )
 
 
 class _CompoundPoissonLevyMeasure(LevyMeasure):
@@ -468,9 +539,14 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
         return self.rate * self.jump_dist.density(x_arr)
 
     def total_mass(self) -> float:
+        if isinstance(self.jump_dist, DiscreteJump):
+            return float(self.rate * self.jump_dist.probs[self.jump_dist.values != 0].sum())
         return self.rate
 
     def tail(self, x: float) -> float:
+        if isinstance(self.jump_dist, DiscreteJump):
+            keep = (self.jump_dist.values > x) & (self.jump_dist.values != 0)
+            return float(self.rate * self.jump_dist.probs[keep].sum())
         return self.rate * self.jump_dist.tail(x)
 
     def moment(self, n: int) -> float:
@@ -478,6 +554,94 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
 
     def is_finite_activity(self) -> bool:
         return True
+
+    def integrate(
+        self, f: Callable[[float], float], lower: float = -np.inf, upper: float = np.inf
+    ) -> float:
+        """Preserve atoms; integrate continuous built-ins in probability space.
+
+        CDF/PPF and SF/ISF halves avoid missing a narrow shifted density or
+        cancelling a small right-tail probability. Bounds are closed for atoms.
+        Zero-size events are not part of a Levy measure on the punctured line.
+        """
+        from scipy.integrate import quad
+
+        if lower > upper:
+            raise ValueError("Integration bounds must be ordered")
+        jump = self.jump_dist
+        if isinstance(jump, DiscreteJump):
+            mask = (jump.values >= lower) & (jump.values <= upper) & (jump.values != 0)
+            return float(
+                self.rate
+                * sum(
+                    p * f(float(x))
+                    for x, p in zip(jump.values[mask], jump.probs[mask], strict=True)
+                )
+            )
+
+        def continuous(distribution: Any, sign: float = 1.0) -> float:
+            a, b = sorted((sign * lower, sign * upper))
+            total = 0.0
+            for tail in (False, True):
+                probability = distribution.sf if tail else distribution.cdf
+                quantile = distribution.isf if tail else distribution.ppf
+                qlo, qhi = sorted((float(probability(a)), float(probability(b))))
+                qhi = min(qhi, 0.5)
+                if qlo >= qhi:
+                    continue
+                points = sorted(
+                    {
+                        qlo,
+                        qhi,
+                        *(
+                            float(probability(sign * x))
+                            for x in (-1, 0, 1)
+                            if qlo < float(probability(sign * x)) < qhi
+                        ),
+                    }
+                )
+                total += sum(
+                    quad(
+                        lambda q, quantile=quantile: f(sign * float(quantile(q))),
+                        x,
+                        y,
+                        epsabs=1e-10,
+                        limit=300,
+                    )[0]
+                    for x, y in zip(points[:-1], points[1:], strict=True)
+                )
+            return float(total)
+
+        if isinstance(jump, NormalJump):
+            result = continuous(stats.norm(loc=jump.mean, scale=jump.std))
+        elif isinstance(jump, ExponentialJump):
+            result = continuous(stats.expon(scale=1 / jump.rate))
+        elif isinstance(jump, UniformJump):
+            result = continuous(stats.uniform(loc=jump.low, scale=jump.high - jump.low))
+        elif isinstance(jump, DoubleExponentialJump):
+            result = jump.p * continuous(stats.expon(scale=1 / jump.eta1)) + (
+                1 - jump.p
+            ) * continuous(stats.expon(scale=1 / jump.eta2), -1)
+        else:
+            return super().integrate(f, lower, upper)
+        return float(self.rate * result)
+
+    def _levy_integral(self, u: complex) -> complex:
+        return self.rate * (
+            complex(self.jump_dist._cf_minus_one(u)) - 1j * u * self.jump_dist.truncation_mean()
+        )
+
+    def _tail_moment_finite(self, n: int) -> bool | None:
+        if n == 1:
+            return self.jump_dist.has_finite_mean
+        if n == 2:
+            return self.jump_dist.has_finite_variance
+        if isinstance(
+            self.jump_dist,
+            (NormalJump, ExponentialJump, DoubleExponentialJump, UniformJump, DiscreteJump),
+        ):
+            return True
+        return None
 
 
 class CompoundPoisson(Process):
@@ -533,27 +697,29 @@ class CompoundPoisson(Process):
         jump_dist: JumpDistribution | str | float | int | None = None,
         **kwargs: Any,
     ) -> None:
-        if rate <= 0:
+        if not np.isfinite(rate) or rate <= 0:
             raise ValueError(f"rate must be positive, got {rate}")
         self.rate = float(rate)
 
         # Parse jump distribution
         if jump_dist is None:
-            self.jump_dist: JumpDistribution = NormalJump(mean=0.0, std=1.0)
+            self.jump_dist: JumpDistribution = NormalJump(**kwargs)
         elif isinstance(jump_dist, JumpDistribution):
+            if kwargs:
+                raise TypeError("JumpDistribution instances do not accept extra parameters")
             self.jump_dist = jump_dist
         elif isinstance(jump_dist, (int, float)):
+            if kwargs:
+                raise TypeError("A constant jump does not accept extra parameters")
             self.jump_dist = DiscreteJump(values=[float(jump_dist)], probs=[1.0])
         elif isinstance(jump_dist, str):
             name = jump_dist.lower()
             if name in ("normal", "gaussian"):
                 self.jump_dist = NormalJump(**kwargs)
             elif name == "exponential":
-                jump_r = (
-                    kwargs.pop("jump_rate", None)
-                    or kwargs.pop("beta", None)
-                    or kwargs.pop("rate", 1.0)
-                )
+                if "jump_rate" in kwargs and "beta" in kwargs:
+                    raise TypeError("Specify only one of jump_rate and beta")
+                jump_r = kwargs.pop("jump_rate", kwargs.pop("beta", 1.0))
                 self.jump_dist = ExponentialJump(rate=jump_r, **kwargs)
             elif name in ("double_exponential", "kou"):
                 self.jump_dist = DoubleExponentialJump(**kwargs)
@@ -592,7 +758,7 @@ class CompoundPoisson(Process):
 
     def _properties(self) -> ProcessProperties:
         # A compound Poisson process is a martingale iff E[X_1] = 0 <=> E[Y] = 0
-        mean_jump = self.jump_dist.moment(1)
+        mean_jump = self.jump_dist.moment(1) if self.jump_dist.has_finite_mean else np.nan
         is_martingale = np.isclose(mean_jump, 0.0, atol=1e-12)
 
         return ProcessProperties(
@@ -606,28 +772,30 @@ class CompoundPoisson(Process):
             is_subordinator=self.jump_dist.is_positive,
         )
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        r"""
-        Closed-form characteristic function:
-          φ(u; t) = exp(λt · (φ_Y(u) - 1))
-        """
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        phi_y = self.jump_dist.char_func(u_arr)
-        result = np.exp(self.rate * t * (phi_y - 1.0))
-        return result if result.shape != (1,) else result[0]
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        validate_time(t)
+        if t == 0:
+            return np.ones_like(np.asarray(u), dtype=complex)
+        return np.asarray(np.exp(t * self.char_exponent(u)))
 
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
-        r"""
-        Exact cumulant: κ_n(X_t) = λ · t · E[Y^n].
-        """
-        return float(self.rate * t * self.jump_dist.moment(n))
+        validate_order(n)
+        validate_time(t)
+        if t == 0:
+            return 0.0
+        if self.triplet.nu._tail_moment_finite(n) is False:
+            raise ValueError("Requested jump moment does not exist")
+        value = float(self.rate * t * self.jump_dist.moment(n))
+        if not np.isfinite(value):
+            raise ValueError("Requested jump cumulant is not finite")
+        return value
 
     def cumulants(self, order: int) -> dict[int, float]:
-        """Return exact cumulants κ_1, ..., κ_{order} for X_1."""
-        return {n: self.cumulant_exact(n, t=1.0) for n in range(1, order + 1)}
+        validate_order(order)
+        return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
 
     def simulate(
         self,
@@ -656,7 +824,7 @@ class CompoundPoisson(Process):
             Shape (n_paths, n_steps + 1). paths[:, 0] == 0.0.
         """
         rng = rng or np.random.default_rng()
-        dt = T / n_steps
+        dt = simulation_grid(n_steps, n_paths, T=T)
         increments = sample_compound_poisson(
             rate=self.rate,
             jump_sampler=lambda g, sz: self.jump_dist.sample(g, sz),
@@ -671,3 +839,7 @@ class CompoundPoisson(Process):
 
     def __repr__(self) -> str:
         return f"CompoundPoisson(rate={self.rate}, jump_dist={self.jump_dist!r})"
+
+    def char_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Continuous unit-time exponent; do not take a principal logarithm."""
+        return np.asarray(self.rate * self.jump_dist._cf_minus_one(u))

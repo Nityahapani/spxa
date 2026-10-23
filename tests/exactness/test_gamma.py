@@ -39,6 +39,7 @@ def test_gamma_infinite_activity() -> None:
     Cont & Tankov (2004), Table 4.1.
     """
     import numpy as np
+
     g = GammaProcess(a=1.0, b=1.0)
     assert np.isinf(g.triplet.nu.total_mass())
 

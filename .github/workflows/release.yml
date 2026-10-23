@@ -22,6 +22,7 @@ jobs:
             echo "Tag $TAG does not match pyproject.toml version $PKG"
             exit 1
           fi
+          python scripts/extract_changelog.py "$TAG" > /dev/null
 
   publish:
     name: Publish to PyPI
@@ -37,6 +38,8 @@ jobs:
           python-version: "3.11"
       - run: pip install build
       - run: python -m build
+      - run: pip install twine
+      - run: twine check dist/*
       - uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
@@ -47,6 +50,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Extract changelog entry
         id: changelog
         run: |

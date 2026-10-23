@@ -28,8 +28,6 @@ Chapter 4, Table 4.2.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
@@ -59,12 +57,10 @@ def _vg_levy_measure(sigma: float, nu: float, theta: float) -> DensityLevyMeasur
         return out
 
     def tail(xv: float) -> float:
-        from scipy import integrate  # type: ignore[import-untyped]
-        result, _ = integrate.quad(
-            lambda t: (C / t) * np.exp(A * t - B * t),
-            xv, np.inf, limit=200
-        )
-        return result
+        from scipy import integrate
+
+        result, _ = integrate.quad(lambda t: (C / t) * np.exp(A * t - B * t), xv, np.inf, limit=200)
+        return float(result)
 
     def moment_1() -> float:
         return theta
@@ -76,8 +72,7 @@ def _vg_levy_measure(sigma: float, nu: float, theta: float) -> DensityLevyMeasur
         return 2 * theta**3 * nu**2 + 3 * sigma**2 * theta * nu
 
     def moment_4() -> float:
-        return (3 * sigma**4 * nu + 12 * sigma**2 * theta**2 * nu**2
-                + 6 * theta**4 * nu**3)
+        return 3 * sigma**4 * nu + 12 * sigma**2 * theta**2 * nu**2 + 6 * theta**4 * nu**3
 
     return DensityLevyMeasure(
         _density_fn=density,
@@ -135,8 +130,8 @@ class VarianceGamma(Process):
             name=f"VarianceGamma(sigma={sigma}, nu={nu}, theta={theta})",
             math_note=(
                 f"Lévy density: C/|x|·exp(Ax - B|x|) with "
-                f"C=1/ν={1/nu:.4f}, A=θ/σ²={theta/sigma**2:.4f}, "
-                f"B=sqrt(θ²/σ⁴+2/(σ²ν))={np.sqrt(theta**2/sigma**4+2/(sigma**2*nu)):.4f}"
+                f"C=1/ν={1 / nu:.4f}, A=θ/σ²={theta / sigma**2:.4f}, "
+                f"B=sqrt(θ²/σ⁴+2/(σ²ν))={np.sqrt(theta**2 / sigma**4 + 2 / (sigma**2 * nu)):.4f}"
             ),
             reference="Madan, Carr & Chang (1998); Cont & Tankov (2004) Table 4.2",
         )
@@ -151,7 +146,7 @@ class VarianceGamma(Process):
         #   b = E[X_1] - ∫_{|x|>1} x k(x) dx
         # The second term is computed numerically on [1,∞), where the integrand
         # has no singularity and converges exponentially (exponential tails).
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy import integrate
 
         nu_measure = _vg_levy_measure(self.sigma, self.nu, self.theta)
 
@@ -161,20 +156,18 @@ class VarianceGamma(Process):
 
         # ∫_1^∞ x * k(x) dx  (positive side, no singularity at origin)
         tail_pos, _ = integrate.quad(
-            lambda x: (C / x) * np.exp(A * x - B * x) * x,
-            1.0, np.inf, limit=200
+            lambda x: (C / x) * np.exp(A * x - B * x) * x, 1.0, np.inf, limit=200
         )
         # ∫_{-∞}^{-1} x * k(x) dx = -∫_1^∞ x * k(-x) dx
         tail_neg, _ = integrate.quad(
-            lambda x: (C / x) * np.exp(-A * x - B * x) * (-x),
-            1.0, np.inf, limit=200
+            lambda x: (C / x) * np.exp(-A * x - B * x) * (-x), 1.0, np.inf, limit=200
         )
         # b = mean - tail_correction
         b_drift = self.theta - tail_pos - tail_neg
 
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu_measure)
 
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """Use the exact closed-form characteristic function for VG."""
         return self.char_func_exact(u=u, t=t)
 
@@ -215,32 +208,18 @@ class VarianceGamma(Process):
             result[k] = self._triplet().cumulant(k)
         return result
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
-        Exact closed-form characteristic function.
-
-        φ(u; t) = (1 - iuθν + σ²νu²/2)^{-t/ν}
-
-        Reference: Madan, Carr & Chang (1998), equation (4).
-
-        Parameters
-        ----------
-        u :
-            Frequency argument(s).
-        t :
-            Time.
-        """
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        base = 1.0 - 1j * u_arr * self.theta * self.nu + 0.5 * self.sigma**2 * self.nu * u_arr**2
-        result = base ** (-t / self.nu)
-        return result if result.shape != (1,) else result[0]
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Evaluate the named characteristic function on its exponential-moment strip."""
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        return np.exp(t * self.characteristic_exponent(u))
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation via Gamma subordination.
@@ -276,7 +255,9 @@ class VarianceGamma(Process):
             size=(n_paths, n_steps),
         )
         normals = rng.standard_normal(size=(n_paths, n_steps))
-        increments = self.theta * gamma_increments + self.sigma * np.sqrt(gamma_increments) * normals
+        increments = (
+            self.theta * gamma_increments + self.sigma * np.sqrt(gamma_increments) * normals
+        )
 
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
@@ -284,3 +265,15 @@ class VarianceGamma(Process):
 
     def __repr__(self) -> str:
         return f"VarianceGamma(sigma={self.sigma}, nu={self.nu}, theta={self.theta})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF on the continuous branch at zero."""
+        z = np.asarray(u, dtype=complex)
+        if np.any(
+            1 + self.theta * self.nu * z.imag - 0.5 * self.sigma**2 * self.nu * z.imag**2 <= 0
+        ):
+            raise ValueError("Exponential moment outside the convergence strip")
+        return np.asarray(
+            -np.log(1 - 1j * self.theta * self.nu * z + 0.5 * self.sigma**2 * self.nu * z * z)
+            / self.nu
+        )

@@ -6,8 +6,7 @@ Gamma-distributed increments. Fundamental building block for subordination:
 Brownian motion subordinated by a Gamma process yields the Variance Gamma model.
 
 Lévy measure: ν(dx) = (a/x) exp(-bx) 𝟙_{x>0} dx
-Triplet: (a/b - a∫_1^∞ (1/x)e^{-bx} dx·𝟙_{...}, 0, ν)  — simplified via
-the known mean: b_effective = 0 when we use the mean-corrected form.
+Triplet drift: a*(1-exp(-b))/b, relative to h(x)=1_{|x|<=1}.
 
 In spxa we parametrise by (a, b) matching the standard shape/rate convention
 of the Lévy measure density k(x) = a·x^{-1}·e^{-bx} on (0,∞).
@@ -23,10 +22,8 @@ Oxford University Press. Chapter 6.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
-from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+from scipy.special import gamma as gamma_fn
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import DensityLevyMeasure
@@ -42,8 +39,7 @@ def _gamma_levy_measure(a: float, b: float) -> DensityLevyMeasure:
 
     Moments: ∫_0^∞ x^n ν(dx) = a·Γ(n)/b^n  (Cont & Tankov 2004, Table 4.2).
     """
-    from scipy.special import expi  # type: ignore[import-untyped]
-    from scipy import integrate  # type: ignore[import-untyped]
+    from scipy import integrate
 
     def density(x: np.ndarray) -> np.ndarray:
         out = np.zeros_like(x, dtype=float)
@@ -55,12 +51,9 @@ def _gamma_levy_measure(a: float, b: float) -> DensityLevyMeasure:
         if xv <= 0:
             return np.inf
         result, _ = integrate.quad(lambda t: a * np.exp(-b * t) / t, xv, np.inf)
-        return result
+        return float(result)
 
-    moment_fns = {
-        n: (lambda n=n: a * float(gamma_fn(n)) / b**n)
-        for n in range(1, 9)
-    }
+    moment_fns = {n: (lambda n=n: a * float(gamma_fn(n)) / b**n) for n in range(1, 9)}
 
     return DensityLevyMeasure(
         _density_fn=density,
@@ -92,7 +85,7 @@ class GammaProcess(Process):
     Cumulants (Cont & Tankov 2004, Table 4.2):
       κ_n(X_t) = a·t·(n-1)! / b^n
 
-    The drift in the Lévy triplet is computed numerically from the Lévy measure
+    The drift in the Lévy triplet is computed analytically from the Lévy measure
     to be consistent with the truncation function 𝟙_{|x|≤1}.
 
     References
@@ -121,14 +114,19 @@ class GammaProcess(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy import integrate  # type: ignore[import-untyped]
-        from scipy.special import expi  # type: ignore[import-untyped]
-
         nu = _gamma_levy_measure(self.a, self.b)
-        # ∫_0^1 a·e^{-bx}/x dx = a · E_1(b) where E_1 is the exponential integral.
-        # expi(-b) = -E_1(b) for b > 0, so E_1(b) = -expi(-b).
-        b_drift = -self.a * float(expi(-self.b))
-        return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
+        return LevyTriplet(b=-self.a * np.expm1(-self.b) / self.b, sigma_sq=0.0, nu=nu)
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF, on the branch continuous at zero (Cont & Tankov, Table 4.2)."""
+        z = np.asarray(u, dtype=complex)
+        if np.any(z.imag <= -self.b):
+            raise ValueError("Exponential moment outside the Gamma convergence strip")
+        return -self.a * np.log1p(-1j * z / self.b)
+
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Evaluate the Gamma CF without numerical Levy integration."""
+        return np.exp(t * self.characteristic_exponent(u))
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -158,8 +156,8 @@ class GammaProcess(Process):
         lam :
             Non-negative real argument(s).
         """
-        lam_arr = np.atleast_1d(np.asarray(lam, dtype=float))
-        result = self.a * np.log1p(lam_arr / self.b)
+        lam_arr = np.atleast_1d(np.asarray(lam, dtype=complex))
+        result = np.real_if_close(self.a * np.log1p(lam_arr / self.b))
         return result if result.shape != (1,) else result[0]
 
     def cumulants(self, order: int) -> dict[int, float]:
@@ -179,6 +177,7 @@ class GammaProcess(Process):
             Time. Default 1.
         """
         import math
+
         return self.a * t * math.factorial(n - 1) / self.b**n
 
     def simulate(
@@ -186,7 +185,7 @@ class GammaProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation: increments Gamma(a·Δt, b) independently.

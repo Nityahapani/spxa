@@ -6,7 +6,7 @@ Run with: python examples/merton_example.py
 
 import numpy as np
 
-from spxa import BrownianMotion, Merton76, MertonJumpDiffusion
+from spxa import BrownianMotion, MertonJumpDiffusion
 
 print("=" * 70)
 print("spxa — Merton (1976) Jump-Diffusion Process Demo")
@@ -31,11 +31,11 @@ print("\n── 1. Model Definition & Triplet ──")
 print(f"  Model            : {merton}")
 print(f"  Exactness        : {merton.exactness.name}")
 print(f"  Continuous Drift : {merton.drift:.4f}")
-print(f"  Diffusion Vol σ  : {merton.sigma*100:.1f}%")
+print(f"  Diffusion Vol σ  : {merton.sigma * 100:.1f}%")
 print(f"  Jump Rate λ      : {merton.rate:.2f} jumps/yr")
-print(f"  Jump Mean μ_J    : {merton.jump_mean*100:.1f}%")
-print(f"  Jump Std σ_J     : {merton.jump_std*100:.1f}%")
-print(f"  Expected Rel Jump: {merton.expected_relative_jump*100:.2f}% (E[exp(Y) - 1])")
+print(f"  Jump Mean μ_J    : {merton.jump_mean * 100:.1f}%")
+print(f"  Jump Std σ_J     : {merton.jump_std * 100:.1f}%")
+print(f"  Expected Rel Jump: {merton.expected_relative_jump * 100:.2f}% (E[exp(Y) - 1])")
 print(f"  Triplet Drift b  : {merton.triplet.b:.6f} (truncation cutoff=1.0)")
 print(f"  Triplet σ²       : {merton.triplet.sigma_sq:.6f}")
 print(f"  Total Jump Mass  : {merton.triplet.nu.total_mass():.4f} (finite activity)")
@@ -56,7 +56,13 @@ z = merton + 0.5 * bm
 print("\n── 3. Algebraic Composition: Z = Merton + 0.5 * BM ──")
 print(f"  Composed Process : {z}")
 print(f"  Exactness Level  : {z.exactness.name}")
-print(f"  Combined σ²      : {z.triplet.sigma_sq:.6f} (theory: {merton.sigma**2 + 0.25*bm.sigma**2:.6f})")
+print(
+    "  Combined σ²      : "
+    f"{z.triplet.sigma_sq:.6f}"
+    " (theory: "
+    f"{merton.sigma**2 + 0.25 * bm.sigma**2:.6f}"
+    ")"
+)
 
 # 4. Merton (1976) Analytical Option Pricing & Implied Volatility
 S0 = 100.0
@@ -71,9 +77,20 @@ implied_vols = merton.implied_vol_smile(strikes, T=T, S0=S0, r=r, q=q)
 
 print(f"\n── 4. Merton Option Pricing & Implied Volatility (T={T} yrs) ──")
 print("   Strike K     Call Price     Put Price     Implied Vol     Parity Error")
-for strk, cp, pp, iv in zip(strikes, call_prices, put_prices, implied_vols):
+for strk, cp, pp, iv in zip(strikes, call_prices, put_prices, implied_vols, strict=True):
     parity_err = abs((cp - pp) - (S0 * np.exp(-q * T) - strk * np.exp(-r * T)))
-    print(f"    {strk:5.1f}        {cp:8.4f}       {pp:8.4f}        {iv*100:5.2f}%         {parity_err:.2e}")
+    print(
+        "    "
+        f"{strk:5.1f}"
+        "        "
+        f"{cp:8.4f}"
+        "       "
+        f"{pp:8.4f}"
+        "        "
+        f"{iv * 100:5.2f}"
+        "%         "
+        f"{parity_err:.2e}"
+    )
 
 # 5. Exact Monte Carlo Simulation Check
 n_paths = 50_000
@@ -90,8 +107,18 @@ th_var = k[2] * T
 
 print("\n── 5. Exact Simulation Check (Zero Discretization Error) ──")
 print(f"  Simulated Paths  : {n_paths:,} trajectories, {n_steps} steps")
-print(f"  Terminal E[X_T]  : {mc_mean:.6f}  (theory: {th_mean:.6f}, diff: {abs(mc_mean - th_mean):.6f})")
-print(f"  Terminal Var[X_T]: {mc_var:.6f}  (theory: {th_var:.6f}, diff: {abs(mc_var - th_var):.6f})")
+print(
+    "  Terminal E[X_T]  : "
+    f"{mc_mean:.6f}"
+    "  (theory: "
+    f"{th_mean:.6f}"
+    ", diff: "
+    f"{abs(mc_mean - th_mean):.6f}"
+    ")"
+)
+print(
+    f"  Terminal Var[X_T]: {mc_var:.6f}  (theory: {th_var:.6f}, diff: {abs(mc_var - th_var):.6f})"
+)
 
 # 6. Derivation Story Trace
 print("\n── 6. Derivation Story Trace ──")

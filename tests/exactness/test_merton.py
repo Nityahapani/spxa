@@ -16,6 +16,7 @@ Verifies:
 """
 
 import math
+
 import numpy as np
 import pytest
 from scipy import stats
@@ -75,11 +76,13 @@ class TestMertonExactness:
         mu_j = -0.05
         sigma_j = 0.14
 
-        m = MertonJumpDiffusion(drift=drift, sigma=sigma, rate=rate, jump_mean=mu_j, jump_std=sigma_j)
+        m = MertonJumpDiffusion(
+            drift=drift, sigma=sigma, rate=rate, jump_mean=mu_j, jump_std=sigma_j
+        )
         trip = m.triplet
 
         # Diffusion coefficient
-        assert np.isclose(trip.sigma_sq, sigma ** 2)
+        assert np.isclose(trip.sigma_sq, sigma**2)
 
         # Finite activity jump measure
         assert np.isclose(trip.nu.total_mass(), rate)
@@ -139,18 +142,20 @@ class TestMertonExactness:
         mu_j = 0.05
         sigma_j = 0.10
 
-        m = MertonJumpDiffusion(drift=drift, sigma=sigma, rate=rate, jump_mean=mu_j, jump_std=sigma_j)
+        m = MertonJumpDiffusion(
+            drift=drift, sigma=sigma, rate=rate, jump_mean=mu_j, jump_std=sigma_j
+        )
         k = m.cumulants(order=5)
 
         # Exact formulas
         assert np.isclose(k[1], drift + rate * mu_j)
-        assert np.isclose(k[2], sigma ** 2 + rate * (mu_j ** 2 + sigma_j ** 2))
-        assert np.isclose(k[3], rate * (mu_j ** 3 + 3.0 * mu_j * sigma_j ** 2))
-        assert np.isclose(k[4], rate * (mu_j ** 4 + 6.0 * mu_j ** 2 * sigma_j ** 2 + 3.0 * sigma_j ** 4))
+        assert np.isclose(k[2], sigma**2 + rate * (mu_j**2 + sigma_j**2))
+        assert np.isclose(k[3], rate * (mu_j**3 + 3.0 * mu_j * sigma_j**2))
+        assert np.isclose(k[4], rate * (mu_j**4 + 6.0 * mu_j**2 * sigma_j**2 + 3.0 * sigma_j**4))
 
         # Check k[5] matches integration against raw normal 5th moment
         # E[Y^5] = mu_j^5 + 10*mu_j^3*sigma_j^2 + 15*mu_j*sigma_j^4
-        th_m5 = mu_j ** 5 + 10.0 * mu_j ** 3 * sigma_j ** 2 + 15.0 * mu_j * sigma_j ** 4
+        th_m5 = mu_j**5 + 10.0 * mu_j**3 * sigma_j**2 + 15.0 * mu_j * sigma_j**4
         assert np.isclose(k[5], rate * th_m5)
 
         with pytest.raises(ValueError, match="order"):
@@ -165,7 +170,7 @@ class TestMertonExactness:
         assert z.exactness == ExactnessLevel.EXACT
         trip_z = z.triplet
 
-        assert np.isclose(trip_z.sigma_sq, m.sigma ** 2 + bm.sigma ** 2)
+        assert np.isclose(trip_z.sigma_sq, m.sigma**2 + bm.sigma**2)
         assert np.isclose(trip_z.nu.total_mass(), m.rate)
 
         # Scaled process 2 * m
@@ -186,8 +191,10 @@ class TestMertonExactness:
         # Fourier inversion of characteristic function
         # Risk-neutral drift adjustment: mu_rn = (r - q) - 0.5*sigma^2 - rate*k_bar
         k_bar = m.expected_relative_jump
-        mu_rn = (r - q) - 0.5 * m.sigma ** 2 - m.rate * k_bar
-        m_rn = MertonJumpDiffusion(drift=mu_rn, sigma=m.sigma, rate=m.rate, jump_mean=m.jump_mean, jump_std=m.jump_std)
+        mu_rn = (r - q) - 0.5 * m.sigma**2 - m.rate * k_bar
+        m_rn = MertonJumpDiffusion(
+            drift=mu_rn, sigma=m.sigma, rate=m.rate, jump_mean=m.jump_mean, jump_std=m.jump_std
+        )
 
         def integrand1(u):
             cf1 = math.exp(-(r - q) * T) * m_rn.char_func(u - 1j, t=T)
@@ -210,7 +217,7 @@ class TestMertonExactness:
         r = 0.05
         vol = 0.20
 
-        d1 = (math.log(S0 / K) + (r + 0.5 * vol ** 2) * T) / (vol * math.sqrt(T))
+        d1 = (math.log(S0 / K) + (r + 0.5 * vol**2) * T) / (vol * math.sqrt(T))
         d2 = d1 - vol * math.sqrt(T)
         bs_call = S0 * stats.norm.cdf(d1) - K * math.exp(-r * T) * stats.norm.cdf(d2)
 

@@ -1,0 +1,14 @@
+include LICENSE README.md CHANGELOG.md CONTRIBUTING.md PROCESS_REGISTRY.md
+include pyproject.toml mkdocs.yml .pre-commit-config.yaml
+recursive-include spxa *.py
+recursive-include tests *.py
+recursive-include scripts *.py
+recursive-include benchmarks *.py *.md
+recursive-include examples *.py
+recursive-include docs *.md *.js *.ipynb *.png
+recursive-include .github *.yml *.md
+prune .cache
+prune .benchmarks
+prune build
+prune dist
+global-exclude *.py[cod] __pycache__

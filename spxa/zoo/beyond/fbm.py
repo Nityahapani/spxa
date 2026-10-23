@@ -23,8 +23,6 @@ Davies, R.B. & Harte, D.S. (1987). Tests for Hurst effect. *Biometrika*,
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
@@ -95,10 +93,9 @@ class FractionalBrownianMotion(Process):
             required="EXACT",
             actual="MOMENT_PROPAGATION",
             reason=(
-                f"FractionalBrownianMotion with H={self.H} is not a Lévy process "
-                f"{'(H≠0.5: correlated increments, not a semimartingale)' if self.H != 0.5 else ''} "
-                "and has no Lévy–Khintchine triplet. "
-                "Use .variance(t), .covariance(s, t), or .simulate() instead."
+                f"FractionalBrownianMotion H={self.H} retains MOMENT_PROPAGATION capability. "
+                "This representation does not expose a Levy triplet; "
+                "use .variance(t), .covariance(s,t), or .simulate()."
             ),
         )
 
@@ -134,7 +131,7 @@ class FractionalBrownianMotion(Process):
 
         Mandelbrot & Van Ness (1968), equation (1.3).
         """
-        return self.sigma**2 * t ** (2 * self.H)
+        return float(self.sigma**2 * t ** (2 * self.H))
 
     def covariance(self, s: float, t: float) -> float:
         """
@@ -142,14 +139,18 @@ class FractionalBrownianMotion(Process):
 
         Mandelbrot & Van Ness (1968), equation (1.2).
         """
-        return 0.5 * self.sigma**2 * (s ** (2 * self.H) + t ** (2 * self.H) - abs(s - t) ** (2 * self.H))
+        return float(
+            0.5
+            * self.sigma**2
+            * (s ** (2 * self.H) + t ** (2 * self.H) - abs(s - t) ** (2 * self.H))
+        )
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Simulate fBM paths via the Davies–Harte circulant embedding algorithm.
@@ -184,9 +185,12 @@ class FractionalBrownianMotion(Process):
 
         def acf(k: int) -> float:
             if k == 0:
-                return self.sigma**2 * dt**(2 * self.H)
-            return 0.5 * self.sigma**2 * dt**(2 * self.H) * (
-                (k + 1)**(2 * self.H) - 2 * k**(2 * self.H) + (k - 1)**(2 * self.H)
+                return float(self.sigma**2 * dt ** (2 * self.H))
+            return float(
+                0.5
+                * self.sigma**2
+                * dt ** (2 * self.H)
+                * ((k + 1) ** (2 * self.H) - 2 * k ** (2 * self.H) + (k - 1) ** (2 * self.H))
             )
 
         gamma = np.array([acf(k) for k in range(n)])
@@ -195,7 +199,7 @@ class FractionalBrownianMotion(Process):
         row[:n] = gamma
         row[n] = 0.0
         if n > 1:
-            row[n + 1:] = gamma[n - 1:0:-1]
+            row[n + 1 :] = gamma[n - 1 : 0 : -1]
 
         eigenvalues = np.fft.fft(row).real
         if np.any(eigenvalues < 0):
@@ -215,3 +219,9 @@ class FractionalBrownianMotion(Process):
 
     def __repr__(self) -> str:
         return f"FractionalBrownianMotion(H={self.H}, sigma={self.sigma})"
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        """Gaussian finite-horizon cumulants; variance is sigma^2*t^(2H)."""
+        if order < 1 or not np.isfinite(t) or t < 0:
+            raise ValueError("Positive order and finite nonnegative horizon required")
+        return {n: float(self.variance(t)) if n == 2 else 0.0 for n in range(1, order + 1)}

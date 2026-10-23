@@ -6,13 +6,12 @@ in NIG construction (NIG = BM subordinated by IG process) and in
 reliability and first-passage-time modelling.
 
 Lévy density (Cont & Tankov 2004, Table 4.1):
-  k(x) = (λ/(2π))^{1/2} · x^{-3/2} · exp(-λ(x-μ)²/(2μ²x))  for x > 0
+  k(x) = (λ/(2π))^{1/2} · x^{-3/2} · exp(-λx/(2μ²))  for x > 0
 
-This is the density of the IG(μ, λ) distribution scaled to unit time,
-generalised to arbitrary t via the self-similarity of the IG process:
+This is a Levy density, not the unit-time probability density. Marginals satisfy:
   X_t ~ IG(μt, λt²)
 
-Bernstein function: φ(s) = λ/μ · (1 - sqrt(1 - 2μ²s/λ))
+Bernstein function: φ(s) = λ/μ · (sqrt(1 + 2μ²s/λ) - 1)
 
 References
 ----------
@@ -28,8 +27,6 @@ Chapter 4, Table 4.1.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
@@ -44,7 +41,7 @@ def _ig_levy_measure(mu: float, lam: float) -> DensityLevyMeasure:
     """
     Lévy measure of IG process.
 
-    k(x) = sqrt(λ/(2π)) · x^{-3/2} · exp(-λ(x-μ)²/(2μ²x))  for x > 0
+    k(x) = sqrt(λ/(2π)) · x^{-3/2} · exp(-λx/(2μ²))  for x > 0
 
     Cont & Tankov (2004), Table 4.1.
     """
@@ -54,22 +51,25 @@ def _ig_levy_measure(mu: float, lam: float) -> DensityLevyMeasure:
         out = np.zeros_like(x, dtype=float)
         pos = x > 0
         xp = x[pos]
-        out[pos] = prefactor * xp**(-1.5) * np.exp(-lam * (xp - mu)**2 / (2 * mu**2 * xp))
+        out[pos] = prefactor * xp ** (-1.5) * np.exp(-lam * xp / (2 * mu**2))
         return out
 
     def tail(xv: float) -> float:
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy import integrate
+
         result, _ = integrate.quad(
-            lambda t: prefactor * t**(-1.5) * np.exp(-lam * (t - mu)**2 / (2 * mu**2 * t)),
-            xv, np.inf, limit=200
+            lambda t: prefactor * t ** (-1.5) * np.exp(-lam * t / (2 * mu**2)),
+            xv,
+            np.inf,
+            limit=200,
         )
-        return result
+        return float(result)
 
     def moment_1() -> float:
         return mu
 
     def moment_2() -> float:
-        return mu**3 / lam + mu**2
+        return mu**3 / lam
 
     return DensityLevyMeasure(
         _density_fn=density,
@@ -99,16 +99,16 @@ class InverseGaussianProcess(Process):
     Notes
     -----
     Cumulants (Tweedie 1957, equation 2.5):
-      κ_n(X_t) = t · (2n-1)!! · μ^{2n-1} / λ^{n-1}
-    where (2n-1)!! = 1·3·5·...·(2n-1).
+      κ_n(X_t) = t · (2n-3)!! · μ^{2n-1} / λ^{n-1}
+    where (2n-3)!! = 1·3·5·...·(2n-3), with (-1)!!=1.
     Explicitly:
       κ₁ = μ
-      κ₂ = 3μ³/λ
-      κ₃ = 15μ⁵/λ²
-      κ₄ = 105μ⁷/λ³
+      κ₂ = μ³/λ
+      κ₃ = 3μ⁵/λ²
+      κ₄ = 15μ⁷/λ³
 
     Bernstein function (Schilling et al. 2012):
-      φ(s) = (λ/μ)(1 - sqrt(1 - 2μ²s/λ))
+      φ(s) = (λ/μ)(sqrt(1 + 2μ²s/λ) - 1)
 
     is_subordinator = True (non-decreasing paths).
 
@@ -136,21 +136,24 @@ class InverseGaussianProcess(Process):
             kind=NodeKind.PRIMITIVE,
             name=f"InverseGaussianProcess(mu={mu}, lam={lam})",
             math_note=(
-                f"Lévy density: sqrt(λ/2π)·x^{{-3/2}}·exp(-λ(x-μ)²/(2μ²x)); "
-                f"φ(s) = (λ/μ)(1-sqrt(1-2μ²s/λ)); "
-                f"κ₁={mu}, κ₂={mu**3/lam:.4f}"
+                f"Lévy density: sqrt(λ/2π)·x^{{-3/2}}·exp(-λx/(2μ²)); "
+                f"φ(s) = (λ/μ)(sqrt(1+2μ²s/λ)-1); "
+                f"κ₁={mu}, κ₂={mu**3 / lam:.4f}"
             ),
-            reference="Tweedie (1957); Cont & Tankov (2004) Table 4.1; Schilling et al. (2012) Ex. 3.12",
+            reference="Tweedie (1957); Cont & Tankov (2004); Schilling et al. (2012), Ch. 3",
         )
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy import integrate
+
         nu = _ig_levy_measure(self.mu, self.lam)
         prefactor = np.sqrt(self.lam / (2 * np.pi))
         b_drift, _ = integrate.quad(
-            lambda x: prefactor * x**(-0.5) * np.exp(-self.lam * (x - self.mu)**2 / (2 * self.mu**2 * x)),
-            0.0, 1.0, limit=200,
+            lambda x: prefactor * x ** (-0.5) * np.exp(-self.lam * x / (2 * self.mu**2)),
+            0.0,
+            1.0,
+            limit=200,
         )
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
@@ -167,55 +170,45 @@ class InverseGaussianProcess(Process):
         )
 
     def bernstein_function(self, lam: float | np.ndarray) -> np.ndarray:
-        """
-        Exact Bernstein function: φ(s) = (λ/μ)(1 - sqrt(1 - 2μ²s/λ)).
+        """Laplace exponent lambda/mu*(sqrt(1+2*mu**2*s/lambda)-1).
 
-        Schilling, Song & Vondraček (2012), Example 3.12.
+        References
+        ----------
+        Schilling, Song & Vondracek (2012), Chapter 3.
         """
-        s = np.atleast_1d(np.asarray(lam, dtype=float))
-        inner = 1.0 - 2.0 * self.mu**2 * s / self.lam
-        inner = np.maximum(inner, 0.0)
-        result = (self.lam / self.mu) * (1.0 - np.sqrt(inner))
-        return result if result.shape != (1,) else result[0]
+        s = np.asarray(lam, dtype=complex)
+        if np.any(s.real < 0):
+            raise ValueError("Laplace arguments must have nonnegative real part")
+        root = np.sqrt(1 + 2 * self.mu**2 * s / self.lam)
+        result = 2 * self.mu * s / (root + 1)
+        return np.real_if_close(result)
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
         Exact closed-form cumulant.
 
-        κ_n(X_t) = t · (2n-1)!! · μ^{2n-1} / λ^{n-1}
-        where (2n-1)!! = 1·3·5·...·(2n-1).
+        κ_n(X_t) = t · (2n-3)!! · μ^{2n-1} / λ^{n-1}
+        where (2n-3)!! = 1·3·5·...·(2n-3), with (-1)!!=1.
 
         Tweedie (1957), equation (2.5).
         """
         from math import prod
-        double_factorial = prod(range(1, 2 * n, 2))
-        return t * double_factorial * self.mu**(2 * n - 1) / self.lam**(n - 1)
+
+        if n < 1:
+            raise ValueError("Cumulant order must be positive")
+        double_factorial = prod(range(1, 2 * n - 2, 2))
+        return t * double_factorial * self.mu ** (2 * n - 1) / self.lam ** (n - 1)
 
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
-        Exact characteristic function.
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Evaluate the named characteristic function on its exponential-moment strip."""
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        return np.exp(t * self.characteristic_exponent(u))
 
-        φ(u; t) = exp(t · λ/μ · (1 - sqrt(1 - 2iuμ²/λ - u²μ²/λ)))
-                = exp(t · φ_Bernstein(iu ... ))
-
-        More precisely for the IG(μt, λt²) distribution:
-          φ(u) = exp(λt/μ · (1 - sqrt(1 - 2iuμ²/λ + u²μ²... )))
-
-        Using the known MGF result (Tweedie 1957):
-          φ(u; t) = exp(tλ/μ · (1 - sqrt(1 - 2iuμ²/λ)))
-
-        Reference: Barndorff-Nielsen & Shephard (2001), equation (A.2).
-        """
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        inner = 1.0 - 2j * u_arr * self.mu**2 / self.lam
-        exponent = t * (self.lam / self.mu) * (1.0 - np.sqrt(inner))
-        result = np.exp(exponent)
-        return result if result.shape != (1,) else result[0]
-
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def simulate(
@@ -223,7 +216,7 @@ class InverseGaussianProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation: increments X_{t_{k+1}} - X_{t_k} ~ IG(μΔt, λΔt²).
@@ -245,3 +238,10 @@ class InverseGaussianProcess(Process):
 
     def __repr__(self) -> str:
         return f"InverseGaussianProcess(mu={self.mu}, lam={self.lam})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF on the continuous branch at zero."""
+        z = np.asarray(u, dtype=complex)
+        if np.any(z.imag < -self.lam / (2 * self.mu**2)):
+            raise ValueError("Exponential moment outside the convergence strip")
+        return np.asarray(2j * self.mu * z / (1 + np.sqrt(1 - 2j * z * self.mu**2 / self.lam)))

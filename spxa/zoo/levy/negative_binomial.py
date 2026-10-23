@@ -37,9 +37,10 @@ negative binomial Lévy process. *Probability and Mathematical Statistics*,
 
 from __future__ import annotations
 
-from typing import Optional
+from collections.abc import Callable
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import LevyMeasure
@@ -65,7 +66,7 @@ class _NegBinLevyMeasure(LevyMeasure):
         self.r = r
         self.p = p
 
-    def density(self, x: np.ndarray) -> np.ndarray:
+    def density(self, x: ArrayLike) -> np.ndarray:
         raise NotImplementedError(
             "NegativeBinomial Lévy measure is discrete (point masses at "
             "positive integers) and has no density w.r.t. Lebesgue measure. "
@@ -74,7 +75,7 @@ class _NegBinLevyMeasure(LevyMeasure):
 
     def total_mass(self) -> float:
         # ∑_{k=1}^∞ r·p^k/k = r·log(1/(1-p))  (Taylor series of -log(1-p))
-        return self.r * np.log(1.0 / (1.0 - self.p))
+        return float(self.r * np.log(1.0 / (1.0 - self.p)))
 
     def tail(self, x: float) -> float:
         # ν((x, ∞)) = ∑_{k=ceil(x)+1}^∞ r·p^k/k
@@ -93,7 +94,22 @@ class _NegBinLevyMeasure(LevyMeasure):
             raise ValueError("Moment order must be >= 1")
         # Truncate at k_max where p^k < 1e-15
         k_max = int(np.ceil(-15 * np.log(10) / np.log(self.p))) + 10
-        return self.r * sum(k ** (n - 1) * self.p**k for k in range(1, k_max + 1))
+        return float(self.r * sum(k ** (n - 1) * self.p**k for k in range(1, k_max + 1)))
+
+    def integrate(
+        self, f: Callable[[float], float], lower: float = -np.inf, upper: float = np.inf
+    ) -> float:
+        if lower > upper:
+            raise ValueError("Integration bounds must be ordered")
+        start = max(1, int(np.ceil(lower))) if np.isfinite(lower) else 1
+        stop = (
+            int(np.floor(upper))
+            if np.isfinite(upper)
+            else max(start, int(np.ceil(np.log(1e-15) / np.log(self.p))))
+        )
+        if stop - start > 1_000_000:
+            raise ValueError("Atomic integration needs too many terms for this p")
+        return float(sum(self.r * self.p**k / k * f(float(k)) for k in range(start, stop + 1)))
 
 
 class NegativeBinomialProcess(Process):
@@ -160,22 +176,15 @@ class NegativeBinomialProcess(Process):
             name=f"NegativeBinomialProcess(r={r}, p={p})",
             math_note=(
                 f"φ(u;t) = ((1-p)/(1-p·e^{{iu}}))^{{rt}}; "
-                f"κ₁={r*p/(1-p):.4f}, κ₂={r*p/(1-p)**2:.4f}; "
-                f"finite activity: nu(R\\{{0}})=r*log(1/(1-p))={r*np.log(1/(1-p)):.4f}"
+                f"κ₁={r * p / (1 - p):.4f}, κ₂={r * p / (1 - p) ** 2:.4f}; "
+                f"finite activity: nu(R\\{{0}})=r*log(1/(1-p))={r * np.log(1 / (1 - p)):.4f}"
             ),
             reference="Quenouille (1949); Johnson et al. (2005) Ch. 5",
         )
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        nu = _NegBinLevyMeasure(self.r, self.p)
-        # All jumps are positive integers ≥ 1, so b = ∫_{|x|≤1} x ν(dx) = 0
-        # (no mass in (0,1) since jumps are integers ≥ 1, and 1 is included
-        # in the truncation but the mass at k=1 gives a drift contribution)
-        # Using truncation h(x) = 𝟙_{|x|≤1}: only k=1 falls in [-1,1]
-        # b = ∫_{|x|≤1} x ν(dx) = 1 · r·p  (mass at k=1 is r·p/1 = r·p)
-        b = self.r * self.p
-        return LevyTriplet(b=b, sigma_sq=0.0, nu=nu)
+        return LevyTriplet(self.r * self.p, 0.0, _NegBinLevyMeasure(self.r, self.p))
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -189,26 +198,13 @@ class NegativeBinomialProcess(Process):
             is_subordinator=True,
         )
 
-    def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
-        Exact characteristic function.
+    def char_func_exact(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
+        """Evaluate the named characteristic function on its exponential-moment strip."""
+        if not np.isfinite(t) or t < 0:
+            raise ValueError("Time must be finite and nonnegative")
+        return np.exp(t * self.characteristic_exponent(u))
 
-        φ(u; t) = ((1-p) / (1-p·e^{iu}))^{rt}
-
-        Quenouille (1949); Johnson et al. (2005), equation (5.4).
-
-        Parameters
-        ----------
-        u :
-            Frequency argument(s).
-        t :
-            Time.
-        """
-        u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        result = ((1 - self.p) / (1 - self.p * np.exp(1j * u_arr))) ** (self.r * t)
-        return result if result.shape != (1,) else result[0]
-
-    def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
@@ -241,7 +237,7 @@ class NegativeBinomialProcess(Process):
         if n == 3:
             return t * self.r * self.p * (1 + self.p) / q**3
         if n == 4:
-            return t * self.r * self.p * (1 + 4*self.p + self.p**2) / q**4
+            return t * self.r * self.p * (1 + 4 * self.p + self.p**2) / q**4
         # Higher orders: κ_n = t·r·p · (d/dp)^{n-1}[p/(1-p)^n] evaluated at p
         # Use the Lévy measure moment: κ_n = t · ∫ x^n ν(dx) for n ≥ 2,
         # κ_1 = t·(b + ∫_{|x|>1} x ν(dx)) = t·mean
@@ -256,7 +252,7 @@ class NegativeBinomialProcess(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         """
         Exact simulation: increments X_{t+Δt} - X_t ~ NegBin(rΔt, p).
@@ -291,3 +287,10 @@ class NegativeBinomialProcess(Process):
 
     def __repr__(self) -> str:
         return f"NegativeBinomialProcess(r={self.r}, p={self.p})"
+
+    def characteristic_exponent(self, u: complex | float | np.ndarray) -> np.ndarray:
+        """Unit-time log CF on the continuous branch at zero."""
+        z = np.asarray(u, dtype=complex)
+        if np.any(self.p * np.exp(-z.imag) >= 1):
+            raise ValueError("Exponential moment outside the convergence strip")
+        return np.asarray(self.r * (np.log1p(-self.p) - np.log1p(-self.p * np.exp(1j * z))))

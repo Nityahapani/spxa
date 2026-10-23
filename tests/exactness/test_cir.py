@@ -19,6 +19,7 @@ Feller, W. (1951). *Annals of Mathematics*, 54(1), 173–182.
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 import scipy.integrate as integrate
@@ -188,10 +189,9 @@ class TestCIRExactness:
         for t in [0.1, 0.5, 1.0, 3.0]:
             e_k = math.exp(-kappa * t)
             e_2k = math.exp(-2.0 * kappa * t)
-            expected = (
-                r0 * (sigma**2 / kappa) * (e_k - e_2k)
-                + theta * (sigma**2 / (2.0 * kappa)) * ((1.0 - e_k) ** 2)
-            )
+            expected = r0 * (sigma**2 / kappa) * (e_k - e_2k) + theta * (
+                sigma**2 / (2.0 * kappa)
+            ) * ((1.0 - e_k) ** 2)
             assert cir.conditional_variance(t=t) == pytest.approx(expected, rel=1e-12)
             assert cir.conditional_std(t=t) == pytest.approx(math.sqrt(expected), rel=1e-12)
 
@@ -242,8 +242,9 @@ class TestCIRExactness:
         assert cir.stationary_skewness == pytest.approx(2.0 / math.sqrt(alpha), rel=1e-12)
         assert cir.stationary_kurtosis == pytest.approx(6.0 / alpha, rel=1e-12)
 
-        # Cumulants dispatch
-        stat_kappas = cir.cumulants(order=4)
+        # Stationary and finite-time marginal APIs must not be conflated.
+        assert cir.cumulants(2)[2] == pytest.approx(cir.conditional_variance(1.0))
+        stat_kappas = {n: cir.stationary_cumulant(n) for n in range(1, 5)}
         for n in range(1, 5):
             expected = math.factorial(n - 1) * theta * (beta_scale ** (n - 1))
             assert stat_kappas[n] == pytest.approx(expected, rel=1e-12)
@@ -276,14 +277,16 @@ class TestCIRExactness:
 
         # Boundary checks
         assert cir.laplace_transform(u=0.0, t=1.0) == pytest.approx(1.0, rel=1e-12)
-        assert cir.laplace_transform(u=3.0, t=0.0) == pytest.approx(math.exp(-3.0 * 0.04), rel=1e-12)
+        assert cir.laplace_transform(u=3.0, t=0.0) == pytest.approx(
+            math.exp(-3.0 * 0.04), rel=1e-12
+        )
 
         # Compare with transition density numerical quadrature
         t = 0.7
         for u in [0.5, 2.0, 5.0]:
             formula_val = cir.laplace_transform(u=u, t=t)
 
-            def integrand(y: float) -> float:
+            def integrand(y: float, u: float = u) -> float:
                 return float(math.exp(-u * y) * cir.transition_density(y, t=t))
 
             num_val, _ = integrate.quad(integrand, 0.0, 1.5, epsabs=1e-9)
@@ -433,7 +436,8 @@ class TestCIRExactness:
     @pytest.mark.exactness
     def test_cir_exact_simulation_moments(self) -> None:
         """
-        Simulated paths via exact non-central chi-squared transition match theoretical mean and variance.
+        Simulated paths via exact non-central chi-squared transition match theoretical mean
+        and variance.
         """
         kappa, theta, sigma, r0 = 2.0, 0.05, 0.1, 0.03
         cir = CIRProcess(kappa=kappa, theta=theta, sigma=sigma, r0=r0)

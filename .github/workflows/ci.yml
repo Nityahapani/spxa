@@ -19,9 +19,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install ruff mypy
-      - run: ruff check spxa tests
-      - run: ruff format --check spxa tests
+      - run: pip install -e ".[dev]"
+      - run: ruff check spxa tests scripts benchmarks examples
+      - run: ruff format --check spxa tests scripts benchmarks examples
       - run: mypy spxa --ignore-missing-imports
 
   test:
@@ -70,3 +70,26 @@ jobs:
         run: |
           pytest tests/exactness -v --tb=short -p no:xfail --strict-markers
           python scripts/check_exactness_markers.py
+
+  minimum-dependencies:
+    name: Minimum numerical dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]" numpy==1.24.0 scipy==1.10.0 sympy==1.12
+      - run: pytest tests/ -q
+
+  docs-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[docs]" build twine
+      - run: mkdocs build --strict
+      - run: python -m build
+      - run: twine check dist/*

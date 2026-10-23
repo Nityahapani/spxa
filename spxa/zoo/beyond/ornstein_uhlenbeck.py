@@ -64,10 +64,10 @@ given marginal distributions and autocorrelation function. *Bernoulli*, 11(2), 1
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
 
 import numpy as np
 
+from spxa.core._validation import validate_order, validate_time
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.exceptions import ExactnessError
 from spxa.core.process import Process
@@ -108,8 +108,10 @@ class OrnsteinUhlenbeckProcess(Process):
         theta: float,
         mu: float,
         sigma: float,
-        x0: Optional[float] = None,
+        x0: float | None = None,
     ) -> None:
+        if not np.all(np.isfinite([theta, mu, sigma, mu if x0 is None else x0])):
+            raise ValueError("Process parameters and initial state must be finite")
         if theta <= 0:
             raise ValueError(f"theta must be strictly positive, got {theta}")
         if sigma <= 0:
@@ -122,11 +124,32 @@ class OrnsteinUhlenbeckProcess(Process):
 
         node = CompositionNode(
             kind=NodeKind.PRIMITIVE,
-            name=f"OrnsteinUhlenbeck(theta={self.theta}, mu={self.mu}, sigma={self.sigma}, x0={self.x0})",
+            name=(
+                "OrnsteinUhlenbeck(theta="
+                f"{self.theta}"
+                ", mu="
+                f"{self.mu}"
+                ", sigma="
+                f"{self.sigma}"
+                ", x0="
+                f"{self.x0}"
+                ")"
+            ),
             math_note=(
-                f"dX_t = θ(μ - X_t)dt + σ dW_t; θ={self.theta}, μ={self.mu}, σ={self.sigma}, x0={self.x0}; "
-                f"Stationary law: N(μ={self.mu}, σ²/(2θ)={self.stationary_variance:.6f}); "
-                f"Half-life = ln(2)/θ = {self.half_life:.4f}"
+                "dX_t = θ(μ - X_t)dt + σ dW_t; θ="
+                f"{self.theta}"
+                ", μ="
+                f"{self.mu}"
+                ", σ="
+                f"{self.sigma}"
+                ", x0="
+                f"{self.x0}"
+                "; Stationary law: N(μ="
+                f"{self.mu}"
+                ", σ²/(2θ)="
+                f"{self.stationary_variance:.6f}"
+                "); Half-life = ln(2)/θ = "
+                f"{self.half_life:.4f}"
             ),
             reference="Uhlenbeck & Ornstein (1930); Vasicek (1977)",
         )
@@ -184,21 +207,12 @@ class OrnsteinUhlenbeckProcess(Process):
     # Analytical Moments & Cumulants
     # ------------------------------------------------------------------
 
-    def conditional_mean(self, t: float, x0: Optional[float] = None) -> float:
-        r"""
-        Conditional expectation E[X_t | X_0] = μ + (X_0 - μ) e^{-θt}.
-
-        Parameters
-        ----------
-        t : float
-            Time horizon t ≥ 0.
-        x0 : float, optional
-            Initial state X_0. Defaults to `self.x0`.
-        """
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        val_x0 = self.x0 if x0 is None else float(x0)
-        return float(self.mu + (val_x0 - self.mu) * math.exp(-self.theta * t))
+    def conditional_mean(self, t: float, x0: float | None = None) -> float:
+        validate_time(t)
+        initial = self.x0 if x0 is None else float(x0)
+        if not np.isfinite(initial):
+            raise ValueError("x0 must be finite")
+        return float(initial * math.exp(-self.theta * t) + self.mu * (-math.expm1(-self.theta * t)))
 
     def conditional_variance(self, t: float) -> float:
         r"""
@@ -209,9 +223,9 @@ class OrnsteinUhlenbeckProcess(Process):
         t : float
             Time horizon t ≥ 0.
         """
-        if t < 0:
+        if not np.isfinite(t) or t < 0:
             raise ValueError(f"Time t must be non-negative, got {t}")
-        return float((self.sigma**2 / (2.0 * self.theta)) * (1.0 - math.exp(-2.0 * self.theta * t)))
+        return float((self.sigma**2 / (2.0 * self.theta)) * (-math.expm1(-2.0 * self.theta * t)))
 
     def conditional_std(self, t: float) -> float:
         r"""Conditional standard deviation std(X_t | X_0)."""
@@ -221,15 +235,15 @@ class OrnsteinUhlenbeckProcess(Process):
         self,
         n: int,
         t: float,
-        x0: Optional[float] = None,
+        x0: float | None = None,
     ) -> float:
         r"""
         Conditional cumulant κ_n(X_t | X_0).
         Because X_t | X_0 is Gaussian, all cumulants of order n ≥ 3 are zero.
         """
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError(f"Cumulant order must be an integer >= 1, got {n}")
-        if t < 0:
+        if not np.isfinite(t) or t < 0:
             raise ValueError(f"Time t must be non-negative, got {t}")
 
         if n == 1:
@@ -243,10 +257,10 @@ class OrnsteinUhlenbeckProcess(Process):
         self,
         t: float,
         order: int = 4,
-        x0: Optional[float] = None,
+        x0: float | None = None,
     ) -> dict[int, float]:
         r"""Compute exact conditional cumulants up to specified order."""
-        if order < 1:
+        if isinstance(order, bool) or not isinstance(order, (int, np.integer)) or order < 1:
             raise ValueError(f"order must be >= 1, got {order}")
         return {n: self.conditional_cumulant(n, t, x0) for n in range(1, order + 1)}
 
@@ -255,7 +269,7 @@ class OrnsteinUhlenbeckProcess(Process):
         Exact n-th cumulant of the stationary distribution:
         κ_1 = μ, κ_2 = σ² / (2θ), κ_n = 0 for n ≥ 3.
         """
-        if n < 1:
+        if isinstance(n, bool) or not isinstance(n, (int, np.integer)) or n < 1:
             raise ValueError(f"Cumulant order must be an integer >= 1, got {n}")
         if n == 1:
             return self.mu
@@ -273,13 +287,13 @@ class OrnsteinUhlenbeckProcess(Process):
         h : float
             Time lag h ≥ 0.
         """
-        if h < 0:
+        if not np.isfinite(h) or h < 0:
             raise ValueError(f"Lag h must be non-negative, got {h}")
         return float(self.stationary_variance * math.exp(-self.theta * h))
 
     def autocorrelation(self, h: float) -> float:
         r"""Stationary autocorrelation Corr(X_t, X_{t+h}) = e^{-θh}."""
-        if h < 0:
+        if not np.isfinite(h) or h < 0:
             raise ValueError(f"Lag h must be non-negative, got {h}")
         return float(math.exp(-self.theta * h))
 
@@ -288,17 +302,19 @@ class OrnsteinUhlenbeckProcess(Process):
         Non-stationary covariance Cov(X_s, X_t) for deterministic initial condition X_0 = x_0:
         Cov(X_s, X_t) = (σ² / (2θ)) [e^{-θ|t-s|} - e^{-θ(s+t)}].
         """
-        if s < 0 or t < 0:
-            raise ValueError("Time arguments s and t must be non-negative")
-        scale = self.sigma**2 / (2.0 * self.theta)
-        return float(scale * (math.exp(-self.theta * abs(t - s)) - math.exp(-self.theta * (s + t))))
+        if not np.all(np.isfinite([s, t])) or s < 0 or t < 0:
+            raise ValueError("Time arguments s and t must be non-negative and finite")
+        return float(self.conditional_variance(min(s, t)) * math.exp(-self.theta * abs(t - s)))
 
     def spectral_density(
         self,
-        omega: Union[float, np.ndarray],
-    ) -> Union[float, np.ndarray]:
+        omega: float | np.ndarray,
+    ) -> float | np.ndarray:
         r"""
-        Two-sided power spectral density S(ω) = σ² / (π (θ² + ω²)).
+        Two-sided spectral density S(ω) = σ² / (2π (θ² + ω²)).
+
+        Convention: C(h) = integral exp(i ω h) S(ω) dω over the real line,
+        so integral S(ω) dω = stationary_variance.
 
         Parameters
         ----------
@@ -309,7 +325,7 @@ class OrnsteinUhlenbeckProcess(Process):
         is_scalar = w_arr.ndim == 0
         w_arr = np.atleast_1d(w_arr)
 
-        dens = (self.sigma**2 / math.pi) / (self.theta**2 + w_arr**2)
+        dens = (self.sigma**2 / (2 * math.pi)) / (self.theta**2 + w_arr**2)
         return float(dens[0]) if is_scalar else dens
 
     # ------------------------------------------------------------------
@@ -317,32 +333,28 @@ class OrnsteinUhlenbeckProcess(Process):
     # ------------------------------------------------------------------
 
     def char_func(
-        self,
-        u: Union[float, complex],
-        t: float = 1.0,
-        x0: Optional[float] = None,
-    ) -> complex:
-        r"""
-        Conditional characteristic function E[exp(i u X_t) | X_0]:
-        φ(u) = exp(i u m(t) - (1/2) u² v(t)).
-        """
-        if t < 0:
-            raise ValueError(f"Time t must be non-negative, got {t}")
-        m = self.conditional_mean(t, x0)
-        v = self.conditional_variance(t)
-        return complex(np.exp(1j * u * m - 0.5 * (u**2) * v))
+        self, u: complex | float | np.ndarray, t: float = 1.0, x0: float | None = None
+    ) -> complex | np.ndarray:
+        validate_time(t)
+        if x0 is not None and not np.isfinite(x0):
+            raise ValueError("x0 must be finite")
+        z = np.asarray(u, dtype=complex)
+        result = np.exp(
+            1j * z * self.conditional_mean(t, x0) - 0.5 * z * z * self.conditional_variance(t)
+        )
+        return complex(result) if z.ndim == 0 else np.asarray(result)
 
     def laplace_transform(
         self,
         u: float,
         t: float = 1.0,
-        x0: Optional[float] = None,
+        x0: float | None = None,
     ) -> float:
         r"""
         Conditional Laplace transform E[exp(-u X_t) | X_0]:
         L(u) = exp(-u m(t) + (1/2) u² v(t)).
         """
-        if t < 0:
+        if not np.isfinite(t) or t < 0:
             raise ValueError(f"Time t must be non-negative, got {t}")
         m = self.conditional_mean(t, x0)
         v = self.conditional_variance(t)
@@ -354,11 +366,11 @@ class OrnsteinUhlenbeckProcess(Process):
 
     def transition_density(
         self,
-        y: Union[float, np.ndarray],
+        y: float | np.ndarray,
         t: float,
-        x0: Optional[float] = None,
+        x0: float | None = None,
         s: float = 0.0,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
         Exact transition Gaussian probability density p(y, t | x_s, s).
 
@@ -366,7 +378,7 @@ class OrnsteinUhlenbeckProcess(Process):
         where Δt = t - s > 0, m = μ + (x - μ) e^{-θΔt}, and v = (σ²/(2θ))(1 - e^{-2θΔt}).
         """
         dt = t - s
-        if dt <= 0:
+        if not np.isfinite(dt) or dt <= 0:
             raise ValueError(f"t must be strictly greater than s (dt={dt})")
 
         val_x0 = self.x0 if x0 is None else float(x0)
@@ -385,8 +397,8 @@ class OrnsteinUhlenbeckProcess(Process):
 
     def stationary_density(
         self,
-        y: Union[float, np.ndarray],
-    ) -> Union[float, np.ndarray]:
+        y: float | np.ndarray,
+    ) -> float | np.ndarray:
         r"""
         Exact stationary Gaussian probability density f_∞(y) ~ N(μ, σ²/(2θ)).
         """
@@ -406,9 +418,9 @@ class OrnsteinUhlenbeckProcess(Process):
 
     def bond_price(
         self,
-        tau: Union[float, np.ndarray],
-        r0: Optional[float] = None,
-    ) -> Union[float, np.ndarray]:
+        tau: float | np.ndarray,
+        r0: float | None = None,
+    ) -> float | np.ndarray:
         r"""
         Vasicek zero-coupon bond price P(τ) = A(τ) exp(-B(τ) r_0).
 
@@ -428,7 +440,7 @@ class OrnsteinUhlenbeckProcess(Process):
         is_scalar = tau_arr.ndim == 0
         tau_arr = np.atleast_1d(tau_arr)
 
-        if np.any(tau_arr < 0):
+        if not np.all(np.isfinite(tau_arr)) or np.any(tau_arr < 0):
             raise ValueError("Maturity tau must be non-negative")
 
         val_r0 = self.x0 if r0 is None else float(r0)
@@ -437,7 +449,7 @@ class OrnsteinUhlenbeckProcess(Process):
 
         if np.any(pos):
             t_pos = tau_arr[pos]
-            b_val = (1.0 - np.exp(-self.theta * t_pos)) / self.theta
+            b_val = (-np.expm1(-self.theta * t_pos)) / self.theta
             gamma_term = self.mu - self.sigma**2 / (2.0 * (self.theta**2))
             ln_a = gamma_term * (b_val - t_pos) - (self.sigma**2 / (4.0 * self.theta)) * (b_val**2)
             out[pos] = np.exp(ln_a - b_val * val_r0)
@@ -446,9 +458,9 @@ class OrnsteinUhlenbeckProcess(Process):
 
     def bond_yield(
         self,
-        tau: Union[float, np.ndarray],
-        r0: Optional[float] = None,
-    ) -> Union[float, np.ndarray]:
+        tau: float | np.ndarray,
+        r0: float | None = None,
+    ) -> float | np.ndarray:
         r"""
         Continuously compounded zero-coupon bond yield y(τ) = -ln(P(τ)) / τ.
 
@@ -458,7 +470,7 @@ class OrnsteinUhlenbeckProcess(Process):
         is_scalar = tau_arr.ndim == 0
         tau_arr = np.atleast_1d(tau_arr)
 
-        if np.any(tau_arr < 0):
+        if not np.all(np.isfinite(tau_arr)) or np.any(tau_arr < 0):
             raise ValueError("Maturity tau must be non-negative")
 
         val_r0 = self.x0 if r0 is None else float(r0)
@@ -469,7 +481,7 @@ class OrnsteinUhlenbeckProcess(Process):
         out[zero_mask] = val_r0
         if np.any(pos_mask):
             t_pos = tau_arr[pos_mask]
-            b_val = (1.0 - np.exp(-self.theta * t_pos)) / self.theta
+            b_val = (-np.expm1(-self.theta * t_pos)) / self.theta
             gamma_term = self.mu - self.sigma**2 / (2.0 * (self.theta**2))
             ln_a = gamma_term * (b_val - t_pos) - (self.sigma**2 / (4.0 * self.theta)) * (b_val**2)
             ln_p = ln_a - b_val * val_r0
@@ -487,10 +499,11 @@ class OrnsteinUhlenbeckProcess(Process):
             required="EXACT",
             actual="MOMENT_PROPAGATION",
             reason=(
-                "OrnsteinUhlenbeckProcess has mean-reverting drift and serially correlated increments — "
-                "it is not a Lévy process and has no Lévy–Khintchine triplet. "
-                "Use .conditional_mean(), .conditional_variance(), .stationary_mean, "
-                ".bond_price(), or .simulate()."
+                "OrnsteinUhlenbeckProcess has mean-reverting drift and serially "
+                "correlated increments — it is not a Lévy process and has no "
+                "Lévy–Khintchine triplet. Use .conditional_mean(), "
+                ".conditional_variance(), .stationary_mean, .bond_price(), or "
+                ".simulate()."
             ),
         )
 
@@ -506,24 +519,39 @@ class OrnsteinUhlenbeckProcess(Process):
             is_subordinator=False,
             hurst_index=None,
             notes=[
-                f"Gaussian Ornstein–Uhlenbeck (Vasicek) process: dX_t = θ(μ - X_t)dt + σ dW_t.",
+                "Gaussian Ornstein–Uhlenbeck (Vasicek) process: dX_t = θ(μ - X_t)dt + σ dW_t.",
                 f"Parameters: θ={self.theta}, μ={self.mu}, σ={self.sigma}, x0={self.x0}.",
-                f"Stationary distribution: N(mean={self.mu}, variance={self.stationary_variance:.6f}).",
-                f"Relaxation time τ={self.relaxation_time:.4f}, half-life t_1/2={self.half_life:.4f}.",
-                "OrnsteinUhlenbeckProcess has mean-reverting drift and serially correlated increments.",
+                (
+                    "Stationary distribution: N(mean="
+                    f"{self.mu}"
+                    ", variance="
+                    f"{self.stationary_variance:.6f}"
+                    ")."
+                ),
+                (
+                    "Relaxation time τ="
+                    f"{self.relaxation_time:.4f}"
+                    ", half-life t_1/2="
+                    f"{self.half_life:.4f}"
+                    "."
+                ),
+                (
+                    "OrnsteinUhlenbeckProcess has mean-reverting drift and serially "
+                    "correlated increments."
+                ),
             ],
         )
 
     def _moment_propagation_cumulants(self, order: int) -> dict[int, float]:
-        r"""Stationary cumulants κ_1, ..., κ_order."""
-        return {n: self.stationary_cumulant(n) for n in range(1, order + 1)}
+        """The common protocol denotes X_1, not the stationary distribution."""
+        return self.conditional_cumulants(t=1.0, order=order)
 
     def simulate(
         self,
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
         method: str = "exact",
     ) -> np.ndarray:
         r"""
@@ -571,9 +599,13 @@ class OrnsteinUhlenbeckProcess(Process):
 
     def __repr__(self) -> str:
         return (
-            f"OrnsteinUhlenbeck(theta={self.theta}, mu={self.mu}, "
-            f"sigma={self.sigma}, x0={self.x0})"
+            f"OrnsteinUhlenbeck(theta={self.theta}, mu={self.mu}, sigma={self.sigma}, x0={self.x0})"
         )
+
+    def cumulants_at(self, order: int, t: float = 1.0) -> dict[int, float]:
+        validate_order(order)
+        validate_time(t)
+        return self.conditional_cumulants(t=t, order=order)
 
 
 # Standard quantitative aliases

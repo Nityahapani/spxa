@@ -16,13 +16,11 @@ This is the core fact that makes spxa's `X + Y` exact. No approximation is invol
 
 **Theorem.** If $X$ has triplet $(b, \sigma^2, \nu)$ and $c \in \mathbb{R}$, then $Z = cX$ has triplet
 
-$$b_Z = cb + \int_{\mathbb{R}} x\left(\mathbf{1}_{\|x\| \leq 1} - \mathbf{1}_{\|cx'\| \leq 1}\right) \nu(dx'/c), \quad \sigma^2_Z = c^2 \sigma^2, \quad \nu_Z(B) = \nu(B/c)$$
+$$b_Z=cb+\int_{\mathbb R}cx\left(\mathbf1_{|cx|\le1}-\mathbf1_{|x|\le1}\right)\nu(dx),\quad
+\sigma_Z^2=c^2\sigma^2,\quad \nu_Z(B)=\nu(\{x:cx\in B\}).$$
 
-In the one-dimensional case with the standard truncation, the drift transforms as
-
-$$b_Z = cb + \int_1^{1/|c|} x\, \mathrm{sgn}(c)\, \nu(dx) \cdot \mathbf{1}_{|c| \neq 1}$$
-
-when $|c| < 1$, and symmetrically when $|c| > 1$. The image measure $\nu_Z(B) = \nu(B/c)$ is exact in all cases.
+This includes negative c and endpoint atoms. For c=0 the image process is zero,
+and its Lévy measure is zero (mass at zero is discarded).
 
 **Derivation.** The characteristic function of $cX_t$ is $\mathbb{E}[e^{iucX_t}] = e^{t\psi_X(cu)}$. Substituting $cu$ for $u$ in the Lévy–Khintchine formula and changing variables $x \mapsto x/c$ in the integral gives the result.
 
@@ -46,23 +44,30 @@ $$\psi_Z(u) = -\phi(-\psi_X(u)) = \delta \psi_X(u) + \int_0^\infty \left(e^{s\ps
 
 The triplet of $Z$ in one dimension is:
 
-$$b_Z = \delta b_X + \int_0^\infty \left(\int_{\mathbb{R}} x\, e^{s\psi_X}\, \text{(via inversion)}\right) \rho(ds)$$
+$$b_Z=\delta b_X+\int_0^\infty\mathbb E[X_s\mathbf1_{|X_s|\le1}]\rho(ds),
+\qquad \sigma_Z^2=\delta\sigma_X^2.$$
+
+The expectation is interpreted under the usual integrability hypotheses for the
+subordination triplet theorem.
 
 In practice, computing the triplet of $Z$ explicitly requires either a closed-form inversion (available for named process pairs like BM-under-Gamma = Variance Gamma) or numerical evaluation of the Lévy measure via
 
 $$\nu_Z(B) = \delta \nu_X(B) + \int_0^\infty P(X_s \in B)\, \rho(ds)$$
 
-spxa computes subordination exactly for known pairs (documented per process) and falls back to numerical quadrature otherwise, with `ExactnessLevel.MOMENT_PROPAGATION` and an explicit warning.
+spxa computes subordination exactly for known pairs (documented per process) and uses exponent/moment composition otherwise, with `ExactnessLevel.MOMENT_PROPAGATION` and an explicit warning; a generic triplet is not exposed.
 
 **The `@` operator in spxa.** `Z = X @ T` denotes subordination: $Z_t = X_{T_t}$. The left operand is the parent process, the right operand must be a subordinator.
 
 ## Cumulant propagation under composition
 
-For any operation producing a Lévy process, cumulants follow from the triplet:
+For a Lévy process, provided the relevant tail moment exists,
 
-$$\kappa_n(Z_t) = t \cdot \kappa_n(Z_1) = t \cdot \int x^n\, \nu_Z(dx) + t \cdot \sigma_Z^2 \cdot \mathbf{1}_{n=2}$$
+$$\kappa_1(X_t)=t\left(b+\int_{|x|>1}x\nu(dx)\right),\qquad
+\kappa_n(X_t)=t\left(\mathbf1_{n=2}\sigma^2+\int x^n\nu(dx)\right),\ n\ge2.$$
 
-This is computed symbolically by spxa when $\nu_Z$ has a closed-form density, and numerically otherwise with a stated error bound.
+Known laws use analytical formulas; generic measures use numerical integration.
+No universal quadrature error certificate is supplied. Non-Lévy processes use their
+own time-aware moment implementation rather than this linear-time rule.
 
 ## Property propagation
 
@@ -74,19 +79,19 @@ Operations propagate properties through the lattice defined in `spxa/core/proper
 | Independent increments | preserved | preserved | preserved |
 | Finite variance | preserved if both have it | preserved | depends on $T$ |
 | Finite mean | preserved if both have it | preserved | preserved if $T$ has finite mean |
-| Self-similarity index $H$ | lost unless $X = Y$ | preserved | lost in general |
-| Martingale | preserved if both are | preserved if $c \neq 0$ and $b=0$ | depends |
+| Self-similarity index $H$ | preserved for equal indices (independent sums) | preserved | lost in general |
+| Martingale | preserved if both are | preserved (and zero scaling is a martingale) | depends |
 | Tail index $\alpha$ | $\min(\alpha_X, \alpha_Y)$ | preserved | depends on $T$ |
 
-Cells marked "depends" cause spxa to check the specific triplet values rather than propagating symbolically.
+Properties are conservative capability flags; unknown cases are not inferred from a scalar drift alone.
 
 ## What breaks outside the Lévy regime
 
 The above arithmetic is **exact only for independent Lévy processes**. The following cases require approximation:
 
-- **Fractional Brownian motion**: not a semimartingale, not a Lévy process, no triplet. The Hurst index $H$ is the relevant parameter; self-similarity and long memory are propagated heuristically.
+- **Fractional Brownian motion**: outside H=1/2, not a semimartingale or Lévy process; this class exposes no triplet. The Hurst index $H$ is the relevant parameter; self-similarity and long memory are propagated heuristically.
 - **Products $X \cdot Y$**: not a Lévy process in general even for Lévy $X$, $Y$. spxa computes moments of the product when $X$ and $Y$ are independent using the moment product formula.
-- **Stochastic integrals $\int f(X_s)\, dY_s$**: exact only for deterministic $f$; for random integrands, Itô isometry gives the variance and spxa propagates moments only.
+- **Stochastic integrals $\int f(X_s)\, dY_s$**: deterministic kernels have an exponent integral; supported random integrands use numerical Itô-isometry moments, and general cases are simulation-only.
 
 In all approximate cases, `ExactnessLevel` is set to `MOMENT_PROPAGATION` or `SIMULATION_ONLY`, and calling `.triplet` raises `ExactnessError` with an explanation.
 

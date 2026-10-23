@@ -23,15 +23,11 @@ Reference: Sato (1999), Proposition 11.10.
 
 from __future__ import annotations
 
-import warnings
-from typing import Iterable
+from collections.abc import Iterable
 
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.exceptions import SpxaDegradationWarning
 from spxa.core.process import Process
-from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
-from spxa.story.narrator import CompositionNode, NodeKind
 
 
 def add(X: Process, Y: Process) -> Process:

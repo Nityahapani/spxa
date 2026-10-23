@@ -77,6 +77,7 @@ def test_cgmy_cumulant_1() -> None:
     Carr et al. (2002), equation (2).
     """
     from scipy.special import gamma as gamma_fn
+
     C, G, M, Y = 1.0, 5.0, 7.0, 0.5
     cgmy = CGMY(C=C, G=G, M=M, Y=Y)
     expected = C * float(gamma_fn(1 - Y)) * (M ** (Y - 1) - G ** (Y - 1))
@@ -90,6 +91,7 @@ def test_cgmy_cumulant_2() -> None:
     Carr et al. (2002), equation (2).
     """
     from scipy.special import gamma as gamma_fn
+
     C, G, M, Y = 1.0, 5.0, 7.0, 0.5
     cgmy = CGMY(C=C, G=G, M=M, Y=Y)
     expected = C * float(gamma_fn(2 - Y)) * (M ** (Y - 2) + G ** (Y - 2))
@@ -119,11 +121,7 @@ def test_cgmy_finite_variance_when_y_lt_2() -> None:
 
 
 @pytest.mark.exactness
-def test_cgmy_cumulant_order_below_y_raises() -> None:
-    """
-    κ_n does not exist for n ≤ Y. cumulant_exact must raise ValueError.
-    Carr et al. (2002): Γ(n-Y) diverges when n ≤ Y.
-    """
+def test_cgmy_tempered_mean_exists_above_y_one() -> None:
+    """Sato 25.3: moment existence is a tail condition, not n>Y near zero."""
     cgmy = CGMY(C=1.0, G=5.0, M=5.0, Y=1.5)
-    with pytest.raises(ValueError, match="does not exist"):
-        cgmy.cumulant_exact(1)
+    assert cgmy.cumulant_exact(1) == pytest.approx(0.0)

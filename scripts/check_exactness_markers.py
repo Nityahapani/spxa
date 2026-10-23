@@ -1,59 +1,43 @@
-"""
-Scans tests/exactness/ and fails if any test function has a skip or xfail marker.
-Called by the exactness-gate CI job.
-"""
+"""Reject skip/xfail decorations, module markers and imperative skipping in exactness tests."""
 
 import ast
 import sys
 from pathlib import Path
 
-FORBIDDEN_MARKERS = {"skip", "skipif", "xfail"}
+FORBIDDEN_MARKERS = {"skip", "skipif", "xfail", "importorskip"}
+
 
 def check_file(path: Path) -> list[str]:
-    violations = []
     tree = ast.parse(path.read_text())
+    aliases = set(FORBIDDEN_MARKERS)
     for node in ast.walk(tree):
-        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            continue
-        for decorator in node.decorator_list:
-            name = None
-            if isinstance(decorator, ast.Attribute):
-                name = decorator.attr
-            elif isinstance(decorator, ast.Call):
-                func = decorator.func
-                if isinstance(func, ast.Attribute):
-                    name = func.attr
-                elif isinstance(func, ast.Name):
-                    name = func.id
-            elif isinstance(decorator, ast.Name):
-                name = decorator.id
-            if name in FORBIDDEN_MARKERS:
-                violations.append(
-                    f"{path}:{node.lineno}: {node.name} has forbidden marker @pytest.mark.{name}"
-                )
-    return violations
+        if isinstance(node, ast.ImportFrom) and node.module == "pytest":
+            aliases.update(n.asname or n.name for n in node.names if n.name in FORBIDDEN_MARKERS)
+    violations = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr in FORBIDDEN_MARKERS:
+            violations.add((node.lineno, node.attr))
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in aliases
+        ):
+            violations.add((node.lineno, node.func.id))
+    return [
+        f"{path}:{line}: forbidden exactness skip/xfail: {name}"
+        for line, name in sorted(violations)
+    ]
+
 
 def main() -> None:
-    exactness_dir = Path("tests/exactness")
-    if not exactness_dir.exists():
-        print("tests/exactness/ does not exist yet — skipping check")
-        sys.exit(0)
+    files = sorted(Path("tests/exactness").rglob("test_*.py"))
+    if not files:
+        sys.exit("No exactness test files found")
+    violations = [item for path in files for item in check_file(path)]
+    if violations:
+        sys.exit("\n".join(violations))
+    print(f"Checked {len(files)} exactness test files; no skips or xfails")
 
-    all_violations: list[str] = []
-    for test_file in exactness_dir.rglob("test_*.py"):
-        all_violations.extend(check_file(test_file))
-
-    if all_violations:
-        print("Exactness test violations found:")
-        for v in all_violations:
-            print(f"  {v}")
-        print(
-            "\nExactness tests may never be skipped or xfailed. "
-            "Open an issue with the label 'exactness-violation' if a test is mathematically wrong."
-        )
-        sys.exit(1)
-
-    print(f"Checked {sum(1 for _ in exactness_dir.rglob('test_*.py'))} exactness test files — all clean.")
 
 if __name__ == "__main__":
     main()

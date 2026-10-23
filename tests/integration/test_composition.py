@@ -10,8 +10,8 @@ import pytest
 
 import spxa
 from spxa.analytics import cumulant_table, hellinger_distance, l2_char_func_distance
-from spxa.zoo.levy import BrownianMotion, GammaProcess, NIG, VarianceGamma
 from spxa.zoo.beyond import FractionalBrownianMotion, OULevy
+from spxa.zoo.levy import NIG, BrownianMotion, GammaProcess, VarianceGamma
 
 
 class TestFullCompositionPipeline:
@@ -81,7 +81,7 @@ class TestFullCompositionPipeline:
         ou = OULevy(lam=lam, subordinator=g)
         g_kappas = g.cumulants(order=2)
         assert ou.stationary_mean == pytest.approx(g_kappas[1], rel=1e-10)
-        assert ou.stationary_variance == pytest.approx(g_kappas[2] / (2 * lam), rel=1e-10)
+        assert ou.stationary_variance == pytest.approx(g_kappas[2] / 2, rel=1e-10)
 
     def test_process_simulation_reproducible(self) -> None:
         """Same rng seed gives identical paths."""
@@ -141,18 +141,43 @@ class TestTopLevelImports:
     def test_all_processes_importable_from_spxa(self) -> None:
         """All main process classes are importable directly from spxa."""
         import spxa
-        for name in ["BrownianMotion", "GammaProcess", "VarianceGamma", "NIG",
-                     "AlphaStable", "CGMY", "PoissonProcess", "CompoundPoisson",
-                     "FractionalBrownianMotion", "HawkesProcess", "OULevy",
-                     "CIRProcess", "CoxIngersollRoss", "OrnsteinUhlenbeck", "Vasicek",
-                     "Heston", "HestonProcess",
-                     "CEV", "CEVProcess", "ConstantElasticityOfVariance",
-                     "MertonJumpDiffusion", "MertonProcess", "Merton76"]:
+
+        for name in [
+            "BrownianMotion",
+            "GammaProcess",
+            "VarianceGamma",
+            "NIG",
+            "AlphaStable",
+            "CGMY",
+            "PoissonProcess",
+            "CompoundPoisson",
+            "FractionalBrownianMotion",
+            "HawkesProcess",
+            "OULevy",
+            "CIRProcess",
+            "CoxIngersollRoss",
+            "OrnsteinUhlenbeck",
+            "Vasicek",
+            "Heston",
+            "HestonProcess",
+            "CEV",
+            "CEVProcess",
+            "ConstantElasticityOfVariance",
+            "MertonJumpDiffusion",
+            "MertonProcess",
+            "Merton76",
+        ]:
             assert hasattr(spxa, name), f"spxa.{name} not found"
 
     def test_core_types_importable(self) -> None:
         """Core types importable directly from spxa."""
         import spxa
-        for name in ["ExactnessLevel", "ExactnessError", "LevyTriplet",
-                     "ProcessProperties", "Process"]:
+
+        for name in [
+            "ExactnessLevel",
+            "ExactnessError",
+            "LevyTriplet",
+            "ProcessProperties",
+            "Process",
+        ]:
             assert hasattr(spxa, name), f"spxa.{name} not found"

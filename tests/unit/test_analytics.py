@@ -57,6 +57,7 @@ class TestFourierPricing:
 
     def test_implied_volatility_recovery(self) -> None:
         from scipy.stats import norm
+
         sigma_true = 0.25
         s0, k, r, t = 100.0, 100.0, 0.05, 1.0
         d1 = (np.log(s0 / k) + (r + 0.5 * sigma_true**2) * t) / (sigma_true * np.sqrt(t))

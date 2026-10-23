@@ -33,14 +33,14 @@ Cambridge University Press. Example 8.6.
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
+from typing import Any
 
 import numpy as np
 from scipy import special, stats
 from scipy.optimize import brentq
 
+from spxa.core._validation import validate_order, validate_time
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.levy_measure import LevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
@@ -81,7 +81,7 @@ class MertonJumpDiffusion(Process):
         rate: float = 1.0,
         jump_mean: float = -0.05,
         jump_std: float = 0.15,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         # Support aliases
         if "mu" in kwargs:
@@ -111,12 +111,16 @@ class MertonJumpDiffusion(Process):
         jump_mean_f = float(jump_mean)
         jump_std_f = float(jump_std)
 
+        if not np.all(np.isfinite([drift_f, sigma_f, rate_f, jump_mean_f, jump_std_f])):
+            raise ValueError("Merton parameters must be finite")
         if sigma_f <= 0.0:
             raise ValueError(f"Diffusion volatility sigma must be strictly positive, got {sigma_f}")
         if rate_f <= 0.0:
             raise ValueError(f"Jump intensity rate must be strictly positive, got {rate_f}")
         if jump_std_f <= 0.0:
-            raise ValueError(f"Jump standard deviation jump_std must be strictly positive, got {jump_std_f}")
+            raise ValueError(
+                f"Jump standard deviation jump_std must be strictly positive, got {jump_std_f}"
+            )
 
         self._drift = drift_f
         self._sigma = sigma_f
@@ -127,7 +131,19 @@ class MertonJumpDiffusion(Process):
 
         node = CompositionNode(
             kind=NodeKind.PRIMITIVE,
-            name=f"Merton(drift={drift_f}, sigma={sigma_f}, rate={rate_f}, jump_mean={jump_mean_f}, jump_std={jump_std_f})",
+            name=(
+                "Merton(drift="
+                f"{drift_f}"
+                ", sigma="
+                f"{sigma_f}"
+                ", rate="
+                f"{rate_f}"
+                ", jump_mean="
+                f"{jump_mean_f}"
+                ", jump_std="
+                f"{jump_std_f}"
+                ")"
+            ),
             math_note=(
                 f"Merton jump-diffusion: μ={drift_f}, σ={sigma_f}, λ={rate_f}, "
                 f"Y ~ N({jump_mean_f}, {jump_std_f}²)"
@@ -178,9 +194,10 @@ class MertonJumpDiffusion(Process):
     @property
     def expected_relative_jump(self) -> float:
         r"""
-        Expected relative percentage jump size :math:`\bar{k} = \mathbb{E}[e^Y - 1] = e^{\mu_J + \frac{1}{2}\sigma_J^2} - 1`.
+        Expected relative percentage jump size :math:`\bar{k} = \mathbb{E}[e^Y - 1] =
+        e^{\mu_J + \frac{1}{2}\sigma_J^2} - 1`.
         """
-        return float(math.exp(self._jump_mean + 0.5 * self._jump_std ** 2) - 1.0)
+        return float(math.expm1(self._jump_mean + 0.5 * self._jump_std**2))
 
     # ------------------------------------------------------------------
     # Lévy Triplet & Properties
@@ -191,7 +208,7 @@ class MertonJumpDiffusion(Process):
         # b = mu + lambda * E[Y * 1_{|Y| <= 1}]
         trunc_mean = self._jump_dist.truncation_mean(cutoff=1.0)
         b = self._drift + self._rate * trunc_mean
-        sigma_sq = self._sigma ** 2
+        sigma_sq = self._sigma**2
         nu = _CompoundPoissonLevyMeasure(self._rate, self._jump_dist)
         return LevyTriplet(b=b, sigma_sq=sigma_sq, nu=nu)
 
@@ -220,31 +237,23 @@ class MertonJumpDiffusion(Process):
     # Distributional Analytics (Exponent, Char Func, Cumulants)
     # ------------------------------------------------------------------
 
-    def char_exponent(self, u: Union[float, np.ndarray]) -> Union[complex, np.ndarray]:
-        r"""
-        Lévy characteristic exponent :math:`\psi(u)`.
+    def char_exponent(self, u: complex | float | np.ndarray) -> complex | np.ndarray:
+        """Continuous Merton exponent, with stable small-jump expm1 evaluation."""
+        z = np.asarray(u, dtype=complex)
+        if not np.all(np.isfinite(z)):
+            raise ValueError("Frequencies must be finite")
+        psi = (
+            1j * self._drift * z
+            - 0.5 * self._sigma**2 * z * z
+            + self._rate * np.expm1(1j * self._jump_mean * z - 0.5 * self._jump_std**2 * z * z)
+        )
+        return complex(psi) if z.ndim == 0 else np.asarray(psi)
 
-        .. math::
-
-            \psi(u) = i\mu u - \frac{1}{2}\sigma^2 u^2 + \lambda \left( e^{i u \mu_J - \frac{1}{2}\sigma_J^2 u^2} - 1 \right)
-        """
-        u_arr = np.asarray(u, dtype=complex)
-        is_scalar = np.ndim(u) == 0
-
-        drift_term = 1j * self._drift * u_arr
-        diff_term = -0.5 * (self._sigma ** 2) * (u_arr ** 2)
-        jump_term = self._rate * (np.exp(1j * self._jump_mean * u_arr - 0.5 * (self._jump_std ** 2) * (u_arr ** 2)) - 1.0)
-        psi = drift_term + diff_term + jump_term
-
-        if is_scalar:
-            return complex(psi)
-        return psi
-
-    def char_func(self, u: Union[float, np.ndarray], t: float = 1.0) -> Union[complex, np.ndarray]:
+    def char_func(self, u: complex | float | np.ndarray, t: float = 1.0) -> complex | np.ndarray:
         r"""
         Characteristic function :math:`\phi(u, t) = \mathbb{E}[e^{i u X_t}] = e^{t \psi(u)}`.
         """
-        if t < 0.0:
+        if not np.isfinite(t) or t < 0.0:
             raise ValueError(f"Time t must be non-negative, got {t}")
         psi = self.char_exponent(u)
         val = np.exp(t * psi)
@@ -262,6 +271,7 @@ class MertonJumpDiffusion(Process):
             \kappa_2 = \sigma^2 + \lambda (\mu_J^2 + \sigma_J^2) \\
             \kappa_n = \lambda \mathbb{E}[Y^n], \quad n \ge 3
         """
+        validate_order(order)
         if order < 1:
             raise ValueError(f"Cumulant order must be at least 1, got {order}")
 
@@ -269,7 +279,7 @@ class MertonJumpDiffusion(Process):
         res[1] = float(self._drift + self._rate * self._jump_mean)
 
         if order >= 2:
-            res[2] = float(self._sigma ** 2 + self._rate * (self._jump_mean ** 2 + self._jump_std ** 2))
+            res[2] = float(self._sigma**2 + self._rate * (self._jump_mean**2 + self._jump_std**2))
 
         for n in range(3, order + 1):
             res[n] = float(self._rate * self._jump_dist.moment(n))
@@ -282,107 +292,82 @@ class MertonJumpDiffusion(Process):
 
     def call_price(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
         S0: float = 100.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
         max_jumps: int = 60,
         tol: float = 1e-12,
-    ) -> Union[float, np.ndarray]:
-        r"""
-        European call option price via Merton's (1976) Poisson mixture formula.
+    ) -> float | np.ndarray:
+        """Merton Poisson mixture, with an explicit truncation-tail budget.
 
-        .. math::
-
-            C(S_0, K, T) = \sum_{k=0}^\infty \frac{e^{-\lambda' T} (\lambda' T)^k}{k!} \, C_{\mathrm{BS}}(S_0, K, T, \sigma_k, r_k)
-
-        where:
-        - :math:`\lambda' = \lambda (1 + \bar{k}) = \lambda e^{\mu_J + \frac{1}{2}\sigma_J^2}`
-        - :math:`\sigma_k = \sqrt{\sigma^2 + \frac{k \sigma_J^2}{T}}`
-        - :math:`r_k = r - q - \lambda \bar{k} + \frac{k (\mu_J + \frac{1}{2}\sigma_J^2)}{T}`
-
-        Parameters
-        ----------
-        K :
-            Strike price or array of strikes (:math:`K > 0`).
-        T :
-            Time to maturity in years (:math:`T > 0`). Default 1.0.
-        S0 :
-            Initial spot asset price (:math:`S_0 > 0`). Default 100.0.
-        r :
-            Risk-free interest rate. If None, uses risk-neutral drift implied by :math:`\mu`.
-        q :
-            Continuous dividend yield. Default 0.0.
-        max_jumps :
-            Maximum Poisson terms in series. Default 60.
-        tol :
-            Convergence tolerance for Poisson tail summation. Default 1e-12.
-
-        Returns
-        -------
-        float or np.ndarray
+        Both the cash-measure and stock-numeraire Poisson tails must be below
+        tol. An insufficient max_jumps raises rather than silently returning an
+        intrinsic-value floor. PMFs are evaluated directly, avoiding p_0 underflow
+        at large intensity. Merton (1976); Cont & Tankov (2004), Section 3.5.
         """
-        if T <= 0.0:
-            raise ValueError(f"Maturity T must be strictly positive, got {T}")
-        if S0 <= 0.0:
-            raise ValueError(f"Spot price S0 must be strictly positive, got {S0}")
-
+        validate_time(T)
+        if T == 0:
+            raise ValueError("Maturity T must be strictly positive")
+        if not np.isfinite(S0) or S0 <= 0:
+            raise ValueError("Spot price S0 must be strictly positive and finite")
+        if (
+            isinstance(max_jumps, bool)
+            or not isinstance(max_jumps, (int, np.integer))
+            or max_jumps < 1
+        ):
+            raise ValueError("max_jumps must be a positive integer")
+        if not np.isfinite(tol) or not 0 < tol < 1:
+            raise ValueError("tol must lie between zero and one")
         k_bar = self.expected_relative_jump
-        if r is None:
-            r_val = float(self._drift + 0.5 * self._sigma ** 2 + self._rate * k_bar)
-        else:
-            r_val = float(r)
+        rate = self._drift + 0.5 * self._sigma**2 + self._rate * k_bar if r is None else float(r)
+        if not np.all(np.isfinite([rate, q])):
+            raise ValueError("Pricing rates must be finite")
+        ordinary_mean = self._rate * T
+        tilted_mean = ordinary_mean * math.exp(self._jump_mean + 0.5 * self._jump_std**2)
+        tail = max(
+            float(stats.poisson.sf(max_jumps - 1, ordinary_mean)),
+            float(stats.poisson.sf(max_jumps - 1, tilted_mean)),
+        )
+        if tail > tol:
+            raise ValueError("max_jumps is insufficient for the requested Poisson tail tolerance")
+        n = np.arange(max_jumps, dtype=float)
+        ordinary = stats.poisson.pmf(n, ordinary_mean)
+        tilted = stats.poisson.pmf(n, tilted_mean)
+        variance = self._sigma**2 * T + n * self._jump_std**2
+        std = np.sqrt(variance)
+        drift = rate - q - 0.5 * self._sigma**2 - self._rate * k_bar
+        strikes = np.asarray(K, dtype=float)
+        if not np.all(np.isfinite(strikes)) or np.any(strikes <= 0):
+            raise ValueError("Strike K must be strictly positive and finite")
 
-        # Risk-neutral continuous drift of log-price under measure Q
-        mu_rn = (r_val - q) - 0.5 * (self._sigma ** 2) - self._rate * k_bar
-        ln_s0 = math.log(S0)
-        sig2_t = (self._sigma ** 2) * T
-        sig_j2 = self._jump_std ** 2
-        exp_neg_r_t = math.exp(-r_val * T)
+        def price(strike: float) -> float:
+            d2 = (math.log(S0 / strike) + drift * T + n * self._jump_mean) / std
+            d1 = d2 + std
+            value = S0 * math.exp(-q * T) * np.dot(tilted, special.ndtr(d1)) - strike * math.exp(
+                -rate * T
+            ) * np.dot(ordinary, special.ndtr(d2))
+            intrinsic = max(0.0, S0 * math.exp(-q * T) - strike * math.exp(-rate * T))
+            bound = tol * (S0 * math.exp(-q * T) + strike * math.exp(-rate * T))
+            if value < intrinsic - bound - 1e-10:
+                raise ArithmeticError("Merton series violates its pricing error bound")
+            return float(max(value, intrinsic))
 
-        def _price_single(strike: float) -> float:
-            if strike <= 0.0:
-                raise ValueError(f"Strike K must be strictly positive, got {strike}")
-
-            total_call = 0.0
-            ln_k = math.log(strike)
-            poisson_weight = math.exp(-self._rate * T)
-
-            for k in range(max_jumps):
-                mean_k = ln_s0 + mu_rn * T + k * self._jump_mean
-                var_k = sig2_t + k * sig_j2
-                std_k = math.sqrt(var_k)
-
-                d1 = (mean_k + var_k - ln_k) / std_k
-                d2 = d1 - std_k
-                call_k = exp_neg_r_t * (math.exp(mean_k + 0.5 * var_k) * special.ndtr(d1) - strike * special.ndtr(d2))
-                total_call += poisson_weight * call_k
-
-                # Iterative update: p_{k+1} = p_k * (rate * T) / (k + 1)
-                poisson_weight *= (self._rate * T) / (k + 1)
-
-                if poisson_weight < tol and k > int(self._rate * T):
-                    break
-
-            intrinsic = max(0.0, S0 * math.exp(-q * T) - strike * exp_neg_r_t)
-            return float(max(total_call, intrinsic))
-
-        K_arr = np.asarray(K)
-        if K_arr.ndim == 0:
-            return _price_single(float(K_arr))
-        return np.array([_price_single(float(k)) for k in K_arr], dtype=float)
+        if strikes.ndim == 0:
+            return price(float(strikes))
+        return np.asarray([price(float(k)) for k in strikes.flat]).reshape(strikes.shape)
 
     def put_price(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
         S0: float = 100.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
         max_jumps: int = 60,
         tol: float = 1e-12,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
         European put option price via Put-Call parity.
 
@@ -391,33 +376,44 @@ class MertonJumpDiffusion(Process):
             P = C - S_0 e^{-q T} + K e^{-r T}
         """
         k_bar = self.expected_relative_jump
-        r_val = float(self._drift + 0.5 * self._sigma ** 2 + self._rate * k_bar) if r is None else float(r)
+        r_val = (
+            float(self._drift + 0.5 * self._sigma**2 + self._rate * k_bar)
+            if r is None
+            else float(r)
+        )
         calls = self.call_price(K, T=T, S0=S0, r=r_val, q=q, max_jumps=max_jumps, tol=tol)
         K_arr = np.asarray(K, dtype=float)
         puts = calls - S0 * math.exp(-q * T) + K_arr * math.exp(-r_val * T)
         intrinsic = np.maximum(0.0, K_arr * math.exp(-r_val * T) - S0 * math.exp(-q * T))
-        return np.maximum(puts, intrinsic)
+        return np.asarray(np.maximum(puts, intrinsic))
 
     def implied_volatility(
         self,
-        K: Union[float, np.ndarray],
+        K: float | np.ndarray,
         T: float = 1.0,
         S0: float = 100.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
-    ) -> Union[float, np.ndarray]:
+    ) -> float | np.ndarray:
         r"""
         Black-Scholes implied volatility inverted from Merton call price.
         """
         k_bar = self.expected_relative_jump
-        r_val = float(self._drift + 0.5 * self._sigma ** 2 + self._rate * k_bar) if r is None else float(r)
+        r_val = (
+            float(self._drift + 0.5 * self._sigma**2 + self._rate * k_bar)
+            if r is None
+            else float(r)
+        )
 
         def _bs_call(vol: float, strike: float) -> float:
             if vol <= 1e-8:
                 return float(max(0.0, S0 * math.exp(-q * T) - strike * math.exp(-r_val * T)))
-            d1 = (math.log(S0 / strike) + (r_val - q + 0.5 * vol ** 2) * T) / (vol * math.sqrt(T))
+            d1 = (math.log(S0 / strike) + (r_val - q + 0.5 * vol**2) * T) / (vol * math.sqrt(T))
             d2 = d1 - vol * math.sqrt(T)
-            return float(S0 * math.exp(-q * T) * special.ndtr(d1) - strike * math.exp(-r_val * T) * special.ndtr(d2))
+            return float(
+                S0 * math.exp(-q * T) * special.ndtr(d1)
+                - strike * math.exp(-r_val * T) * special.ndtr(d2)
+            )
 
         def _iv_single(strike: float) -> float:
             call_mkt = float(self.call_price(strike, T=T, S0=S0, r=r_val, q=q))
@@ -440,14 +436,16 @@ class MertonJumpDiffusion(Process):
 
     def implied_vol_smile(
         self,
-        strikes: Union[list[float], np.ndarray],
+        strikes: list[float] | np.ndarray,
         T: float = 1.0,
         S0: float = 100.0,
-        r: Optional[float] = None,
+        r: float | None = None,
         q: float = 0.0,
     ) -> np.ndarray:
         r"""Compute the Black-Scholes implied volatility smile across an array of strikes."""
-        return self.implied_volatility(strikes, T=T, S0=S0, r=r, q=q)
+        return np.asarray(
+            self.implied_volatility(np.asarray(strikes, dtype=float), T=T, S0=S0, r=r, q=q)
+        )
 
     # ------------------------------------------------------------------
     # Exact Path Simulation
@@ -458,7 +456,7 @@ class MertonJumpDiffusion(Process):
         n_steps: int,
         n_paths: int = 1,
         T: float = 1.0,
-        rng: Optional[np.random.Generator] = None,
+        rng: np.random.Generator | None = None,
     ) -> np.ndarray:
         r"""
         Simulate exact sample paths of :math:`X_t`.
