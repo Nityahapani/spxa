@@ -153,11 +153,12 @@ conn = AffineConnection(
     dim=2,
 )
 flow = GeodesicFlow(conn)
-d_rao = flow.gaussian_exact_rao_distance(
-    theta_0=np.array([0.0, 1.0]),
-    theta_1=np.array([2.0, 3.0]),
-)
+d_rao = flow.gaussian_exact_rao_distance((0.0, 1.0), (2.0, 3.0))  # (mu, sigma) pairs
 print(f"Hyperbolic Rao Distance: {d_rao:.4f}")
+
+# Numerical geodesic shooting agrees with the closed form
+d_num = flow.rao_distance(np.array([0.0, 1.0]), np.array([2.0, 3.0]))
+print(f"Geodesic-shooting Rao Distance: {d_num:.4f}")
 ```
 
 ### 4. Rough Paths & Hyperbolic Goursat Signature Kernel
@@ -204,13 +205,10 @@ tau = 0.05  # short maturity (approx 18 days)
 short_skew = rberg.theoretical_short_time_skew(tau=tau)
 print(f"Short-Maturity ATM Implied Volatility Skew: {short_skew:.4f}")
 
-# Simulate joint asset and instantaneous variance paths
-t_mat, s_paths, v_paths = rberg.simulate_paths(
-    t_mat=1.0,
-    n_steps=250,
-    n_paths=1000,
-    seed=42,
-)
+# Exact joint simulation of the Volterra driver, variance, and correlated spot
+sim = rberg.simulate_paths(t_mat=1.0, n_steps=250, n_paths=1000, seed=42)
+s_paths, v_paths = sim["spot_paths"], sim["variance_paths"]
+print("E[v_T] ≈ xi0:", v_paths[:, -1].mean())
 ```
 
 ### 6. High-Frequency Market Making & Inventory Control
@@ -322,18 +320,19 @@ Unlike numerical libraries that silently approximate or introduce uncontrolled t
 | Subpackage | Namespace | Description | Key Modules & APIs |
 | :--- | :--- | :--- | :--- |
 | **Core** | `spxa.core` | Algebraic foundations, triplet types, and exactness lattice | `Process`, `LevyTriplet`, `LevyMeasure`, `ExactnessLevel` |
-| **Process Zoo** | `spxa.zoo` | 198+ continuous-time models (Lévy, diffusions, jumps) | `VarianceGamma`, `NIG`, `Heston`, `SABR`, `Bates`, `CIR`, `CEV` |
+| **Process Zoo** | `spxa.zoo` | 198+ continuous-time models (Lévy, diffusions, jumps) | `VarianceGamma`, `NIG`, `Heston`, `SABR`, `BatesProcess`, `CoxIngersollRoss`, `CEV` |
 | **Computational Graph** | `spxa.graph` | Stochastic DAG engine, compilers, and backends | `ComputationalGraph`, `GraphCompiler`, `GradientTape`, `to_graph` |
 | **Information Geometry** | `spxa.geom` | Differential geometry of statistical manifolds | `FisherInformationMetric`, `AffineConnection`, `GeodesicFlow` |
 | **Rough Paths** | `spxa.signature` | Path signatures, shuffle algebra, and PDE kernels | `PathSignature`, `SignatureAlgebra`, `SignatureKernel` |
 | **Rough Volatility** | `spxa.rough` | Fractional Brownian motion and Volterra calculus | `FractionalKernel`, `RoughBergomi`, `FractionalRiccatiSolver` |
 | **Stochastic Control** | `spxa.control` | Portfolio optimization, market making, and HJB solvers | `MertonPortfolio`, `AvellanedaStoikov`, `AlmgrenChriss`, `HJBSolver` |
-| **Model Calibration** | `spxa.calibration` | Volatility surface calibration, MLE, and filtering | `HestonCalibrator`, `KalmanFilter`, `ParticleFilter`, `sandwich_cov` |
+| **Model Calibration** | `spxa.calibration` | Volatility surface calibration, MLE, GMM, and filtering | `HestonCalibrator`, `CIRMaximumLikelihood`, `UnscentedKalmanFilter`, `ParticleFilter`, `sandwich_covariance_matrix` |
 | **Copula & Dependence** | `spxa.copula` | Multi-asset dependence and extreme value copulas | `ClaytonCopula`, `GumbelCopula`, `GaussianCopula`, `CoupledProcess` |
-| **Stochastic Calculus** | `spxa.calculus` | Itô calculus, Dynkin generators, and Malliavin weights | `ito_formula`, `generator_apply`, `bismut_weight`, `scale_density` |
-| **Stochastic Diffusions** | `spxa.diff` | Advanced SDE systems and local-stochastic volatility | `SDE`, `EulerMaruyama`, `Milstein`, `PredictorCorrector` |
-| **Financial Risk** | `spxa.risk` | Portfolio risk engines, VaR/CVaR, and XVA analytics | `Portfolio`, `VaR`, `CVaR`, `CreditValuationAdjustment` |
-| **Visualization** | `spxa.vis` | Volatility surfaces, smiles, and composition DAGs | `plot_surface`, `plot_smile`, `plot_story_dag`, `levy_inspector` |
+| **Stochastic Calculus** | `spxa.calculus` | Itô calculus, Dynkin generators, and Malliavin weights | `apply_ito_symbolic`, `InfinitesimalGenerator`, `bismut_elworthy_li_delta`, `compute_scale_and_speed_densities` |
+| **Differentiable SDEs** | `spxa.diff` | JAX-differentiable SDE solvers, pathwise Greeks, and neural SDEs | `DifferentiableHeston`, `solve_sde`, `compute_pathwise_greeks`, `DifferentiableNeuralSDE` |
+| **Simulation** | `spxa.sim` | Discretisation schemes, exact samplers, QMC, and MLMC | `euler_maruyama`, `milstein`, `stochastic_runge_kutta`, `mlmc_estimate` |
+| **Financial Risk** | `spxa.risk` | Portfolio risk engines, stress testing, SIMM/FRTB, and XVA analytics | `Portfolio`, `StressTestingEngine`, `ISDASimmEngine`, `XVACalculator` |
+| **Visualization** | `spxa.vis` | Volatility surfaces, smiles, Lévy densities, and composition DAGs | `plot_iv_surface`, `plot_smile_comparison`, `plot_dag`, `inspect_levy_triplet` |
 
 ---
 
