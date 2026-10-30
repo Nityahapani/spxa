@@ -20,9 +20,10 @@ volatility. Prices are per unit notional.
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
+from scipy.integrate import quad
 from scipy.stats import norm
 
 from spxa.pde._utils import check_option_type, check_positive
@@ -385,3 +386,142 @@ def perpetual_put_boundary(K: float, r: float, sigma: float, q: float = 0.0) -> 
     """Optimal exercise level of the perpetual American put."""
     beta = _perpetual_beta(r, sigma, q)
     return K * beta / (beta - 1.0)
+
+
+# =====================================================================================
+# Fourier pricing (Lewis 2001) and Merton's jump-diffusion series
+# =====================================================================================
+
+CharFn = Callable[[complex], complex]
+
+
+def lewis_call_price(
+    cf: CharFn,
+    S: float,
+    K: float,
+    T: float,
+    r: float,
+    q: float = 0.0,
+    option: str = "call",
+) -> float:
+    r"""European option price from the characteristic function (Lewis, 2001).
+
+    ``cf(u)`` must be the characteristic function
+    :math:`\varphi(u) = \mathbb{E}[e^{iuX_T}]` of the *martingale-normalised*
+    log-return, :math:`S_T = S e^{(r-q)T + X_T}` with
+    :math:`\mathbb{E}[e^{X_T}] = 1`, analytic in the strip
+    :math:`-1 < \operatorname{Im} u < 0`. Then
+
+    .. math::
+        C = S e^{-qT} - \frac{\sqrt{SK}\, e^{-(r+q)T/2}}{\pi}
+            \int_0^\infty \operatorname{Re}\!\left[e^{iuk}
+            \varphi\!\left(u - \tfrac{i}{2}\right)\right] \frac{du}{u^2 + 1/4},
+
+    with :math:`k = \log(S/K) + (r - q)T`. Puts follow from parity.
+    """
+    opt = check_option_type(option)
+    k = math.log(S / K) + (r - q) * T
+
+    def integrand(u: float) -> float:
+        return float((np.exp(1j * u * k) * cf(u - 0.5j)).real) / (u * u + 0.25)
+
+    val, _ = quad(integrand, 0.0, np.inf, limit=1000, epsabs=1e-13, epsrel=1e-12)
+    call = S * math.exp(-q * T) - math.sqrt(S * K) * math.exp(-0.5 * (r + q) * T) * val / math.pi
+    if opt == "call":
+        return float(call)
+    return float(call - S * math.exp(-q * T) + K * math.exp(-r * T))
+
+
+def bs_cf(sigma: float, T: float) -> CharFn:
+    """Characteristic function of the normalised Black–Scholes log-return."""
+
+    def cf(u: complex) -> complex:
+        return complex(np.exp(-0.5 * sigma**2 * T * (u * u + 1j * u)))
+
+    return cf
+
+
+def heston_cf(T: float, v0: float, kappa: float, theta: float, sigma: float, rho: float) -> CharFn:
+    r"""Heston characteristic function of :math:`X_T = \log(S_T/S_0) - (r - q)T`.
+
+    Uses the formulation of Albrecher et al. (2007) ("little Heston trap"),
+    which is continuous in :math:`u` along the integration path.
+    """
+
+    def cf(u: complex) -> complex:
+        iu = 1j * u
+        d = np.sqrt((rho * sigma * iu - kappa) ** 2 + sigma**2 * (iu + u * u))
+        g = (kappa - rho * sigma * iu - d) / (kappa - rho * sigma * iu + d)
+        e = np.exp(-d * T)
+        C = (kappa * theta / sigma**2) * (
+            (kappa - rho * sigma * iu - d) * T - 2.0 * np.log((1.0 - g * e) / (1.0 - g))
+        )
+        D = ((kappa - rho * sigma * iu - d) / sigma**2) * (1.0 - e) / (1.0 - g * e)
+        return complex(np.exp(C + D * v0))
+
+    return cf
+
+
+def levy_cf(process: Any, T: float) -> CharFn:
+    r"""Martingale-normalised characteristic function of a Lévy process.
+
+    Returns :math:`u \mapsto \varphi_L(u, T) / \varphi_L(-i, T)^{iu}`, so
+    that :math:`X_T = L_T - T\log\mathbb{E}[e^{L_1}]` satisfies
+    :math:`\mathbb{E}[e^{X_T}] = 1`. The drift of the process cancels out,
+    as it must under the risk-neutral measure.
+    """
+    log_m = complex(np.log(complex(process.char_func(-1j, t=1.0))))
+    if abs(log_m.imag) > 1e-10:
+        raise ValueError("process has no finite exponential moment E[exp(L_1)]")
+    omega = log_m.real
+
+    def cf(u: complex) -> complex:
+        return complex(process.char_func(u, t=T)) * complex(np.exp(-1j * u * omega * T))
+
+    return cf
+
+
+def merton_price(
+    S: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    lam: float,
+    jump_mean: float,
+    jump_std: float,
+    q: float = 0.0,
+    option: str = "call",
+    tol: float = 1e-15,
+) -> float:
+    r"""Merton (1976) jump-diffusion price as a Poisson mixture of Black–Scholes prices.
+
+    Log-jumps are :math:`N(\mu_J, \delta^2)`, so
+    :math:`\kappa = e^{\mu_J + \delta^2/2} - 1` and
+
+    .. math::
+        V = \sum_{n \ge 0} e^{-\lambda' T} \frac{(\lambda' T)^n}{n!}
+            V_{BS}\!\left(\sigma_n, r_n\right), \quad
+        \lambda' = \lambda(1 + \kappa),\;
+        \sigma_n^2 = \sigma^2 + \frac{n\delta^2}{T},\;
+        r_n = r - \lambda\kappa + \frac{n \log(1 + \kappa)}{T}.
+    """
+    kap = math.exp(jump_mean + 0.5 * jump_std**2) - 1.0
+    lam_p = lam * (1.0 + kap)
+    total = 0.0
+    weight_sum = 0.0
+    n = 0
+    log_w = -lam_p * T
+    while True:
+        w = math.exp(log_w)
+        sig_n = math.sqrt(sigma**2 + n * jump_std**2 / T)
+        r_n = r - lam * kap + n * math.log1p(kap) / T
+        # with weights at intensity lambda' the n-th term is a plain BS price at rate r_n
+        px = float(bs_price(S, K, T, r_n, sig_n, q, option))
+        total += w * px
+        weight_sum += w
+        n += 1
+        log_w += math.log(lam_p * T) - math.log(n) if lam_p > 0 else -np.inf
+        if (1.0 - weight_sum) < tol or n > 500:
+            break
+    return float(total)
