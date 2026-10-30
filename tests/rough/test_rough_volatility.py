@@ -89,3 +89,95 @@ def test_fractional_riccati_abm_solver_and_char_func():
     cf_1 = solver.rough_heston_char_func(u=1.0, t_mat=1.0, v0=0.04, theta=0.04, n_steps=50)
     modulus = abs(cf_1)
     assert modulus <= 1.0 + 1e-4
+
+
+def test_volterra_joint_covariance_matches_quadrature():
+    from scipy.integrate import quad
+
+    kernel = FractionalKernel(hurst=0.1)
+    a = kernel.alpha
+    t = np.array([0.2, 0.5, 1.0])
+    cov = kernel.volterra_joint_covariance(t)
+    n = len(t)
+
+    for i in range(n):
+        for j in range(n):
+            s_, l_ = min(t[i], t[j]), max(t[i], t[j])
+            ref_ww = quad(lambda u: (s_ - u) ** a * (l_ - u) ** a, 0.0, s_, limit=200)[0]
+            assert cov[i, j] == pytest.approx(ref_ww, rel=1e-6)
+            ref_wz = quad(lambda u: (t[i] - u) ** a, 0.0, min(t[i], t[j]), limit=200)[0]
+            assert cov[i, n + j] == pytest.approx(ref_wz, rel=1e-6)
+            assert cov[n + i, n + j] == pytest.approx(min(t[i], t[j]))
+
+    assert np.all(np.linalg.eigvalsh(cov) > -1e-12)
+
+
+def test_rbergomi_forward_variance_and_leverage():
+    model = RoughBergomi(hurst=0.1, eta=1.9, rho=-0.9, xi0=0.04, s0=100.0)
+    res = model.simulate_paths(t_mat=1.0, n_steps=50, n_paths=20000, seed=7)
+    v = res["variance_paths"]
+    s = res["spot_paths"]
+
+    # Flat forward variance curve: E[v_t] = xi0
+    assert np.mean(v[:, 25]) == pytest.approx(0.04, rel=0.05)
+    assert np.mean(v[:, -1]) == pytest.approx(0.04, rel=0.08)
+    # Discounted spot is a martingale
+    assert np.mean(s[:, -1]) == pytest.approx(100.0, rel=0.01)
+    # Leverage: returns negatively correlated with variance when rho < 0
+    corr = np.corrcoef(np.log(s[:, 10] / 100.0), v[:, 10])[0, 1]
+    assert corr < -0.2
+
+
+def test_rbergomi_short_time_skew_constant_matches_fukasawa():
+    model = RoughBergomi(hurst=0.1, eta=1.5, rho=-0.7)
+    h = 0.1
+    expected = 0.7 * 1.5 * np.sqrt(2 * h) / (2 * (h + 0.5) * (h + 1.5))
+    assert model.theoretical_short_time_skew(1.0) == pytest.approx(expected, rel=1e-12)
+
+
+def test_rbergomi_monte_carlo_skew_matches_asymptotic():
+    from scipy.optimize import brentq
+    from scipy.stats import norm
+
+    model = RoughBergomi(hurst=0.1, eta=0.5, rho=-0.7, xi0=0.04, s0=1.0)
+    t_mat = 0.1
+    s_t = model.simulate_paths(t_mat=t_mat, n_steps=64, n_paths=60000, seed=3)["spot_paths"][:, -1]
+
+    def implied_vol(k: float) -> float:
+        strike = np.exp(k)
+        price = np.maximum(s_t - strike, 0.0).mean()
+        sq = np.sqrt(t_mat)
+
+        def bs(sig: float) -> float:
+            d1 = -k / (sig * sq) + 0.5 * sig * sq
+            return norm.cdf(d1) - strike * norm.cdf(d1 - sig * sq) - price
+
+        return brentq(bs, 1e-3, 3.0)
+
+    h = 0.02
+    mc_skew = (implied_vol(h) - implied_vol(-h)) / (2 * h)
+    assert mc_skew < 0.0
+    assert mc_skew == pytest.approx(-model.theoretical_short_time_skew(t_mat), rel=0.15)
+
+
+def test_fractional_riccati_reduces_to_classical_heston():
+    from spxa.zoo.beyond.heston import HestonProcess
+
+    lam, nu, rho, v0, theta = 1.5, 0.3, -0.7, 0.04, 0.05
+    heston = HestonProcess(v0=v0, kappa=lam, theta=theta, sigma_v=nu, rho=rho)
+    solver = FractionalRiccatiSolver(hurst=0.5, lambda_param=lam, rho=rho, nu=nu)
+    for u in [0.5, 1.0, 3.0, -2.0]:
+        cf_rough = solver.rough_heston_char_func(u, t_mat=1.0, v0=v0, theta=theta, n_steps=400)
+        cf_heston = heston.char_func(u, t=1.0)
+        assert abs(cf_rough - cf_heston) < 1e-6
+
+
+def test_rough_heston_martingale_and_convergence():
+    solver = FractionalRiccatiSolver(hurst=0.1, lambda_param=1.5, rho=-0.7, nu=0.3)
+    # E[S_T / S_0] = phi(-i) = 1
+    cf_mart = solver.rough_heston_char_func(-1j, t_mat=1.0, v0=0.04, theta=0.05, n_steps=100)
+    assert abs(cf_mart - 1.0) < 1e-12
+    # Grid refinement converges
+    cf_200 = solver.rough_heston_char_func(1.0, t_mat=1.0, v0=0.04, theta=0.05, n_steps=200)
+    cf_400 = solver.rough_heston_char_func(1.0, t_mat=1.0, v0=0.04, theta=0.05, n_steps=400)
+    assert abs(cf_200 - cf_400) < 1e-5

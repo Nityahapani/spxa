@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, Optional
 
 import numpy as np
-from scipy.special import gamma
+from scipy.special import gamma, hyp2f1
 
 
 class FractionalKernel:
@@ -64,6 +64,76 @@ class FractionalKernel:
 
         return {
             "paths": full_paths,
+            "time_grid": time_grid,
+        }
+
+    def volterra_joint_covariance(self, t_grid: np.ndarray) -> np.ndarray:
+        r"""Exact joint covariance of the Riemann-Liouville Volterra process and its driver.
+
+        For :math:`\tilde{W}_t = \int_0^t (t - s)^{H - 1/2} dZ_s` with :math:`a = H - 1/2`
+        and grid points :math:`0 < t_1 < \dots < t_n`, returns the :math:`2n \times 2n`
+        covariance of :math:`(\tilde{W}_{t_1}, \dots, \tilde{W}_{t_n}, Z_{t_1}, \dots, Z_{t_n})`:
+
+        .. math::
+
+            \mathrm{Cov}(\tilde{W}_s, \tilde{W}_t) &= \frac{s^{a + 1} t^{a}}{a + 1}
+                \, {}_2F_1\!\left(-a, 1; a + 2; \tfrac{s}{t}\right), \quad s \le t, \\
+            \mathrm{Var}(\tilde{W}_t) &= \frac{t^{2H}}{2H}, \\
+            \mathrm{Cov}(\tilde{W}_t, Z_s) &= \frac{t^{a + 1} - (t - \min(s, t))^{a + 1}}{a + 1}, \\
+            \mathrm{Cov}(Z_s, Z_t) &= \min(s, t).
+
+        This is the exact Cholesky construction of Bayer, Friz & Gatheral (2016, Section 4).
+        """
+        t = np.asarray(t_grid, dtype=np.float64)
+        if t.ndim != 1 or np.any(t <= 0.0):
+            raise ValueError("t_grid must be a 1D array of strictly positive times")
+        a = self.alpha
+        n = len(t)
+        cov = np.zeros((2 * n, 2 * n), dtype=np.float64)
+
+        s_mat = np.minimum.outer(t, t)
+        l_mat = np.maximum.outer(t, t)
+        ratio = s_mat / l_mat
+        cov_ww = (s_mat ** (a + 1.0)) * (l_mat**a) / (a + 1.0) * hyp2f1(-a, 1.0, a + 2.0, ratio)
+        np.fill_diagonal(cov_ww, t ** (2.0 * self.H) / (2.0 * self.H))
+
+        t_col = t[:, np.newaxis]
+        m_mat = np.minimum(t_col, t[np.newaxis, :])
+        cov_wz = (t_col ** (a + 1.0) - (t_col - m_mat) ** (a + 1.0)) / (a + 1.0)
+
+        cov[:n, :n] = cov_ww
+        cov[:n, n:] = cov_wz
+        cov[n:, :n] = cov_wz.T
+        cov[n:, n:] = s_mat
+        return cov
+
+    def sample_volterra_cholesky(
+        self,
+        t_mat: float = 1.0,
+        n_steps: int = 100,
+        n_paths: int = 1000,
+        seed: Optional[int] = None,
+    ) -> Dict[str, np.ndarray]:
+        r"""Exact joint simulation of :math:`(\tilde{W}_t, Z_t)` on a uniform grid.
+
+        Returns arrays of shape ``(n_paths, n_steps + 1)`` with ``volterra_paths``
+        :math:`\tilde{W}` and ``driver_paths`` :math:`Z`, both starting at 0.
+        """
+        rng = np.random.default_rng(seed)
+        time_grid = np.linspace(0.0, t_mat, n_steps + 1)
+        cov = self.volterra_joint_covariance(time_grid[1:])
+        jitter = 1e-12 * np.max(np.diag(cov))
+        chol = np.linalg.cholesky(cov + jitter * np.eye(cov.shape[0]))
+        z = rng.normal(0.0, 1.0, size=(cov.shape[0], n_paths))
+        joint = (chol @ z).T
+
+        volterra = np.zeros((n_paths, n_steps + 1))
+        driver = np.zeros((n_paths, n_steps + 1))
+        volterra[:, 1:] = joint[:, :n_steps]
+        driver[:, 1:] = joint[:, n_steps:]
+        return {
+            "volterra_paths": volterra,
+            "driver_paths": driver,
             "time_grid": time_grid,
         }
 

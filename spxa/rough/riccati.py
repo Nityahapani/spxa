@@ -34,9 +34,14 @@ class FractionalRiccatiSolver:
         self.nu = float(nu)
 
     def riccati_rhs(self, u: complex, h: complex) -> complex:
-        r"""Evaluates :math:`F(u, h) = -\frac{1}{2}(u^2 + i u) + (\lambda - i \rho \nu u) h + \frac{1}{2}\nu^2 h^2`."""
+        r"""Evaluates :math:`F(u, h) = -\frac{1}{2}(u^2 + i u) + (i \rho \nu u - \lambda) h + \frac{1}{2}\nu^2 h^2`.
+
+        The linear coefficient :math:`i\rho\nu u - \lambda` carries the mean-reversion
+        speed with a negative sign, matching the classical Heston Riccati equation
+        :math:`\psi' = F(u, \psi)` in the limit :math:`H = 1/2`.
+        """
         term1 = -0.5 * (u**2 + 1j * u)
-        term2 = (self.lam - 1j * self.rho * self.nu * u) * h
+        term2 = (1j * self.rho * self.nu * u - self.lam) * h
         term3 = 0.5 * (self.nu**2) * (h**2)
         return term1 + term2 + term3
 
@@ -100,21 +105,32 @@ class FractionalRiccatiSolver:
         theta: float = 0.04,
         n_steps: int = 100,
     ) -> complex:
-        r"""Evaluates rough Heston characteristic function :math:`\mathbb{E}[e^{i u X_T}]`."""
+        r"""Evaluates the rough Heston characteristic function :math:`\mathbb{E}[e^{i u X_T}]`.
+
+        El Euch & Rosenbaum (2019), Theorem 4.1:
+
+        .. math::
+
+            \log \phi(u, T) = \lambda \theta \, I^{1} h(u, T) + V_0 \, I^{1 - \alpha} h(u, T).
+
+        Because :math:`h = I^{\alpha} F(u, h)`, the semigroup property of fractional
+        integrals gives :math:`I^{1 - \alpha} h = I^{1} F(u, h)`, so both terms are
+        ordinary (non-singular) integrals evaluated by the trapezoidal rule:
+
+        .. math::
+
+            \log \phi(u, T) = \lambda \theta \int_0^T h(u, s) ds + V_0 \int_0^T F(u, h(u, s)) ds.
+        """
         sol = self.solve(u, t_mat=t_mat, n_steps=n_steps)
         h_vals = sol["h_vals"]
         t_grid = sol["t_grid"]
-        dt = t_mat / n_steps
 
-        # Fractional integral I^{H+1/2} h(T)
-        alpha = self.alpha
-        weights = ((t_mat - t_grid[:-1]) ** (alpha - 1.0)) / gamma(alpha)
-        # Handle singularity by replacing last weight with integrated weight
-        weights[-1] = (dt ** (alpha - 1.0)) / gamma(alpha)
-        frac_int = np.sum(weights * h_vals[:-1]) * dt
+        f_vals = np.array([self.riccati_rhs(u, h) for h in h_vals], dtype=complex)
 
-        # Standard Riemann integral theta * lambda * int_0^T h(s) ds
-        riemann_int = np.sum(h_vals) * dt
+        # V_0 * I^{1 - alpha} h(T) = V_0 * int_0^T F(u, h(s)) ds
+        frac_int = np.trapezoid(f_vals, t_grid)
+        # lambda * theta * int_0^T h(s) ds
+        riemann_int = np.trapezoid(h_vals, t_grid)
 
         log_cf = v0 * frac_int + theta * self.lam * riemann_int
         return complex(np.exp(log_cf))
