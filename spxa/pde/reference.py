@@ -525,3 +525,121 @@ def merton_price(
         if (1.0 - weight_sum) < tol or n > 500:
             break
     return float(total)
+
+
+# =====================================================================================
+# Short-rate models
+# =====================================================================================
+
+
+def _vasicek_ab(tau: float, kappa: float, theta: float, sigma: float) -> tuple[float, float]:
+    B = (1.0 - math.exp(-kappa * tau)) / kappa
+    lnA = (theta - sigma**2 / (2 * kappa**2)) * (B - tau) - sigma**2 * B**2 / (4 * kappa)
+    return lnA, B
+
+
+def vasicek_bond(r: Any, tau: float, kappa: float, theta: float, sigma: float) -> Any:
+    r"""Vasicek zero-coupon bond :math:`P = A(\tau) e^{-B(\tau) r}`.
+
+    :math:`B = (1 - e^{-\kappa\tau})/\kappa`,
+    :math:`\ln A = (\theta - \sigma^2/2\kappa^2)(B - \tau) - \sigma^2 B^2/4\kappa`.
+    """
+    if tau <= 0.0:
+        return np.ones_like(np.asarray(r, dtype=float)) if np.ndim(r) else 1.0
+    lnA, B = _vasicek_ab(tau, kappa, theta, sigma)
+    return np.exp(lnA - B * np.asarray(r, dtype=float))
+
+
+def vasicek_bond_option(
+    r: float,
+    K: float,
+    T: float,
+    S: float,
+    kappa: float,
+    theta: float,
+    sigma: float,
+    option: str = "call",
+) -> float:
+    r"""Jamshidian (1989) option expiring at ``T`` on the bond maturing at ``S``.
+
+    .. math::
+        \sigma_p = \frac{\sigma}{\kappa}\bigl(1 - e^{-\kappa(S - T)}\bigr)
+                   \sqrt{\frac{1 - e^{-2\kappa T}}{2\kappa}}, \quad
+        h = \frac{1}{\sigma_p}\ln\frac{P(0,S)}{K P(0,T)} + \frac{\sigma_p}{2},
+
+    call :math:`= P(0,S) N(h) - K P(0,T) N(h - \sigma_p)`.
+    """
+    opt = check_option_type(option)
+    pS = float(vasicek_bond(r, S, kappa, theta, sigma))
+    pT = float(vasicek_bond(r, T, kappa, theta, sigma))
+    sp = sigma / kappa * (1 - math.exp(-kappa * (S - T)))
+    sp *= math.sqrt((1 - math.exp(-2 * kappa * T)) / (2 * kappa))
+    h = math.log(pS / (K * pT)) / sp + 0.5 * sp
+    if opt == "call":
+        return pS * norm.cdf(h) - K * pT * norm.cdf(h - sp)
+    return K * pT * norm.cdf(-h + sp) - pS * norm.cdf(-h)
+
+
+def _cir_ab(tau: float, kappa: float, theta: float, sigma: float) -> tuple[float, float]:
+    g = math.sqrt(kappa**2 + 2 * sigma**2)
+    e = math.expm1(g * tau)
+    den = 2 * g + (kappa + g) * e
+    B = 2 * e / den
+    lnA = (2 * kappa * theta / sigma**2) * (
+        math.log(2 * g) + 0.5 * (kappa + g) * tau - math.log(den)
+    )
+    return lnA, B
+
+
+def cir_bond(r: Any, tau: float, kappa: float, theta: float, sigma: float) -> Any:
+    r"""CIR (1985) zero-coupon bond :math:`P = A(\tau) e^{-B(\tau) r}` with
+    :math:`\gamma = \sqrt{\kappa^2 + 2\sigma^2}`,
+    :math:`B = 2(e^{\gamma\tau} - 1)/[2\gamma + (\kappa + \gamma)(e^{\gamma\tau} - 1)]`,
+    :math:`A = [2\gamma e^{(\kappa + \gamma)\tau/2}/(\cdots)]^{2\kappa\theta/\sigma^2}`."""
+    if tau <= 0.0:
+        return np.ones_like(np.asarray(r, dtype=float)) if np.ndim(r) else 1.0
+    lnA, B = _cir_ab(tau, kappa, theta, sigma)
+    return np.exp(lnA - B * np.asarray(r, dtype=float))
+
+
+def cir_bond_option(
+    r: float,
+    K: float,
+    T: float,
+    S: float,
+    kappa: float,
+    theta: float,
+    sigma: float,
+    option: str = "call",
+) -> float:
+    r"""CIR (1985) option on a zero-coupon bond via non-central chi-square laws.
+
+    With :math:`\rho = 2\gamma/[\sigma^2(e^{\gamma T} - 1)]`,
+    :math:`\psi = (\kappa + \gamma)/\sigma^2`, :math:`d = 4\kappa\theta/\sigma^2`
+    and :math:`r^* = \ln(A(S - T)/K)/B(S - T)`,
+
+    .. math::
+        C = P(0,S)\,\chi^2\!\Bigl(2r^*[\rho + \psi + B];\, d,
+              \tfrac{2\rho^2 r e^{\gamma T}}{\rho + \psi + B}\Bigr)
+          - K P(0,T)\,\chi^2\!\Bigl(2r^*[\rho + \psi];\, d,
+              \tfrac{2\rho^2 r e^{\gamma T}}{\rho + \psi}\Bigr)
+
+    (Brigo & Mercurio, eq. 3.26); puts follow from parity.
+    """
+    from scipy.stats import ncx2
+
+    opt = check_option_type(option)
+    g = math.sqrt(kappa**2 + 2 * sigma**2)
+    rho = 2 * g / (sigma**2 * math.expm1(g * T))
+    psi = (kappa + g) / sigma**2
+    lnA, B = _cir_ab(S - T, kappa, theta, sigma)
+    r_star = (lnA - math.log(K)) / B
+    d = 4 * kappa * theta / sigma**2
+    pS = float(cir_bond(r, S, kappa, theta, sigma))
+    pT = float(cir_bond(r, T, kappa, theta, sigma))
+    e = math.exp(g * T)
+    c = pS * ncx2.cdf(2 * r_star * (rho + psi + B), d, 2 * rho**2 * r * e / (rho + psi + B))
+    c -= K * pT * ncx2.cdf(2 * r_star * (rho + psi), d, 2 * rho**2 * r * e / (rho + psi))
+    if opt == "call":
+        return float(c)
+    return float(c - pS + K * pT)
