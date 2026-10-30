@@ -14,6 +14,13 @@ verified finite-difference schemes.
 """
 
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
+from spxa.pde.convergence import (
+    ConvergenceStudy,
+    convergence_study,
+    observed_order,
+    observed_order_from_values,
+    richardson_extrapolate,
+)
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 from spxa.pde.payoffs import Payoff, asset_or_nothing, digital, project_payoff, vanilla
@@ -22,6 +29,11 @@ from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
     "BoundaryCondition",
+    "ConvergenceStudy",
+    "convergence_study",
+    "observed_order",
+    "observed_order_from_values",
+    "richardson_extrapolate",
     "Dirichlet",
     "DiscreteOperator1D",
     "Linear",
