@@ -13,7 +13,7 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
-from spxa.pde.black_scholes import BlackScholesPDE
+from spxa.pde.black_scholes import BlackScholesPDE, DiscreteDividend
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.convergence import (
     ConvergenceStudy,
@@ -37,6 +37,7 @@ __all__ = [
     "observed_order_from_values",
     "richardson_extrapolate",
     "Dirichlet",
+    "DiscreteDividend",
     "DiscreteOperator1D",
     "Linear",
     "LinearPDE1D",

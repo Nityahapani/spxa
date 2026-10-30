@@ -17,7 +17,8 @@ Discretisation choices, all verified by the test-suite:
   imposed). At :math:`S_{\max}` the zero-gamma condition
   :math:`u_{SS} = 0` holds for every payoff that is asymptotically linear.
 * **Payoff.** Cell averages of the payoff (Pooley–Vetzal–Forsyth smoothing).
-* **Time stepping.** Crank–Nicolson with Rannacher start-up.
+* **Time stepping.** Crank–Nicolson with Rannacher start-up, restarted after
+  every discrete dividend.
 
 Together these give clean second-order convergence of prices and grid
 Greeks.
@@ -26,11 +27,12 @@ Greeks.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import Any, Callable, Optional, Sequence, Union
 
 import numpy as np
 
-from spxa.pde._utils import check_option_type, check_positive
+from spxa.pde._utils import check_option_type, check_positive, cubic_interpolate
 from spxa.pde.boundary import BoundaryCondition, Linear, Natural
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
@@ -39,6 +41,28 @@ from spxa.pde.solution import PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaSolver1D
 
 Volatility = Union[float, Callable[[np.ndarray, float], np.ndarray]]
+
+
+@dataclass(frozen=True)
+class DiscreteDividend:
+    r"""A dividend paid at calendar time ``time``.
+
+    On the ex-dividend date the spot drops by ``amount + proportional * S``
+    (floored at zero), so that by no-arbitrage
+    :math:`V(S, t_d^-) = V(\max(S(1 - \delta) - D, 0), t_d^+)`.
+    """
+
+    time: float
+    amount: float = 0.0
+    proportional: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.amount < 0.0 or not 0.0 <= self.proportional < 1.0:
+            raise ValueError("need amount >= 0 and 0 <= proportional < 1")
+
+    def apply(self, s: np.ndarray) -> np.ndarray:
+        """Post-dividend spot as a function of the pre-dividend spot."""
+        return np.maximum(s * (1.0 - self.proportional) - self.amount, 0.0)
 
 
 class BlackScholesPDE:
@@ -133,6 +157,7 @@ class BlackScholesPDE:
         align: Sequence[float] = (),
         events: Optional[dict[float, Any]] = None,
         event_times: Sequence[float] = (),
+        dividends: Sequence[DiscreteDividend] = (),
         lcp: Optional[LCPStepper] = None,
         obstacle: Any = None,
         store_history: bool = False,
@@ -170,6 +195,8 @@ class BlackScholesPDE:
             ``event_times`` (calendar time).
         event_times : sequence of float
             Calendar times to insert into the time grid.
+        dividends : sequence of DiscreteDividend
+            Discrete dividends (jump conditions at the ex-dates).
         lcp, obstacle :
             Free-boundary solver and obstacle for American-style problems.
         smoothing : {'average', 'none'}
@@ -195,11 +222,15 @@ class BlackScholesPDE:
         right = Linear() if right is None else right
         op = DiscreteOperator1D(self.pde(T), g, left, right, convection_scheme)
         u0 = project_payoff(payoff, g, method=smoothing)
-        all_times = sorted(set(float(t) for t in event_times))
+        all_times = sorted(set(float(t) for t in event_times) | {d.time for d in dividends})
         tg = TimeGrid.from_calendar_events(T, n_time, all_times)
         hooks: dict[float, list[Any]] = {}
         for tau, hk in (events or {}).items():
             hooks.setdefault(float(tau), []).extend(hk if isinstance(hk, list) else [hk])
+        for d in dividends:
+            if not 0.0 <= d.time < T:
+                raise ValueError("dividend dates must lie in [0, T)")
+            hooks.setdefault(T - d.time, []).append(_dividend_hook(d))
         # match hook times to the exact grid times
         ev: dict[float, list[Any]] = {}
         for tau, hk in hooks.items():
@@ -273,7 +304,7 @@ class BlackScholesPDE:
         """European call or put.
 
         Extra keyword arguments are forwarded to :meth:`solve` (resolution,
-        grid, ...). ``bump_greeks=True`` adds vega and rho by
+        grid, dividends, ...). ``bump_greeks=True`` adds vega and rho by
         central bump-and-revalue (four extra solves).
         """
         opt = check_option_type(option)
@@ -305,3 +336,10 @@ class BlackScholesPDE:
         kwargs.setdefault("label", f"Digital {opt} K={K:g} T={T:g}")
         sol = self.solve(digital(K, opt, cash), T, center=K, **kwargs)
         return self._result(sol, spot, f"Black-Scholes PDE digital {opt}")
+
+
+def _dividend_hook(div: DiscreteDividend) -> Callable[[np.ndarray, np.ndarray, float], np.ndarray]:
+    def hook(u: np.ndarray, s: np.ndarray, tau: float) -> np.ndarray:
+        return cubic_interpolate(s, u, div.apply(s))
+
+    return hook
