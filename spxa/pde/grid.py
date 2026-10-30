@@ -198,3 +198,125 @@ class Grid1D:
     def __repr__(self) -> str:
         kind = "uniform" if self.is_uniform else "non-uniform"
         return f"Grid1D({kind}, n={self.n}, [{self.lo:.6g}, {self.hi:.6g}])"
+
+
+class TimeGrid:
+    r"""Grid in time to maturity :math:`\tau \in [0, T]` with exact event times.
+
+    Parameters
+    ----------
+    times : array_like
+        Strictly increasing times starting at ``0``.
+    event_taus : iterable of float, optional
+        Times (in :math:`\tau`) at which event hooks are applied. Each must
+        coincide with a grid time.
+    """
+
+    def __init__(
+        self,
+        times: Sequence[float] | np.ndarray,
+        event_taus: Iterable[float] = (),
+    ) -> None:
+        arr = np.asarray(times, dtype=float).ravel()
+        if arr.size < 2 or arr[0] != 0.0:
+            raise ValueError("a TimeGrid must start at tau=0 and contain at least one step")
+        if np.any(np.diff(arr) <= 0.0):
+            raise ValueError("time grid must be strictly increasing")
+        self._times = arr
+        self._times.setflags(write=False)
+        idx: list[int] = []
+        for e in sorted(set(float(v) for v in event_taus)):
+            j = int(np.argmin(np.abs(arr - e)))
+            if not np.isclose(arr[j], e, rtol=0.0, atol=1e-12 * max(1.0, arr[-1])):
+                raise ValueError(f"event tau={e} is not a grid time")
+            if j == 0:
+                raise ValueError("events at tau=0 are the terminal condition, not events")
+            idx.append(j)
+        self._event_indices = tuple(idx)
+
+    @classmethod
+    def uniform(cls, maturity: float, n_steps: int, event_taus: Iterable[float] = ()) -> "TimeGrid":
+        """Piecewise-uniform grid with ``~n_steps`` steps and exact event times.
+
+        The interval ``[0, T]`` is split at the event times and each piece
+        receives a number of steps proportional to its length (at least one),
+        so that every event is hit exactly.
+        """
+        T = check_positive("maturity", maturity)
+        n = int(n_steps)
+        if n < 1:
+            raise ValueError("n_steps must be at least 1")
+        events = sorted(set(float(e) for e in event_taus))
+        for e in events:
+            if not (0.0 < e <= T + 1e-14):
+                raise ValueError(f"event tau={e} must lie in (0, T]")
+        breaks = [0.0] + [e for e in events if e < T * (1 - 1e-14)] + [T]
+        pieces = [np.array([0.0])]
+        for a, b in zip(breaks[:-1], breaks[1:]):
+            m = max(1, int(round(n * (b - a) / T)))
+            pieces.append(np.linspace(a, b, m + 1)[1:])
+        times = np.concatenate(pieces)
+        times[-1] = T
+        events = [min(e, T) for e in events]
+        return cls(times, events)
+
+    @classmethod
+    def from_calendar_events(
+        cls, maturity: float, n_steps: int, event_times: Iterable[float] = ()
+    ) -> "TimeGrid":
+        """Like :meth:`uniform` but with events given in calendar time ``t = T - tau``.
+
+        Calendar times must lie in ``[0, T)``.
+        """
+        T = check_positive("maturity", maturity)
+        taus = []
+        for t in event_times:
+            t = float(t)
+            if not (0.0 <= t < T):
+                raise ValueError(f"event time t={t} must lie in [0, T)")
+            taus.append(T - t)
+        return cls.uniform(T, n_steps, taus)
+
+    @property
+    def times(self) -> np.ndarray:
+        """Grid times :math:`0 = \\tau_0 < \\dots < \\tau_N = T`."""
+        return self._times
+
+    @property
+    def maturity(self) -> float:
+        """Final time :math:`T`."""
+        return float(self._times[-1])
+
+    @property
+    def n_steps(self) -> int:
+        """Number of time steps."""
+        return int(self._times.size - 1)
+
+    @property
+    def steps(self) -> np.ndarray:
+        """Step sizes."""
+        return np.diff(self._times)
+
+    @property
+    def event_indices(self) -> tuple[int, ...]:
+        """Indices ``k`` such that an event is applied once ``tau_k`` is reached."""
+        return self._event_indices
+
+    @property
+    def event_taus(self) -> np.ndarray:
+        """Event times in :math:`\\tau`."""
+        return self._times[list(self._event_indices)]
+
+    def refine(self) -> "TimeGrid":
+        """Halve every time step (events are preserved)."""
+        t = self._times
+        out = np.empty(2 * t.size - 1)
+        out[0::2] = t
+        out[1::2] = 0.5 * (t[1:] + t[:-1])
+        return TimeGrid(out, self.event_taus)
+
+    def __repr__(self) -> str:
+        return (
+            f"TimeGrid(T={self.maturity:.6g}, n_steps={self.n_steps}, "
+            f"events={len(self._event_indices)})"
+        )

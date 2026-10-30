@@ -13,4 +13,9 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
-__all__: list[str] = []
+from spxa.pde.grid import Grid1D, TimeGrid
+
+__all__ = [
+    "Grid1D",
+    "TimeGrid",
+]
