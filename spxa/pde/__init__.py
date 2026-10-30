@@ -34,10 +34,12 @@ from spxa.pde.convergence import (
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 from spxa.pde.payoffs import Payoff, asset_or_nothing, digital, project_payoff, vanilla
+from spxa.pde.short_rate import ShortRatePDE
 from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "ShortRatePDE",
     "AsianPDE",
     "vecer_shares",
     "BlackScholesPDE",
