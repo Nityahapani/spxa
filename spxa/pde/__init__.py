@@ -16,6 +16,7 @@ verified finite-difference schemes.
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
+from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
     "BoundaryCondition",
@@ -26,5 +27,8 @@ __all__ = [
     "Natural",
     "Neumann",
     "Grid1D",
+    "LCPStepper",
+    "ThetaResult",
+    "ThetaSolver1D",
     "TimeGrid",
 ]

@@ -62,8 +62,10 @@ class TestThetaScheme:
     def test_factorisation_cached_for_homogeneous_problems(self):
         grid = Grid1D.uniform(0.0, 1.0, 11)
         op = DiscreteOperator1D(LinearPDE1D(diffusion=1.0), grid, Dirichlet(0.0), Dirichlet(0.0))
-        res = ThetaSolver1D(op).solve(np.zeros(11), TimeGrid.uniform(1.0, 50))
+        res = ThetaSolver1D(op, rannacher_steps=0).solve(np.zeros(11), TimeGrid.uniform(1.0, 50))
         assert res.info["n_factorisations"] == 1
+        res = ThetaSolver1D(op).solve(np.zeros(11), TimeGrid.uniform(1.0, 50))
+        assert res.info["n_factorisations"] == 2  # CN step + backward-Euler half step
 
     def test_history_and_callback(self):
         grid = Grid1D.uniform(0.0, 1.0, 11)
@@ -79,6 +81,52 @@ class TestThetaScheme:
         assert seen == list(range(6))
         np.testing.assert_array_equal(res.history[-1], res.values)
         np.testing.assert_array_equal(res.history[-2], res.previous_values)
+
+
+def _digital_heat(n_space, n_time, rannacher_steps):
+    """u_tau = u_xx with a unit step at x=0; exact u = N(x / sqrt(2 tau))."""
+    from scipy.stats import norm
+
+    grid = Grid1D.uniform(-6.0, 6.0, n_space)
+    op = DiscreteOperator1D(LinearPDE1D(diffusion=1.0), grid, Dirichlet(0.0), Dirichlet(1.0))
+    x = grid.nodes
+    u0 = np.where(x > 0, 1.0, np.where(x == 0, 0.5, 0.0))
+    res = ThetaSolver1D(op, rannacher_steps=rannacher_steps).solve(
+        u0, TimeGrid.uniform(1.0, n_time)
+    )
+    near = np.abs(x) <= 1.0
+    return np.max(np.abs(res.values - norm.cdf(x / np.sqrt(2.0)))[near])
+
+
+class TestRannacher:
+    def test_removes_crank_nicolson_oscillations(self):
+        err_cn = _digital_heat(481, 10, 0)
+        err_rn = _digital_heat(481, 10, 2)
+        assert err_cn > 1e-2
+        assert err_rn < 1e-3
+
+    def test_second_order_with_discontinuous_data(self):
+        errs = [_digital_heat(240 * 2**k + 1, 10 * 2**k, 2) for k in range(3)]
+        orders = np.log2(np.array(errs[:-1]) / np.array(errs[1:]))
+        assert np.all(orders > 1.8)
+
+    def test_restart_after_events(self):
+        grid = Grid1D.uniform(0.0, 1.0, 11)
+        op = DiscreteOperator1D(LinearPDE1D(diffusion=1.0), grid, Dirichlet(0.0), Dirichlet(0.0))
+        tg = TimeGrid.uniform(1.0, 10, event_taus=[0.5])
+        ev = {0.5: lambda u, x, t: u}
+        res = ThetaSolver1D(op).solve(np.zeros(11), tg, events=ev)
+        assert res.info["n_rannacher_steps"] == 4
+        res = ThetaSolver1D(op, rannacher_after_events=False).solve(np.zeros(11), tg, events=ev)
+        assert res.info["n_rannacher_steps"] == 2
+        res = ThetaSolver1D(op, theta=1.0).solve(np.zeros(11), tg)
+        assert res.info["n_rannacher_steps"] == 0
+
+    def test_negative_steps_rejected(self):
+        grid = Grid1D.uniform(0.0, 1.0, 5)
+        op = DiscreteOperator1D(LinearPDE1D(diffusion=1.0), grid, Dirichlet(0.0), Dirichlet(0.0))
+        with pytest.raises(ValueError):
+            ThetaSolver1D(op, rannacher_steps=-1)
 
 
 class TestEvents:
@@ -136,7 +184,7 @@ class TestLCPHook:
         g = 0.5 * np.sin(np.pi * grid.nodes)
         res = ThetaSolver1D(op).solve(g, TimeGrid.uniform(1.0, 10), lcp=lcp, obstacle=g)
         assert np.all(res.values >= g - 1e-14)
-        assert lcp.calls == 10
+        assert lcp.calls == 12  # two Rannacher steps use two half steps each
         assert res.values[0] == pytest.approx(0.0, abs=1e-14)
 
 

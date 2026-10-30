@@ -13,6 +13,17 @@ step from :math:`\tau_n` to :math:`\tau_{n+1} = \tau_n + \Delta\tau` reads
 L-stable). Rows that belong to algebraic boundary conditions (Dirichlet,
 zero curvature) are replaced by the constraint ``C u^{n+1} = g(tau_{n+1})``.
 
+Rannacher start-up
+------------------
+Crank–Nicolson does not damp the high-frequency error modes created by a
+non-smooth payoff (a kink at the strike, a jump for digitals or barriers),
+which pollutes Greeks and can degrade the convergence order. Following
+Rannacher (1984) and Giles & Carter (2006), the first
+``rannacher_steps`` steps are each replaced by two backward-Euler half
+steps. Second-order convergence is retained and the start-up oscillations
+are removed. Since every event re-introduces a non-smoothness, the smoothing
+is restarted after each event by default.
+
 Event hooks
 -----------
 Jump conditions at event dates, such as discrete dividends, discrete barrier
@@ -123,16 +134,32 @@ class ThetaSolver1D:
         Spatial discretisation with boundary closures.
     theta : float
         Implicitness :math:`\theta \in [0, 1]` (default Crank–Nicolson).
+    rannacher_steps : int
+        Number of initial steps replaced by two backward-Euler half steps
+        each (ignored when ``theta == 1``). Default 2, i.e. four
+        backward-Euler half steps.
+    rannacher_after_events : bool
+        Restart the Rannacher smoothing after every event.
     """
 
-    def __init__(self, operator: DiscreteOperator1D, theta: float = 0.5) -> None:
+    def __init__(
+        self,
+        operator: DiscreteOperator1D,
+        theta: float = 0.5,
+        rannacher_steps: int = 2,
+        rannacher_after_events: bool = True,
+    ) -> None:
         if not isinstance(operator, DiscreteOperator1D):
             raise TypeError("operator must be a DiscreteOperator1D")
         theta = float(theta)
         if not 0.0 <= theta <= 1.0:
             raise ValueError("theta must lie in [0, 1]")
+        if int(rannacher_steps) < 0:
+            raise ValueError("rannacher_steps must be non-negative")
         self.operator = operator
         self.theta = theta
+        self.rannacher_steps = int(rannacher_steps) if theta < 1.0 else 0
+        self.rannacher_after_events = bool(rannacher_after_events)
         self._lu_cache: dict[tuple[float, float], Any] = {}
         self._asm_cache: Optional[tuple[sp.csr_matrix, np.ndarray]] = None
         self._n_factorisations = 0
@@ -248,13 +275,25 @@ class ThetaSolver1D:
         if callback is not None:
             callback(0, 0.0, u)
         prev = u.copy()
+        smoothing_left = self.rannacher_steps
+        n_smoothed = 0
         for k in range(1, times.size):
             prev = u
-            u = self._step(u, times[k - 1], times[k], self.theta, lcp, obstacle)
+            t0, t1 = float(times[k - 1]), float(times[k])
+            if smoothing_left > 0:
+                mid = 0.5 * (t0 + t1)
+                u = self._step(u, t0, mid, 1.0, lcp, obstacle)
+                u = self._step(u, mid, t1, 1.0, lcp, obstacle)
+                smoothing_left -= 1
+                n_smoothed += 1
+            else:
+                u = self._step(u, t0, t1, self.theta, lcp, obstacle)
             for hook in event_at.get(k, []):
-                u = np.asarray(hook(u, x, float(times[k])), dtype=float)
+                u = np.asarray(hook(u, x, t1), dtype=float)
                 if u.shape != x.shape:
                     raise ValueError("event hooks must preserve the grid shape")
+            if k in event_at and self.rannacher_after_events:
+                smoothing_left = self.rannacher_steps
             if history is not None:
                 history.append(u.copy())
             if callback is not None:
@@ -264,6 +303,7 @@ class ThetaSolver1D:
             "n_steps": time_grid.n_steps,
             "n_factorisations": self._n_factorisations,
             "n_events": sum(len(v) for v in event_at.values()),
+            "n_rannacher_steps": n_smoothed,
         }
         return ThetaResult(
             grid=op.grid,
