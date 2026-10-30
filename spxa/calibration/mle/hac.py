@@ -29,7 +29,9 @@ def newey_west_hac(
     lags : int, optional
         Truncation lag length L. If None, uses automatic rule L = floor(4 * (N / 100)^{2/9}).
     kernel : str
-        Kernel weighting function: 'bartlett' (default) or 'quadratic_spectral'.
+        Kernel weighting function: 'bartlett' (default), with weights 1 - j/(L+1), or
+        'quadratic_spectral' (Andrews 1991), k(x) = 25/(12 pi^2 x^2) [sin(6 pi x/5)/(6 pi x/5)
+        - cos(6 pi x/5)] with x = j/(L+1), summed over all lags.
 
     Returns
     -------
@@ -57,12 +59,22 @@ def newey_west_hac(
     gamma_0 = (m_dev.T @ m_dev) / n
     omega = gamma_0.copy()
 
-    # Add autocovariances with kernel weights
-    for j in range(1, min(lags + 1, n)):
+    # Add autocovariances with kernel weights. Bartlett truncates at L; the quadratic-spectral
+    # kernel (Andrews 1991) has unbounded support and uses bandwidth b = L + 1 over all lags.
+    if kernel == "bartlett":
+        max_lag = min(lags, n - 1)
+    elif kernel == "quadratic_spectral":
+        max_lag = n - 1
+    else:
+        raise ValueError(f"kernel must be 'bartlett' or 'quadratic_spectral', got {kernel!r}")
+
+    bandwidth = lags + 1.0
+    for j in range(1, max_lag + 1):
         if kernel == "bartlett":
-            w = 1.0 - j / (lags + 1.0)
-        else:  # Fallback to Bartlett
-            w = 1.0 - j / (lags + 1.0)
+            w = 1.0 - j / bandwidth
+        else:
+            z = 6.0 * math.pi * (j / bandwidth) / 5.0
+            w = 3.0 / z**2 * (math.sin(z) / z - math.cos(z))
 
         gamma_j = (m_dev[j:].T @ m_dev[:-j]) / n
         omega += w * (gamma_j + gamma_j.T)
