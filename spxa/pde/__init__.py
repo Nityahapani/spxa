@@ -1,0 +1,16 @@
+r"""
+spxa.pde — finite-difference PDE and PIDE solvers for pricing and transition densities.
+
+Every Markov process in spxa has a generator :math:`\mathcal{A}`; the
+Feynman–Kac theorem turns expectations of the form
+
+.. math::
+    u(x, \tau) = \mathbb{E}\!\left[e^{-\int_0^\tau r(X_s)\,ds} g(X_\tau) \,\middle|\, X_0 = x\right]
+
+into the backward equation :math:`u_\tau = \mathcal{A}u - r u`,
+:math:`u(x, 0) = g(x)`, written here in time to maturity :math:`\tau`.
+This subpackage discretises such equations with second-order accurate,
+verified finite-difference schemes.
+"""
+
+__all__: list[str] = []
