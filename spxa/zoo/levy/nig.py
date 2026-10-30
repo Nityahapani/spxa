@@ -28,6 +28,7 @@ from typing import Optional
 
 import numpy as np
 from scipy.special import k1 as bessel_k1  # type: ignore[import-untyped]
+from scipy.special import k1e as bessel_k1e  # type: ignore[import-untyped]
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import DensityLevyMeasure
@@ -39,9 +40,11 @@ from spxa.story.narrator import CompositionNode, NodeKind
 
 def _nig_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMeasure:
     """
-    NIG Lévy density: k(x) = αδ/π · K_1(α√(δ²+x²)) / √(δ²+x²) · exp(βx).
+    NIG Lévy density: k(x) = αδ/π · K_1(α|x|) / |x| · exp(βx).
 
-    Barndorff-Nielsen (1997), equation (2.4).
+    Barndorff-Nielsen (1997), equation (2.4). (The expression with
+    √(δ²+x²) in place of |x| is the NIG probability density of L_1, not
+    its Lévy density.)
     """
     prefactor = alpha * delta / np.pi
 
@@ -49,8 +52,9 @@ def _nig_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMea
         out = np.zeros_like(x, dtype=float)
         nz = x != 0
         xv = x[nz]
-        arg = alpha * np.sqrt(delta**2 + xv**2)
-        out[nz] = prefactor * bessel_k1(arg) / np.sqrt(delta**2 + xv**2) * np.exp(beta * xv)
+        ax = np.abs(xv)
+        # exponentially scaled K_1 avoids 0 * inf in the far tails
+        out[nz] = prefactor * bessel_k1e(alpha * ax) / ax * np.exp(beta * xv - alpha * ax)
         return out
 
     gamma_param = np.sqrt(alpha**2 - beta**2)

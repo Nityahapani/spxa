@@ -112,3 +112,29 @@ def test_nig_simulate_variance() -> None:
     paths = nig.simulate(n_steps=50, n_paths=30_000, T=1.0, rng=rng)
     empirical_var = paths[:, -1].var()
     assert empirical_var == pytest.approx(expected_var, rel=0.05)
+
+
+@pytest.mark.exactness
+def test_nig_levy_density_reproduces_cumulants() -> None:
+    """
+    The Lévy density k(x) = αδ/π · K_1(α|x|)/|x| · e^{βx} must reproduce the
+    cumulants of L_1: κ_2 = ∫x² k(x) dx = δα²/γ³ and
+    log E[e^{L_1}] - μ = ∫(e^x - 1) k(x) dx = δ(γ - √(α² - (β+1)²)).
+    Barndorff-Nielsen (1997), equations (2.4) and (2.2).
+    """
+    from scipy.integrate import quad
+
+    alpha, beta, delta = 15.0, -5.0, 0.5
+    nu = NIG(alpha=alpha, beta=beta, delta=delta).triplet.nu
+
+    def k(x: float) -> float:
+        return float(nu.density(np.array([x]))[0])
+
+    gamma = np.sqrt(alpha**2 - beta**2)
+    m2 = (
+        quad(lambda x: x * x * k(x), -np.inf, 0.0)[0] + quad(lambda x: x * x * k(x), 0.0, np.inf)[0]
+    )
+    assert m2 == pytest.approx(delta * alpha**2 / gamma**3, rel=1e-8)
+    expm = quad(lambda x: np.expm1(x) * k(x), -np.inf, 0.0, limit=200)[0]
+    expm += quad(lambda x: np.expm1(x) * k(x), 0.0, np.inf, limit=200)[0]
+    assert expm == pytest.approx(delta * (gamma - np.sqrt(alpha**2 - (beta + 1) ** 2)), rel=1e-7)
