@@ -118,3 +118,62 @@ class PenaltyLCP:
 
     def describe(self) -> str:
         return f"penalty iteration (1/eps={self.penalty:.0e})"
+
+
+class PSORLCP:
+    r"""Projected successive over-relaxation (Cryer, 1971).
+
+    Gauss–Seidel sweeps with relaxation :math:`\omega \in (0, 2)`, each
+    update projected onto :math:`u \ge g`. Converges for symmetric positive
+    definite and for strictly diagonally dominant M-matrices, but needs
+    :math:`O(n)` sweeps per step on fine grids.
+    """
+
+    def __init__(self, omega: float = 1.5, tol: float = 1e-10, max_iter: int = 20000) -> None:
+        if not 0.0 < omega < 2.0:
+            raise ValueError("omega must lie in (0, 2)")
+        self.omega = float(omega)
+        self.tol = float(tol)
+        self.max_iter = int(max_iter)
+        self.iterations: list[int] = []
+
+    def reset(self, n: int) -> None:
+        self.iterations = []
+
+    def step(
+        self,
+        M: sp.csr_matrix,
+        solve: Callable[[np.ndarray], np.ndarray],
+        rhs: np.ndarray,
+        obstacle: np.ndarray,
+        guess: np.ndarray,
+        dt: float,
+        free: np.ndarray,
+    ) -> np.ndarray:
+        M = sp.csr_matrix(M)
+        indptr, indices, data = M.indptr, M.indices, M.data
+        n = rhs.size
+        diag = M.diagonal()
+        if np.any(diag == 0.0):
+            raise ValueError("PSOR needs a non-zero diagonal")
+        u = np.where(free, np.maximum(guess, obstacle), guess).astype(float)
+        w = self.omega
+        for k in range(1, self.max_iter + 1):
+            delta = 0.0
+            for i in range(n):
+                lo, hi = indptr[i], indptr[i + 1]
+                s = float(np.dot(data[lo:hi], u[indices[lo:hi]]))
+                gs = u[i] + (rhs[i] - s) / diag[i]
+                new = u[i] + w * (gs - u[i]) if free[i] else gs
+                if free[i] and new < obstacle[i]:
+                    new = obstacle[i]
+                delta = max(delta, abs(new - u[i]))
+                u[i] = new
+            if delta <= self.tol * max(1.0, float(np.max(np.abs(u)))):
+                self.iterations.append(k)
+                return u
+        self.iterations.append(self.max_iter)
+        return u
+
+    def describe(self) -> str:
+        return f"PSOR (omega={self.omega})"
