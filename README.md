@@ -471,7 +471,7 @@ If you use `spxa` in your academic research, quantitative modeling, or open-sour
   publisher    = {GitHub},
   journal      = {GitHub repository},
   howpublished = {\url{https://github.com/Nityahapani/spxa}},
-  version      = {1.0.0}
+  version      = {1.0.1}
 }
 ```
 

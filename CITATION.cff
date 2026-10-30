@@ -18,8 +18,8 @@ authors:
 repository-code: "https://github.com/Nityahapani/spxa"
 url: "https://nityahapani.github.io/spxa"
 license: MIT
-version: 1.0.0
-date-released: "2026-09-19"
+version: 1.0.1
+date-released: "2026-10-30"
 keywords:
   - stochastic processes
   - Lévy processes
@@ -39,5 +39,5 @@ preferred-citation:
     - name: "spxa contributors"
   repository-code: "https://github.com/Nityahapani/spxa"
   license: MIT
-  version: 1.0.0
+  version: 1.0.1
   year: 2026

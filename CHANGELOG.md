@@ -4,6 +4,8 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-10-30
+
 ### Added
 
 - `morph/` — Model Morphing (`spxa.morph`, `spxa.graph.morph`): continuous interpolation between
@@ -364,6 +366,11 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   exponentials (with a conditioning guard), stationary distribution and mean intensity.
   Reference: Fischer & Meier-Hellstern (1993), Performance Evaluation 18, 149-171.
 
+### Changed
+
+- Minimum NumPy raised to `numpy>=2.0`. The library uses `np.trapezoid`, which does not exist in
+  NumPy 1.x, so the old `numpy>=1.24` lower bound allowed broken installs.
+
 ### Fixed
 
 - `rough/riccati.py` — `FractionalRiccatiSolver`: corrected the sign of the linear Riccati
@@ -388,6 +395,9 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   log-likelihood.
 - `calibration/mle/hac.py` — `newey_west_hac(kernel="quadratic_spectral")` silently used
   Bartlett weights. It now implements the Andrews (1991) kernel and rejects unknown kernels.
+- `scripts/extract_changelog.py` — the release workflow's note extractor did not match
+  bracketed Keep a Changelog headings (`## [X.Y.Z] — date`), so GitHub releases got the
+  placeholder body `Release X.Y.Z`.
 
 ### Documentation
 
