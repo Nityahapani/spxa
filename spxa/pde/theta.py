@@ -179,15 +179,18 @@ class ThetaSolver1D:
         L_new, s_new = self._assemble(tau_new)
         C, g = op.constraints(tau_new)
         key = (round(dt, 15), theta)
-        lu = self._lu_cache.get(key) if op.matrix_time_homogeneous else None
+        if op.matrix_time_homogeneous:
+            cached = self._lu_cache.get(key)
+            if cached is not None:
+                M, lu = cached
+                return M, lu, s_new, g
         rows = op.constraint_rows
         E = sp.csr_matrix((np.ones(rows.size), (rows, rows)), shape=(n, n))
         M = (sp.identity(n, format="csr") - theta * dt * L_new + (C - E)).tocsr()
-        if lu is None:
-            lu = splu(M.tocsc())
-            self._n_factorisations += 1
-            if op.matrix_time_homogeneous:
-                self._lu_cache[key] = lu
+        lu = splu(M.tocsc())
+        self._n_factorisations += 1
+        if op.matrix_time_homogeneous:
+            self._lu_cache[key] = (M, lu)
         return M, lu, s_new, g
 
     def _step(
