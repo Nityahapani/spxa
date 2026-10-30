@@ -13,9 +13,18 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
+from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.grid import Grid1D, TimeGrid
+from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 
 __all__ = [
+    "BoundaryCondition",
+    "Dirichlet",
+    "DiscreteOperator1D",
+    "Linear",
+    "LinearPDE1D",
+    "Natural",
+    "Neumann",
     "Grid1D",
     "TimeGrid",
 ]
