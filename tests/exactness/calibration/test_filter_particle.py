@@ -51,3 +51,47 @@ class TestFilterParticle:
         # Filtered trajectory tracks true state
         corr = np.corrcoef(traj.filtered_states[:, 0], true_x)[0, 1]
         assert corr > 0.90
+
+
+def _kalman_loglik(y, a, q, r, m0, p0):
+    """Exact log-likelihood of x_k = a x_{k-1} + N(0, q), y_k = x_k + N(0, r)."""
+    m, p, ll = m0, p0, 0.0
+    for yk in y:
+        m, p = a * m, a * a * p + q
+        s = p + r
+        ll += -0.5 * (np.log(2 * np.pi * s) + (yk - m) ** 2 / s)
+        gain = p / s
+        m, p = m + gain * (yk - m), (1 - gain) * p
+    return ll
+
+
+def test_particle_filter_loglik_matches_kalman_without_resampling_every_step():
+    """Weights must be carried between steps when ESS stays above the threshold."""
+    rng = np.random.default_rng(0)
+    a, q, r, n = 0.9, 0.05, 0.2, 60
+    x = np.zeros(n)
+    x_prev = 0.0
+    for k in range(n):
+        x_prev = a * x_prev + rng.normal(0.0, np.sqrt(q))
+        x[k] = x_prev
+    y = x + rng.normal(0.0, np.sqrt(r), size=n)
+
+    def transition(particles, dt, gen):
+        return a * particles + gen.normal(0.0, np.sqrt(q), size=particles.shape)
+
+    def obs_loglik(particles, yk):
+        return -0.5 * (np.log(2 * np.pi * r) + (yk[0] - particles[:, 0]) ** 2 / r)
+
+    exact = _kalman_loglik(y, a, q, r, 0.0, 0.0)
+    for threshold in (0.5, 1.01):
+        pf = BootstrapParticleFilter(
+            dim_state=1,
+            dim_obs=1,
+            transition_sampler=transition,
+            observation_loglik=obs_loglik,
+            n_particles=20000,
+            resample_threshold=threshold,
+            rng=np.random.default_rng(1),
+        )
+        res = pf.filter(y, dt=1.0, initial_particles=np.zeros((20000, 1)))
+        assert abs(res.log_likelihood - exact) < 0.5, (threshold, res.log_likelihood, exact)

@@ -3,6 +3,11 @@ r"""Bootstrap Particle Filter (Sequential Monte Carlo) for non-Gaussian state-sp
 Implements Sequential Importance Resampling (SIR) with systematic/stratified resampling:
     x_k^{(i)} \sim p(x_k | x_{k-1}^{(i)})
     w_k^{(i)} \propto w_{k-1}^{(i)} * p(y_k | x_k^{(i)})
+    \log \hat{p}(y_{1:n}) = \sum_k \log \sum_i w_{k-1}^{(i)} p(y_k | x_k^{(i)})
+
+Systematic resampling is triggered when ESS < resample_threshold * N; weights are reset to
+1/N after resampling and carried forward otherwise. The likelihood estimator is unbiased
+(Del Moral 2004).
 """
 
 from __future__ import annotations
@@ -74,11 +79,13 @@ class BootstrapParticleFilter:
 
             # 2. Measurement update: compute log likelihood of y_k given each particle
             # observation_loglik takes particles of shape (n_p, dim_state) and y_k, returns (n_p,)
-            log_weights = self.observation_loglik(particles, y_k)
-            # Normalize in log-space to prevent underflow
+            log_obs = self.observation_loglik(particles, y_k)
+            # Sequential importance update w_k ∝ w_{k-1} p(y_k | x_k), carried in log-space.
+            # Incremental marginal likelihood: p(y_k | y_{1:k-1}) ≈ sum_i w_{k-1}^i p(y_k | x_k^i).
+            log_weights = np.log(np.maximum(weights, 1e-300)) + log_obs
             max_logw = np.max(log_weights)
             unnorm_w = np.exp(log_weights - max_logw)
-            marginal_ll_k = max_logw + math.log(max(1e-300, float(np.mean(unnorm_w))))
+            marginal_ll_k = max_logw + math.log(max(1e-300, float(np.sum(unnorm_w))))
             total_loglik += marginal_ll_k
 
             weights = unnorm_w / np.sum(unnorm_w)
