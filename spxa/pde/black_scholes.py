@@ -33,7 +33,7 @@ from typing import Any, Callable, Optional, Sequence, Union
 import numpy as np
 
 from spxa.pde._utils import check_option_type, check_positive, cubic_interpolate
-from spxa.pde.boundary import BoundaryCondition, Linear, Natural
+from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 from spxa.pde.american import make_lcp
@@ -434,6 +434,146 @@ class BlackScholesPDE:
         sol = self.solve(payoff, T, center=K, events=events, event_times=times, **kwargs)
         sol.info["exercise_dates"] = len(times)
         return self._result(sol, spot, f"Black-Scholes PDE Bermudan {opt} ({len(times)} dates)")
+
+    # ------------------------------------------------------------------ barriers
+    def barrier(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        barrier: float,
+        barrier_type: str = "down-and-out",
+        option: str = "call",
+        rebate: float = 0.0,
+        rebate_timing: str = "hit",
+        american: bool = False,
+        method: str = "penalty",
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        """Continuously monitored single-barrier option.
+
+        Knock-outs are solved on the domain bounded by the barrier with the
+        Dirichlet condition ``u = rebate`` (``rebate_timing='hit'``) or
+        ``u = rebate * exp(-r tau)`` (``'expiry'``) at the barrier. Knock-ins
+        use in/out parity on the same grid: the vanilla minus the knock-out,
+        plus the rebate times the price of a claim paying one at expiry if
+        the barrier is never hit. American knock-outs are free-boundary
+        problems on the knock-out domain.
+        """
+        opt = check_option_type(option)
+        spot = check_positive("spot", spot)
+        H = check_positive("barrier", barrier)
+        bt = str(barrier_type).lower()
+        if bt not in ("down-and-out", "down-and-in", "up-and-out", "up-and-in"):
+            raise ValueError("unknown barrier_type")
+        if rebate_timing not in ("hit", "expiry"):
+            raise ValueError("rebate_timing must be 'hit' or 'expiry'")
+        down = bt.startswith("down")
+        if (down and spot <= H) or (not down and spot >= H):
+            raise ValueError("spot has already breached the barrier")
+        payoff = vanilla(K, opt)
+        if bt.endswith("out"):
+            return self._knock_out(
+                payoff, T, spot, H, down, rebate, rebate_timing, american, method, K, kwargs
+            )
+        if american:
+            raise NotImplementedError("American knock-in options are not supported")
+        base = dict(kwargs)
+        out = self._knock_out(payoff, T, spot, H, down, 0.0, "hit", False, method, K, base)
+        van = self.european(K, T, spot, opt, **dict(kwargs))
+        price = van.price - out.price
+        delta = van.delta - out.delta
+        gamma = van.gamma - out.gamma
+        theta = van.theta - out.theta
+        if rebate:
+            one = Payoff(lambda s: np.ones_like(s), (), "unit")
+            nohit = self._knock_out(one, T, spot, H, down, 0.0, "hit", False, method, K, base)
+            price += rebate * nohit.price
+            delta += rebate * nohit.delta
+            gamma += rebate * nohit.gamma
+            theta += rebate * nohit.theta
+        out.solution.info["method"] = "in/out parity on the knock-out grid"
+        return PDEPricingResult(
+            price=price,
+            delta=delta,
+            gamma=gamma,
+            theta=theta,
+            spot=spot,
+            solution=out.solution,
+            method=f"Black-Scholes PDE {bt} {opt} (parity)",
+        )
+
+    def _knock_out(
+        self,
+        payoff: Payoff,
+        T: float,
+        spot: float,
+        H: float,
+        down: bool,
+        rebate: float,
+        rebate_timing: str,
+        american: bool,
+        method: str,
+        K: float,
+        kwargs: dict[str, Any],
+    ) -> PDEPricingResult:
+        r = self.r
+        R = float(rebate)
+        bc = (
+            Dirichlet(R)
+            if rebate_timing == "hit"
+            else Dirichlet(lambda tau: R * math.exp(-r * tau))
+        )
+        kw = dict(kwargs)
+        s_max = kw.pop("s_max", None)  # the barrier bounds the domain of up-and-outs
+        if down:
+            lo = H
+            hi = self.default_s_max(spot, max(K, H), T) if s_max is None else float(s_max)
+            left, right = bc, Linear()
+        else:
+            lo, hi = 0.0, H
+            left, right = Natural(), bc
+        center = K if lo < K < hi else spot
+        kw.setdefault("label", f"knock-out barrier H={H:g}")
+        extra: dict[str, Any] = {}
+        if american:
+            lcp = make_lcp(method, side="left" if payoff(np.array([0.0]))[0] > 0 else "right")
+            extra = dict(lcp=lcp, obstacle=lambda s, tau: payoff(s))
+        sol = self.solve(
+            payoff, T, center=center, s_min=lo, s_max=hi, left=left, right=right, **extra, **kw
+        )
+        sol.info["boundary"] = f"barrier Dirichlet u = rebate ({rebate_timing}) at H={H:g}"
+        return self._result(sol, spot, "Black-Scholes PDE knock-out")
+
+    def double_barrier(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        lower: float,
+        upper: float,
+        option: str = "call",
+        rebate: float = 0.0,
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        """Continuously monitored double knock-out (rebate paid at the hit)."""
+        opt = check_option_type(option)
+        if not 0.0 < lower < spot < upper:
+            raise ValueError("need 0 < lower < spot < upper")
+        payoff = vanilla(K, opt)
+        center = K if lower < K < upper else spot
+        kwargs.setdefault("label", f"double knock-out [{lower:g}, {upper:g}]")
+        sol = self.solve(
+            payoff,
+            T,
+            center=center,
+            s_min=lower,
+            s_max=upper,
+            left=Dirichlet(rebate),
+            right=Dirichlet(rebate),
+            **kwargs,
+        )
+        return self._result(sol, spot, f"Black-Scholes PDE double knock-out {opt}")
 
 
 def _boundary_location(
