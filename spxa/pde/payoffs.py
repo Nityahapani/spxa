@@ -128,9 +128,13 @@ def project_payoff(
         Payoff of the *underlying* :math:`S`.
     grid : Grid1D
         Grid in the PDE variable :math:`x` (with :math:`S = T(x)`).
-    method : {'average', 'none'}
-        ``'average'`` returns control-volume averages (in :math:`x`),
-        ``'none'`` pointwise samples.
+    method : {'average', 'kink', 'none'}
+        ``'average'`` returns control-volume averages (in :math:`x`) at
+        interior nodes and samples at the two end points (whose control
+        volumes are one-sided half cells). ``'kink'`` averages only the
+        control volumes containing a kink and samples everywhere else, which
+        removes the :math:`O(h^2)` averaging bias of smooth (e.g. linear)
+        parts on stretched grids. ``'none'`` samples pointwise.
     transform, inverse : callable, optional
         :math:`T` and :math:`T^{-1}` when the grid variable is not :math:`S`
         (for example ``np.exp`` / ``np.log``). Kinks are mapped through
@@ -150,8 +154,8 @@ def project_payoff(
     x = grid.nodes
     if method == "none":
         return g(x)
-    if method != "average":
-        raise ValueError("method must be 'average' or 'none'")
+    if method not in ("average", "kink"):
+        raise ValueError("method must be 'average', 'kink' or 'none'")
     k_s = kinks if kinks is not None else getattr(payoff, "kinks", ())
     k_x = np.asarray(
         [float(inverse(np.asarray(k))) if inverse is not None else float(k) for k in k_s],
@@ -169,4 +173,13 @@ def project_payoff(
     # map each sub-interval to the control volume containing it
     owner = np.searchsorted(faces, mid, side="right") - 1
     totals = np.bincount(owner, weights=integrals, minlength=x.size)
-    return totals / grid.cell_widths
+    out = totals / grid.cell_widths
+    # end-point control volumes are half cells lying on one side of the node,
+    # whose average is an O(h) biased nodal value; sample there instead
+    out[[0, -1]] = g(x[[0, -1]])
+    if method == "kink":
+        smooth = np.ones(x.size, dtype=bool)
+        if inner.size:
+            smooth[np.searchsorted(faces, inner, side="right") - 1] = False
+        out[smooth] = g(x[smooth])
+    return out

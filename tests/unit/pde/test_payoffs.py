@@ -51,7 +51,8 @@ class TestProjection:
         # node 2 cell [1.5, 2.5]: (1/1) * int_{1.7}^{2.5} (s - 1.7) ds = 0.32
         assert out[2] == pytest.approx(0.32)
         assert out[0] == 0.0
-        assert out[4] == pytest.approx(4.0 - 0.25 - 1.7)
+        # end points are sampled: their control volumes are one-sided half cells
+        assert out[4] == pytest.approx(4.0 - 1.7)
 
     def test_average_preserves_integral(self):
         g = Grid1D.sinh(0.0, 3.0, 57, center=1.1, alpha=0.2)
@@ -68,9 +69,11 @@ class TestProjection:
     def test_log_space_transform(self):
         g = Grid1D.uniform(np.log(50), np.log(200), 41)
         out = project_payoff(vanilla(100), g, transform=np.exp, inverse=np.log)
-        # integral over the whole log-domain of (e^x - K)^+
-        exact = (200 - 100) - 100 * (np.log(200) - np.log(100))
-        assert np.dot(out, g.cell_widths) == pytest.approx(exact, rel=1e-10)
+        # integral of (e^x - K)^+ over the interior control volumes
+        hi = g.faces[-2]
+        exact = (np.exp(hi) - 100) - 100 * (hi - np.log(100))
+        assert np.dot(out[1:-1], g.cell_widths[1:-1]) == pytest.approx(exact, rel=1e-10)
+        assert out[-1] == pytest.approx(100.0)
         with pytest.raises(ValueError):
             project_payoff(vanilla(100), g, transform=np.exp)
 
@@ -78,6 +81,21 @@ class TestProjection:
         g = Grid1D.uniform(0.0, 2.0, 11)
         fn = lambda s: np.abs(s - 0.95)  # noqa: E731
         out = project_payoff(fn, g, kinks=(0.95,))
-        assert np.dot(out, g.cell_widths) == pytest.approx(0.95**2 / 2 + 1.05**2 / 2)
+        lo, hi = g.faces[1], g.faces[-2]  # interior control volumes: [0.1, 1.9]
+        exact = (0.95 - lo) ** 2 / 2 + (hi - 0.95) ** 2 / 2
+        assert np.dot(out[1:-1], g.cell_widths[1:-1]) == pytest.approx(exact)
         with pytest.raises(ValueError):
             project_payoff(fn, g, method="spline")
+
+    def test_kink_method_averages_only_kink_cells(self):
+        g = Grid1D.sinh(0.0, 4.0, 41, center=1.7, alpha=0.5)
+        avg = project_payoff(vanilla(1.7), g)
+        kink = project_payoff(vanilla(1.7), g, method="kink")
+        j = int(np.argmin(np.abs(g.nodes - 1.7)))
+        assert kink[j] == pytest.approx(avg[j])
+        others = np.arange(g.n) != j
+        np.testing.assert_allclose(kink[others], np.maximum(g.nodes[others] - 1.7, 0.0), atol=1e-15)
+        # off-node kink: only its own control volume is averaged
+        k2 = project_payoff(vanilla(1.234), g, method="kink")
+        diff = np.abs(k2 - np.maximum(g.nodes - 1.234, 0.0)) > 1e-15
+        assert diff.sum() == 1
