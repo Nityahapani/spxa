@@ -64,6 +64,47 @@ class TestGrid1DConstruction:
         assert np.max(np.abs(ratio - 1.0)) < 0.05
 
 
+class TestSinhAlignment:
+    def test_points_land_on_nodes(self):
+        g = Grid1D.sinh(0.0, 400.0, 201, center=100.0, alpha=100.0, align=[90.0, 117.3])
+        for p in (90.0, 100.0, 117.3):
+            assert np.min(np.abs(g.nodes - p)) == 0.0
+        assert np.all(np.diff(g.nodes) > 0)
+
+    def test_center_only_matches_split_formula(self):
+        lo, hi, n, c, a = 0.0, 300.0, 101, 100.0, 50.0
+        g = Grid1D.sinh(lo, hi, n, center=c, alpha=a)
+        c1, c2 = np.arcsinh((lo - c) / a), np.arcsinh((hi - c) / a)
+        j = int(round(-c1 / (c2 - c1) * (n - 1)))
+        left = c + a * np.sinh(c1 * (1.0 - np.arange(j + 1) / j))
+        right = c + a * np.sinh(c2 * np.arange(1, n - j) / (n - 1 - j))
+        np.testing.assert_allclose(g.nodes, np.concatenate([left, right]), atol=1e-12)
+
+    def test_spacing_ratio_smooth_at_aligned_points(self):
+        for n in (101, 401, 1601):
+            g = Grid1D.sinh(0.0, 400.0, n, center=100.0, alpha=100.0, align=[93.7])
+            h = np.diff(g.nodes)
+            ratio = np.abs(np.log(h[1:] / h[:-1]))
+            # O(1/n) with a constant set by the xi-distance between aligned points
+            assert ratio.max() * n < 40.0
+
+    def test_alignment_without_center(self):
+        g = Grid1D.sinh(
+            95.0, 400.0, 101, center=100.0, alpha=100.0, align_center=False, align=[110.0]
+        )
+        assert np.min(np.abs(g.nodes - 110.0)) == 0.0
+        assert np.min(np.abs(g.nodes - 100.0)) > 0.0
+
+    def test_points_outside_are_ignored(self):
+        g = Grid1D.sinh(0.0, 10.0, 21, center=5.0, align=[-1.0, 10.0, 12.0])
+        h = Grid1D.sinh(0.0, 10.0, 21, center=5.0)
+        np.testing.assert_array_equal(g.nodes, h.nodes)
+
+    def test_too_few_nodes(self):
+        with pytest.raises(ValueError):
+            Grid1D.sinh(0.0, 10.0, 4, center=5.0, align=[2.0, 3.0, 4.0])
+
+
 class TestGrid1DOperations:
     def test_faces_and_cell_widths(self):
         g = Grid1D([0.0, 1.0, 3.0, 4.0])

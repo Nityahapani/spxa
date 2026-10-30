@@ -213,7 +213,14 @@ class BlackScholesPDE:
         if s_min > 0.0 and left is None:
             raise ValueError("a positive s_min requires an explicit left boundary condition")
         if grid == "sinh":
-            g = Grid1D.sinh(s_min, s_max, n_space, center=center, alpha=concentration * center)
+            g = Grid1D.sinh(
+                s_min,
+                s_max,
+                n_space,
+                center=center,
+                alpha=concentration * center,
+                align=list(payoff.kinks) + [float(a) for a in align],
+            )
         elif grid == "uniform":
             g = Grid1D.uniform(s_min, s_max, n_space)
         else:

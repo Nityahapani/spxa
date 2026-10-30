@@ -76,6 +76,7 @@ class Grid1D:
         center: float,
         alpha: Optional[float] = None,
         align_center: bool = True,
+        align: Iterable[float] = (),
     ) -> "Grid1D":
         r"""Sinh-stretched grid concentrated around ``center``.
 
@@ -98,6 +99,14 @@ class Grid1D:
             avoids snapping a node onto the strike afterwards, which would
             perturb the local spacing by up to half a cell and make the
             convergence of digital payoffs erratic.
+        align : iterable of float
+            Further points (strikes, barriers) to place exactly on nodes in
+            the same way: the computational coordinate :math:`\xi` is split
+            at every aligned point, each piece receives a node count
+            proportional to its length in :math:`\xi`, and nodes are uniform
+            in :math:`\xi` within each piece. The spacing therefore stays a
+            smooth function of the index up to :math:`O(1/n)` jumps in the
+            ratio at the aligned points.
         """
         if hi <= lo:
             raise ValueError("hi must exceed lo")
@@ -107,15 +116,26 @@ class Grid1D:
         c1 = np.arcsinh((lo - center) / a)
         c2 = np.arcsinh((hi - center) / a)
         n = int(n_nodes)
+        pts = sorted({float(p) for p in align if lo < float(p) < hi})
         if align_center and lo < center < hi:
-            j = int(np.clip(round(-c1 / (c2 - c1) * (n - 1)), 1, n - 2))
-            left = center + a * np.sinh(c1 * (1.0 - np.arange(j + 1) / j))
-            right = center + a * np.sinh(c2 * np.arange(1, n - j) / (n - 1 - j))
-            nodes = np.concatenate([left, right])
-            nodes[j] = center
-        else:
-            xi = np.linspace(0.0, 1.0, n)
-            nodes = center + a * np.sinh(c2 * xi + c1 * (1.0 - xi))
+            pts = sorted(set(pts) | {float(center)})
+        xi_pts = [(np.arcsinh((p - center) / a) - c1) / (c2 - c1) for p in pts]
+        breaks = [0.0, *xi_pts, 1.0]
+        idx = [0]
+        for k, b in enumerate(breaks[1:-1], start=1):
+            remaining = len(breaks) - 1 - k
+            if idx[-1] + 1 > n - 1 - remaining:
+                raise ValueError("too few nodes to align all points; increase n_nodes")
+            j = min(max(int(round(b * (n - 1))), idx[-1] + 1), n - 1 - remaining)
+            idx.append(j)
+        idx.append(n - 1)
+        xi = np.empty(n)
+        for k in range(len(breaks) - 1):
+            i0, i1 = idx[k], idx[k + 1]
+            xi[i0 : i1 + 1] = np.linspace(breaks[k], breaks[k + 1], i1 - i0 + 1)
+        nodes = center + a * np.sinh(c1 + (c2 - c1) * xi)
+        for j, p in zip(idx[1:-1], pts):
+            nodes[j] = p
         nodes[0], nodes[-1] = lo, hi
         return cls(nodes)
 
