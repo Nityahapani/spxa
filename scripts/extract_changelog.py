@@ -11,8 +11,9 @@ from pathlib import Path
 
 def extract(version: str) -> str:
     text = Path("CHANGELOG.md").read_text()
-    pattern = rf"## {re.escape(version)}.*?\n(.*?)(?=\n## |\Z)"
-    match = re.search(pattern, text, re.DOTALL)
+    # Keep a Changelog headings are "## [X.Y.Z] — date"; accept the bare form too.
+    pattern = rf"^## \[?{re.escape(version)}\]?(?![\w.]).*?\n(.*?)(?=\n## |\Z)"
+    match = re.search(pattern, text, re.DOTALL | re.MULTILINE)
     if not match:
         return f"Release {version}"
     return match.group(1).strip()
