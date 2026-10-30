@@ -32,6 +32,12 @@ from spxa.pde.convergence import (
     richardson_extrapolate,
 )
 from spxa.pde.grid import Grid1D, TimeGrid
+from spxa.pde.local_vol import (
+    DupirePDE,
+    DupireSurface,
+    implied_volatility,
+    local_vol_from_prices,
+)
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 from spxa.pde.payoffs import Payoff, asset_or_nothing, digital, project_payoff, vanilla
 from spxa.pde.short_rate import ShortRatePDE
@@ -39,6 +45,10 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "DupirePDE",
+    "DupireSurface",
+    "implied_volatility",
+    "local_vol_from_prices",
     "ShortRatePDE",
     "AsianPDE",
     "vecer_shares",
