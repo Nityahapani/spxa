@@ -8,6 +8,12 @@ an incorrect answer.
 This document is the authoritative guide for every type of contribution.
 Read the section for what you want to add, then follow it exactly.
 
+By participating in this project you agree to abide by the
+[Code of Conduct](https://github.com/Nityahapani/spxa/blob/main/CODE_OF_CONDUCT.md).
+Security vulnerabilities must be reported privately as described in the
+[Security Policy](https://github.com/Nityahapani/spxa/blob/main/SECURITY.md),
+never through public issues.
+
 ---
 
 ## Contents
