@@ -27,7 +27,6 @@ from __future__ import annotations
 from typing import Optional
 
 import numpy as np
-from scipy.special import k1 as bessel_k1  # type: ignore[import-untyped]
 from scipy.special import k1e as bessel_k1e  # type: ignore[import-untyped]
 
 from spxa.core.exactness import ExactnessLevel
@@ -75,17 +74,9 @@ def _nig_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMea
 
     def tail(xv: float) -> float:
         result, _ = integrate.quad(
-            lambda t: (
-                prefactor
-                * float(bessel_k1(alpha * np.sqrt(delta**2 + t**2)))
-                / np.sqrt(delta**2 + t**2)
-                * np.exp(beta * t)
-            ),
-            xv,
-            np.inf,
-            limit=200,
+            lambda t: float(density(np.array([t]))[0]), xv, np.inf, limit=200
         )
-        return result
+        return float(result)
 
     return DensityLevyMeasure(
         _density_fn=density,
@@ -166,33 +157,14 @@ class NIG(Process):
 
         nu_measure = _nig_levy_measure(self.alpha, self.beta, self.delta)
 
-        prefactor = self.alpha * self.delta / np.pi
+        def x_nu(x: float) -> float:
+            return x * float(nu_measure.density(np.array([x]))[0])
 
-        b_pos, _ = integrate.quad(
-            lambda x: (
-                prefactor
-                * float(bessel_k1(self.alpha * np.sqrt(self.delta**2 + x**2)))
-                / np.sqrt(self.delta**2 + x**2)
-                * np.exp(self.beta * x)
-                * x
-            ),
-            0.0,
-            1.0,
-            limit=200,
-        )
-        b_neg, _ = integrate.quad(
-            lambda x: (
-                prefactor
-                * float(bessel_k1(self.alpha * np.sqrt(self.delta**2 + x**2)))
-                / np.sqrt(self.delta**2 + x**2)
-                * np.exp(self.beta * x)
-                * x
-            ),
-            -1.0,
-            0.0,
-            limit=200,
-        )
-        b_drift = self.mu + b_pos + b_neg
+        # E[X_1] = mu + delta beta / gamma = b + ∫_{|x|>1} x ν(dx)
+        gamma_param = np.sqrt(self.alpha**2 - self.beta**2)
+        big_pos, _ = integrate.quad(x_nu, 1.0, np.inf, limit=200)
+        big_neg, _ = integrate.quad(x_nu, -np.inf, -1.0, limit=200)
+        b_drift = self.mu + self.delta * self.beta / gamma_param - (big_pos + big_neg)
 
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu_measure)
 
