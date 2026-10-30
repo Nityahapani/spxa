@@ -21,6 +21,7 @@ from spxa.pde.american import (
     complementarity_residual,
     make_lcp,
 )
+from spxa.pde.asian import AsianPDE, vecer_shares
 from spxa.pde.black_scholes import BlackScholesPDE, DiscreteDividend
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.convergence import (
@@ -37,6 +38,8 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "AsianPDE",
+    "vecer_shares",
     "BlackScholesPDE",
     "BrennanSchwartzLCP",
     "IkonenToivanenLCP",
