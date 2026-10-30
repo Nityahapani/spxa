@@ -36,8 +36,9 @@ from spxa.pde._utils import check_option_type, check_positive, cubic_interpolate
 from spxa.pde.boundary import BoundaryCondition, Linear, Natural
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
+from spxa.pde.american import make_lcp
 from spxa.pde.payoffs import Payoff, digital, project_payoff, vanilla
-from spxa.pde.solution import PDEPricingResult, PDESolution1D
+from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaSolver1D
 
 Volatility = Union[float, Callable[[np.ndarray, float], np.ndarray]]
@@ -336,6 +337,115 @@ class BlackScholesPDE:
         kwargs.setdefault("label", f"Digital {opt} K={K:g} T={T:g}")
         sol = self.solve(digital(K, opt, cash), T, center=K, **kwargs)
         return self._result(sol, spot, f"Black-Scholes PDE digital {opt}")
+
+    def american(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        option: str = "put",
+        method: str = "penalty",
+        bump_greeks: bool = False,
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        """American call or put (free-boundary problem).
+
+        Parameters
+        ----------
+        method : {'penalty', 'psor', 'brennan_schwartz', 'ikonen_toivanen'}
+            LCP solver (see :mod:`spxa.pde.american`).
+
+        The early-exercise boundary :math:`S^*(\tau)` is recorded at every
+        time level and returned in ``result.exercise_boundary``.
+        """
+        opt = check_option_type(option)
+        spot = check_positive("spot", spot)
+        kwargs.setdefault("s_max", self.default_s_max(spot, K, T))
+        kwargs.setdefault("label", f"American {opt} K={K:g} T={T:g}")
+        payoff = vanilla(K, opt)
+        side = "left" if opt == "put" else "right"
+
+        def run(model: "BlackScholesPDE", record: bool) -> tuple[PDESolution1D, Any]:
+            lcp = make_lcp(method, side=side)
+            nodes: list[np.ndarray] = []  # the grid is built inside solve()
+            taus: list[float] = []
+            locs: list[float] = []
+
+            def obstacle(s: np.ndarray, tau: float) -> np.ndarray:
+                if not nodes:
+                    nodes.append(s)
+                return payoff(s)
+
+            def callback(k: int, tau: float, u: np.ndarray) -> None:
+                if record and nodes:
+                    taus.append(tau)
+                    locs.append(_boundary_location(nodes[0], u, payoff, side, K))
+
+            sol = model.solve(
+                payoff,
+                T,
+                center=K,
+                lcp=lcp,  # type: ignore[arg-type]
+                obstacle=obstacle,
+                callback=callback,
+                **kwargs,
+            )
+            sol.info["lcp"] = lcp.describe()  # type: ignore[attr-defined]
+            if record:
+                sol.exercise_boundary = ExerciseBoundary(np.array(taus), np.array(locs), side)
+            return sol, sol.exercise_boundary
+
+        sol, eb = run(self, True)
+        bump = None
+        if bump_greeks:
+
+            def bump(model: "BlackScholesPDE") -> float:
+                return float(run(model, False)[0].value(spot))
+
+        return self._result(sol, spot, f"Black-Scholes PDE American {opt} ({method})", bump, eb)
+
+    def bermudan(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        exercise_times: Sequence[float],
+        option: str = "put",
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        r"""Bermudan call or put exercisable at the given calendar times.
+
+        Exercise is applied as the jump condition :math:`u \leftarrow \max(u, g)`
+        at each date in ``[0, T)``; exercise at ``T`` is the payoff itself.
+        """
+        opt = check_option_type(option)
+        spot = check_positive("spot", spot)
+        kwargs.setdefault("s_max", self.default_s_max(spot, K, T))
+        kwargs.setdefault("label", f"Bermudan {opt} K={K:g} T={T:g}")
+        payoff = vanilla(K, opt)
+        times = sorted(set(float(t) for t in exercise_times if float(t) < T))
+        if any(t < 0.0 for t in times):
+            raise ValueError("exercise times must be non-negative")
+
+        def exercise(u: np.ndarray, s: np.ndarray, tau: float) -> np.ndarray:
+            return np.maximum(u, payoff(s))
+
+        events = {T - t: exercise for t in times}
+        sol = self.solve(payoff, T, center=K, events=events, event_times=times, **kwargs)
+        sol.info["exercise_dates"] = len(times)
+        return self._result(sol, spot, f"Black-Scholes PDE Bermudan {opt} ({len(times)} dates)")
+
+
+def _boundary_location(
+    s: np.ndarray, u: np.ndarray, payoff: Payoff, side: str, strike: float
+) -> float:
+    """Edge of the region where ``u`` equals the exercise value (in-the-money only)."""
+    g = payoff(s)
+    tol = 1e-7 * max(1.0, strike)
+    ex = (u - g <= tol) & (g > 0.0)
+    if not np.any(ex):
+        return float("nan")
+    return float(np.max(s[ex]) if side == "left" else np.min(s[ex]))
 
 
 def _dividend_hook(div: DiscreteDividend) -> Callable[[np.ndarray, np.ndarray, float], np.ndarray]:
