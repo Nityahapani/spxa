@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use spxa in your research, please cite it using the metadata below."
+type: software
+title: "spxa: Stochastic Process Algebra and Computational Graph Engine"
+abstract: >-
+  spxa is a Python library that treats continuous-time stochastic processes as
+  first-class algebraic objects. It provides exact Lévy–Khintchine triplet
+  arithmetic with a tracked exactness lattice, a stochastic computational graph
+  with reverse-mode differentiation, information geometry, rough path
+  signatures, rough volatility, model morphing, stochastic optimal control,
+  copulas, and econometric calibration.
+authors:
+  - given-names: Nitya
+    family-names: Hapani
+    email: nityahapani.tges@gmail.com
+    alias: Nityahapani
+  - name: "spxa contributors"
+repository-code: "https://github.com/Nityahapani/spxa"
+url: "https://nityahapani.github.io/spxa"
+license: MIT
+version: 1.0.0
+date-released: "2026-09-19"
+keywords:
+  - stochastic processes
+  - Lévy processes
+  - Lévy–Khintchine
+  - rough volatility
+  - path signatures
+  - information geometry
+  - optimal transport
+  - quantitative finance
+  - automatic differentiation
+preferred-citation:
+  type: software
+  title: "spxa: Stochastic Process Algebra and Computational Graph Engine"
+  authors:
+    - given-names: Nitya
+      family-names: Hapani
+    - name: "spxa contributors"
+  repository-code: "https://github.com/Nityahapani/spxa"
+  license: MIT
+  version: 1.0.0
+  year: 2026
