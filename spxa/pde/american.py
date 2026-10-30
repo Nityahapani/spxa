@@ -177,3 +177,124 @@ class PSORLCP:
 
     def describe(self) -> str:
         return f"PSOR (omega={self.omega})"
+
+
+class BrennanSchwartzLCP:
+    r"""Direct LCP solver of Brennan & Schwartz (1977) for tridiagonal systems.
+
+    For an exercise region :math:`\{i < i^*\}` (``side='left'``, e.g. a put)
+    the tridiagonal system is reduced to lower-bidiagonal form by eliminating
+    from the last row upwards, and the solution is then recovered by forward
+    substitution with projection,
+    :math:`u_i = \max\big((d'_i - a_i u_{i-1})/b'_i,\; g_i\big)`.
+    Jaillet, Lamberton & Lapeyre (1990) show that this yields the exact LCP
+    solution whenever the exercise region is a single interval at that end
+    of the grid. ``side='right'`` handles exercise regions at the upper end
+    (calls with dividends) by reversing the ordering.
+
+    Boundary rows whose stencil reaches two nodes inward (zero-curvature and
+    natural boundaries) are eliminated algebraically: the boundary unknown
+    is substituted into the adjacent row and recovered after the sweep. This
+    treats the boundary row as an equation and is exact when that node lies
+    in the continuation region (or is a constraint row).
+    """
+
+    def __init__(self, side: str = "left") -> None:
+        if side not in ("left", "right"):
+            raise ValueError("side must be 'left' or 'right'")
+        self.side = side
+
+    def reset(self, n: int) -> None:
+        pass
+
+    @staticmethod
+    def _sweep(
+        a: np.ndarray, b: np.ndarray, c: np.ndarray, d: np.ndarray, g: np.ndarray, fr: np.ndarray
+    ) -> np.ndarray:
+        n = d.size
+        bp = b.copy()
+        dp = d.copy()
+        for i in range(n - 2, -1, -1):
+            m = c[i] / bp[i + 1]
+            bp[i] -= m * a[i + 1]
+            dp[i] -= m * dp[i + 1]
+        u = np.empty(n)
+        u[0] = dp[0] / bp[0]
+        if fr[0]:
+            u[0] = max(u[0], g[0])
+        for i in range(1, n):
+            u[i] = (dp[i] - a[i] * u[i - 1]) / bp[i]
+            if fr[i]:
+                u[i] = max(u[i], g[i])
+        return u
+
+    def step(
+        self,
+        M: sp.csr_matrix,
+        solve: Callable[[np.ndarray], np.ndarray],
+        rhs: np.ndarray,
+        obstacle: np.ndarray,
+        guess: np.ndarray,
+        dt: float,
+        free: np.ndarray,
+    ) -> np.ndarray:
+        A = sp.csr_matrix(M, copy=True)
+        A.eliminate_zeros()
+        A = A.tolil()
+        d = np.asarray(rhs, dtype=float).copy()
+        n = d.size
+        i0, i1 = 0, n - 1
+        first = last = None
+        # eliminate boundary unknowns whose rows reach two nodes inward
+        if n > 3 and A[0, 2] != 0.0:
+            c0, c1, c2 = A[0, 0], A[0, 1], A[0, 2]
+            a1 = A[1, 0]
+            A[1, 1] = A[1, 1] - a1 * c1 / c0
+            A[1, 2] = A[1, 2] - a1 * c2 / c0
+            d[1] -= a1 * d[0] / c0
+            A[1, 0] = 0.0
+            first = (c0, c1, c2, d[0])
+            i0 = 1
+        if n > 3 and A[n - 1, n - 3] != 0.0:
+            c0, c1, c2 = A[n - 1, n - 1], A[n - 1, n - 2], A[n - 1, n - 3]
+            a1 = A[n - 2, n - 1]
+            A[n - 2, n - 2] = A[n - 2, n - 2] - a1 * c1 / c0
+            A[n - 2, n - 3] = A[n - 2, n - 3] - a1 * c2 / c0
+            d[n - 2] -= a1 * d[n - 1] / c0
+            A[n - 2, n - 1] = 0.0
+            last = (c0, c1, c2, d[n - 1])
+            i1 = n - 2
+        sub = A.tocsr()[i0 : i1 + 1, i0 : i1 + 1]
+        sub.eliminate_zeros()
+        coo = sub.tocoo()
+        if np.any(np.abs(coo.row - coo.col) > 1):
+            raise ValueError("Brennan-Schwartz requires a tridiagonal system")
+        m = i1 - i0 + 1
+        a = np.zeros(m)
+        c = np.zeros(m)
+        a[1:] = sub.diagonal(-1)
+        c[:-1] = sub.diagonal(1)
+        b = sub.diagonal().astype(float)
+        dd = d[i0 : i1 + 1]
+        g = obstacle[i0 : i1 + 1]
+        fr = free[i0 : i1 + 1]
+        if self.side == "right":
+            core = self._sweep(c[::-1], b[::-1], a[::-1], dd[::-1], g[::-1], fr[::-1])[::-1]
+        else:
+            core = self._sweep(a, b, c, dd, g, fr)
+        u = np.empty(n)
+        u[i0 : i1 + 1] = core
+        if first is not None:
+            c0, c1, c2, d0 = first
+            u[0] = (d0 - c1 * u[1] - c2 * u[2]) / c0
+            if free[0]:
+                u[0] = max(u[0], obstacle[0])
+        if last is not None:
+            c0, c1, c2, dn = last
+            u[n - 1] = (dn - c1 * u[n - 2] - c2 * u[n - 3]) / c0
+            if free[n - 1]:
+                u[n - 1] = max(u[n - 1], obstacle[n - 1])
+        return u
+
+    def describe(self) -> str:
+        return f"Brennan-Schwartz direct method (exercise on the {self.side})"
