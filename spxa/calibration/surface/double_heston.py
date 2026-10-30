@@ -86,12 +86,14 @@ def double_heston_call_price(
     u = 0.5 * u_max * (u_nodes + 1.0)
     w = 0.5 * u_max * weights
 
+    # P1 uses the share measure: phi(u - i) / phi(-i), with phi(-i) = E[S_T] = S0 e^{rT}
+    forward = s0 * math.exp(r * t)
     cf1 = np.array(
         [
             double_heston_char_func(
                 phi - 1j, s0, t, r, v0_1, k1, th1, sig1, rho1, v0_2, k2, th2, sig2, rho2
             )
-            / s0
+            / forward
             for phi in u
         ]
     )

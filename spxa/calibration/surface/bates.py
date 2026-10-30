@@ -74,6 +74,8 @@ def bates_call_price(
     u = 0.5 * u_max * (u_nodes + 1.0)
     w = 0.5 * u_max * weights
 
+    # P1 uses the share measure: phi(u - i) / phi(-i), with phi(-i) = E[S_T] = S0 e^{rT}
+    forward = s0 * math.exp(r * t)
     cf1 = np.array(
         [
             bates_char_func(
@@ -90,7 +92,7 @@ def bates_call_price(
                 t,
                 r,
             )
-            / s0
+            / forward
             for phi in u
         ]
     )
