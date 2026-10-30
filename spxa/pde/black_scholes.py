@@ -582,6 +582,61 @@ class BlackScholesPDE:
         )
         return self._result(sol, spot, f"Black-Scholes PDE double knock-out {opt}")
 
+    def discrete_barrier(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        barrier: float,
+        monitoring_times: Sequence[float],
+        barrier_type: str = "down-and-out",
+        option: str = "call",
+        rebate: float = 0.0,
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        r"""Discretely monitored knock-out option.
+
+        At each monitoring date :math:`t_i < T` the jump condition
+        :math:`u \leftarrow R` on the knocked-out region is applied (the
+        rebate is paid at the monitoring date); a monitoring date at ``T``
+        is part of the payoff. The node on the barrier receives the average
+        of both one-sided values, the nodal analogue of the cell average of
+        the discontinuity.
+        """
+        opt = check_option_type(option)
+        H = check_positive("barrier", barrier)
+        bt = str(barrier_type).lower()
+        if bt not in ("down-and-out", "up-and-out"):
+            raise ValueError("discrete monitoring is supported for knock-out barriers")
+        down = bt == "down-and-out"
+        R = float(rebate)
+
+        def knocked(s: np.ndarray) -> np.ndarray:
+            return s < H if down else s > H
+
+        def monitor(u: np.ndarray, s: np.ndarray, tau: float) -> np.ndarray:
+            out = np.where(knocked(s), R, u)
+            on = s == H
+            out[on] = 0.5 * (u[on] + R)
+            return out
+
+        base = vanilla(K, opt)
+        at_T = any(abs(float(t) - T) < 1e-12 for t in monitoring_times)
+
+        def pay(s: np.ndarray) -> np.ndarray:
+            v = base(s)
+            if at_T:
+                v = np.where(knocked(s), R, v)
+            return v
+
+        payoff = Payoff(pay, tuple(sorted({K, H})), f"discrete {bt} payoff")
+        times = sorted(set(float(t) for t in monitoring_times if 0.0 <= float(t) < T))
+        events = {T - t: monitor for t in times}
+        kwargs.setdefault("s_max", self.default_s_max(spot, max(K, H), T))
+        kwargs.setdefault("label", f"discrete {bt} H={H:g}, {len(times)} dates")
+        sol = self.solve(payoff, T, center=K, align=[H], events=events, event_times=times, **kwargs)
+        return self._result(sol, spot, f"Black-Scholes PDE discrete {bt} {opt}")
+
 
 def _boundary_location(
     s: np.ndarray, u: np.ndarray, payoff: Payoff, side: str, strike: float
