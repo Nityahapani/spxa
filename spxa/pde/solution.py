@@ -235,3 +235,71 @@ class PDESolution1D:
 
     def __repr__(self) -> str:
         return f"PDESolution1D({self.label!r}, n={self.grid.n}, variable={self.variable!r})"
+
+
+@dataclass
+class PDEPricingResult:
+    """Price and sensitivities of a contract computed by a PDE pricer.
+
+    Attributes
+    ----------
+    price, delta, gamma, theta : float
+        Value and grid Greeks at the spot (theta per year, calendar time).
+    spot : float
+        Spot at which the result is reported.
+    solution : PDESolution1D
+        Full grid solution (evaluate at other spots, plot, ...).
+    vega, rho : float, optional
+        Bump-and-revalue sensitivities, when requested.
+    exercise_boundary : ExerciseBoundary, optional
+        Early-exercise boundary for American-style contracts.
+    method : str
+        Short description of the numerical method.
+    """
+
+    price: float
+    delta: float
+    gamma: float
+    theta: float
+    spot: float
+    solution: PDESolution1D
+    vega: Optional[float] = None
+    rho: Optional[float] = None
+    exercise_boundary: Optional[ExerciseBoundary] = None
+    method: str = ""
+
+    def __float__(self) -> float:
+        return float(self.price)
+
+    def as_dict(self) -> dict[str, float]:
+        """Scalar results as a dictionary (missing sensitivities omitted)."""
+        out = {
+            "price": self.price,
+            "delta": self.delta,
+            "gamma": self.gamma,
+            "theta": self.theta,
+        }
+        if self.vega is not None:
+            out["vega"] = self.vega
+        if self.rho is not None:
+            out["rho"] = self.rho
+        return out
+
+    def __story__(self) -> str:
+        """Plain-language account of the computation and its results."""
+        lines = [f"{self.method or self.solution.label} at S = {self.spot:g}"]
+        lines.append(
+            "  price = {:.8f}, delta = {:.6f}, gamma = {:.6f}, theta = {:.6f}".format(
+                self.price, self.delta, self.gamma, self.theta
+            )
+        )
+        if self.vega is not None or self.rho is not None:
+            lines.append(f"  vega = {self.vega}, rho = {self.rho} (bump and revalue)")
+        if self.exercise_boundary is not None and self.exercise_boundary.taus.size:
+            final = self.exercise_boundary.at(float(self.exercise_boundary.taus[-1]))
+            lines.append(f"  exercise boundary today: {final:.6g}")
+        lines.append(self.solution.__story__())
+        return "\n".join(lines)
+
+    def __repr__(self) -> str:
+        return f"PDEPricingResult(price={self.price:.8g}, delta={self.delta:.6g})"

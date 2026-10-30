@@ -77,3 +77,20 @@ class TestExerciseBoundary:
         assert np.isnan(eb.at(0.5))
         sol = PDESolution1D(g, np.zeros(5), exercise_boundary=eb)
         assert "exercise" in sol.__story__()
+
+
+class TestPDEPricingResult:
+    def test_container(self):
+        from spxa.pde.solution import PDEPricingResult
+
+        g = Grid1D.uniform(0.0, 2.0, 21)
+        sol = PDESolution1D(g, g.nodes**2, label="toy")
+        eb = ExerciseBoundary(np.array([0.0, 1.0]), np.array([1.0, 0.8]))
+        res = PDEPricingResult(1.0, 2.0, 2.0, -0.1, 1.0, sol, exercise_boundary=eb, method="m")
+        assert float(res) == 1.0
+        assert set(res.as_dict()) == {"price", "delta", "gamma", "theta"}
+        story = res.__story__()
+        assert "m at S = 1" in story and "exercise boundary today" in story
+        assert "PDEPricingResult" in repr(res)
+        res2 = PDEPricingResult(1.0, 2.0, 2.0, -0.1, 1.0, sol, vega=3.0, rho=4.0)
+        assert res2.as_dict()["vega"] == 3.0 and "bump" in res2.__story__()

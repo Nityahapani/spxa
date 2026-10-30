@@ -13,6 +13,7 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
+from spxa.pde.black_scholes import BlackScholesPDE
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.convergence import (
     ConvergenceStudy,
@@ -24,10 +25,11 @@ from spxa.pde.convergence import (
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.operators import DiscreteOperator1D, LinearPDE1D
 from spxa.pde.payoffs import Payoff, asset_or_nothing, digital, project_payoff, vanilla
-from spxa.pde.solution import ExerciseBoundary, PDESolution1D
+from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "BlackScholesPDE",
     "BoundaryCondition",
     "ConvergenceStudy",
     "convergence_study",
@@ -41,6 +43,7 @@ __all__ = [
     "Natural",
     "Neumann",
     "ExerciseBoundary",
+    "PDEPricingResult",
     "PDESolution1D",
     "Payoff",
     "asset_or_nothing",
