@@ -6,6 +6,12 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ### Added
 
+- `morph/` — Model Morphing (`spxa.morph`, `spxa.graph.morph`): continuous interpolation between
+  processes. The triplet homotopy $\psi_\alpha = (1-\alpha)\psi_0 + \alpha\psi_1$ is `EXACT` for
+  Lévy processes. Also includes generator, Fisher–Rao geodesic, Wasserstein and convex-combination
+  morphs; time- and state-dependent schedules (`DynamicMorphedProcess`); `ModelBarycenter`,
+  `ModelEnsemble` and `SurfaceMorphEngine`; and the `Process.morph` / `spxa.morph` API.
+  See `docs/theory/model_morphing.md`.
 - `zoo/beyond/multivariate_hawkes.py` — Multivariate Hawkes mutually exciting point process (`MultivariateHawkesProcess`, `MultivariateHawkes`, `MHawkes`):
   $M$-dimensional Hawkes intensity $\lambda_m(t)$, branching infectivity matrix $\mathbf{\Gamma}$, spectral radius stationarity condition $\rho(\mathbf{\Gamma}) < 1$, exact expected arrival intensity $\mathbf{\lambda}_\infty = (\mathbf{I} - \mathbf{\Gamma})^{-1} \mathbf{\mu}$, and Ogata thinning event simulation.
 - `zoo/levy/nts.py` — Normal Tempered Stable (NTS) Lévy process (`NormalTemperedStableProcess`, `NormalTemperedStable`, `NTSProcess`):
@@ -285,6 +291,41 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   simulation, finite-horizon mean/variance and cumulants of any order via block matrix
   exponentials (with a conditioning guard), stationary distribution and mean intensity.
   Reference: Fischer & Meier-Hellstern (1993), Performance Evaluation 18, 149-171.
+
+### Fixed
+
+- `rough/riccati.py` — `FractionalRiccatiSolver`: corrected the sign of the linear Riccati
+  coefficient to $(i\rho\nu u - \lambda)$, and the characteristic function now uses
+  $V_0 I^{1-\alpha}h(T) = V_0\int_0^T F(u, h(s))\,ds$ (El Euch & Rosenbaum 2019). It reduces to
+  the classical Heston closed form at $H = 1/2$.
+- `rough/rbergomi.py` — `RoughBergomi` simulates the Riemann–Liouville driver and its Brownian
+  motion jointly and exactly (Cholesky), so $\rho$ now correlates returns with variance and
+  $\mathbb E[v_t] = \xi_0$. `theoretical_short_time_skew` gains the missing $1/(H + 3/2)$ factor
+  (Fukasawa). Added `FractionalKernel.volterra_joint_covariance` and `sample_volterra_cholesky`.
+- `signature/kernel.py` — the Goursat solver weighted the increment term by 5/4. It is now
+  the second-order trapezoidal scheme, converging to $I_0(2)$ for $X = Y = t$.
+- `signature/algebra.py` — level-3 log-signature Hall coordinates were twice their true value.
+  `log_signature_dimension` computes the Möbius function exactly; the old lookup table stopped
+  at $n = 6$, which gave wrong Witt dimensions from depth 10.
+- `calibration/surface/{heston,bates,double_heston}.py` — the share-measure probability $P_1$
+  normalised $\varphi(u - i)$ by $S_0$ instead of $\varphi(-i) = S_0e^{rT}$, so every call price
+  was wrong when $r \ne 0$. Regression tests now check against the Black–Scholes and Merton limits.
+- `calibration/filter/particle_filter.py` — `BootstrapParticleFilter` discarded the previous
+  weights on steps without resampling. Weights are now carried forward, and the incremental
+  likelihood is $\log\sum_i w_{k-1}^i p(y_k \mid x_k^i)$. Checked against the exact Kalman
+  log-likelihood.
+- `calibration/mle/hac.py` — `newey_west_hac(kernel="quadratic_spectral")` silently used
+  Bartlett weights. It now implements the Andrews (1991) kernel and rejects unknown kernels.
+
+### Documentation
+
+- `LICENSE` (MIT), `CITATION.cff`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1) and
+  `SECURITY.md`.
+- New theory pages: information geometry, rough paths & signatures, rough volatility,
+  copulas, stochastic control, and estimation & calibration.
+- README: Model Morphing quickstart and corrected examples and API names.
+- Added the missing `docs/javascripts/mathjax.js` (math now renders on the docs site) and
+  removed the `polyfill.io` script.
 
 ## [1.0.0] — 2026-09-19
 
