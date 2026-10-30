@@ -214,3 +214,71 @@ def barrier_price(
         else:
             core = A - B + D if above else C
     return float(core + rebate * E_unit)
+
+
+# =====================================================================================
+# Double barrier knock-out: eigenfunction expansion
+# =====================================================================================
+
+
+def double_barrier_price(
+    S: float,
+    K: float,
+    L: float,
+    U: float,
+    T: float,
+    r: float,
+    sigma: float,
+    q: float = 0.0,
+    option: str = "call",
+    tol: float = 1e-14,
+    max_terms: int = 2000,
+) -> float:
+    r"""Double knock-out call or put (no rebate) by eigenfunction expansion.
+
+    In :math:`x = \log S` with drift :math:`\nu = r - q - \tfrac12\sigma^2`,
+    the transition density killed at :math:`l = \log L`, :math:`u = \log U`
+    (:math:`W = u - l`) is
+
+    .. math::
+        p(x, y, T) = e^{\nu (y - x)/\sigma^2 - \nu^2 T / (2\sigma^2)}
+        \frac{2}{W} \sum_{n \ge 1} e^{-\frac12 \sigma^2 (n\pi/W)^2 T}
+        \sin\frac{n\pi (x - l)}{W} \sin\frac{n\pi (y - l)}{W},
+
+    and the price is :math:`e^{-rT} \int_l^u p(x, y, T) g(e^y)\,dy`. The
+    payoff integrals use high-order Gauss–Legendre quadrature on the smooth
+    part of the payoff, and the series is summed until the terms fall below
+    ``tol``.
+    """
+    opt = check_option_type(option)
+    for name, v in (("S", S), ("K", K), ("L", L), ("U", U), ("T", T), ("sigma", sigma)):
+        check_positive(name, v)
+    if not L < U:
+        raise ValueError("need L < U")
+    if not (L < S < U):
+        return 0.0
+    lo, hi = math.log(L), math.log(U)
+    W = hi - lo
+    x = math.log(S)
+    nu = r - q - 0.5 * sigma**2
+    # payoff support inside the corridor
+    k = math.log(K)
+    a, b = (max(lo, k), hi) if opt == "call" else (lo, min(hi, k))
+    if a >= b:
+        return 0.0
+    n_q = 400
+    gx, gw = np.polynomial.legendre.leggauss(n_q)
+    y = 0.5 * (b - a) * gx + 0.5 * (a + b)
+    w = 0.5 * (b - a) * gw
+    pay = np.maximum(np.exp(y) - K, 0.0) if opt == "call" else np.maximum(K - np.exp(y), 0.0)
+    weight = w * pay * np.exp(nu * (y - x) / sigma**2)
+    pref = math.exp(-r * T - nu**2 * T / (2 * sigma**2)) * 2.0 / W
+    total = 0.0
+    for n in range(1, max_terms + 1):
+        kn = n * math.pi / W
+        decay = math.exp(-0.5 * sigma**2 * kn**2 * T)
+        term = decay * math.sin(kn * (x - lo)) * float(np.dot(weight, np.sin(kn * (y - lo))))
+        total += term
+        if decay * float(np.sum(np.abs(weight))) < tol and n > 3:
+            break
+    return float(pref * total)
