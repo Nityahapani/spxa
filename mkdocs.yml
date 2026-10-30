@@ -62,6 +62,12 @@ nav:
       - Triplet arithmetic: theory/triplet_arithmetic.md
       - Beyond Lévy: theory/beyond_levy.md
       - Model Morphing: theory/model_morphing.md
+      - Information geometry: theory/information_geometry.md
+      - Rough paths & signatures: theory/rough_paths_signatures.md
+      - Rough volatility: theory/rough_volatility.md
+      - Copulas & dependence: theory/copulas.md
+      - Stochastic control: theory/stochastic_control.md
+      - Estimation & calibration: theory/calibration.md
   - Tutorials:
       - First composition: tutorials/01_first_composition.ipynb
       - Finance models: tutorials/02_finance_models.ipynb
