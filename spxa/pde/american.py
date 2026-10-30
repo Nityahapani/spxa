@@ -27,7 +27,7 @@ value. All solvers implement the
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional
 
 import numpy as np
 import scipy.sparse as sp
@@ -298,3 +298,68 @@ class BrennanSchwartzLCP:
 
     def describe(self) -> str:
         return f"Brennan-Schwartz direct method (exercise on the {self.side})"
+
+
+class IkonenToivanenLCP:
+    r"""Operator splitting of Ikonen & Toivanen (2004).
+
+    With a Lagrange multiplier :math:`\lambda \ge 0` carried between steps,
+
+    .. math::
+        M \tilde u &= b + \Delta\tau\, \lambda^n, \\
+        u^{n+1} &= \max(\tilde u - \Delta\tau \lambda^n,\; g), \qquad
+        \lambda^{n+1} = \max\!\big(0,\; \lambda^n + (g - \tilde u)/\Delta\tau\big).
+
+    Only one linear solve (with the cached factorisation) per step; the
+    splitting error is :math:`O(\Delta\tau)` locally but the scheme retains
+    second-order accuracy with Crank–Nicolson in practice.
+    """
+
+    def __init__(self) -> None:
+        self._lam: Optional[np.ndarray] = None
+
+    def reset(self, n: int) -> None:
+        self._lam = np.zeros(n)
+
+    @property
+    def multiplier(self) -> Optional[np.ndarray]:
+        """Current Lagrange multiplier (the early-exercise 'premium rate')."""
+        return self._lam
+
+    def step(
+        self,
+        M: sp.csr_matrix,
+        solve: Callable[[np.ndarray], np.ndarray],
+        rhs: np.ndarray,
+        obstacle: np.ndarray,
+        guess: np.ndarray,
+        dt: float,
+        free: np.ndarray,
+    ) -> np.ndarray:
+        if self._lam is None or self._lam.size != rhs.size:
+            self._lam = np.zeros(rhs.size)
+        lam = np.where(free, self._lam, 0.0)
+        u_t = solve(rhs + dt * lam)
+        u = u_t.copy()
+        u[free] = np.maximum(u_t[free] - dt * lam[free], obstacle[free])
+        new_lam = np.zeros_like(lam)
+        new_lam[free] = np.maximum(0.0, lam[free] + (obstacle[free] - u_t[free]) / dt)
+        self._lam = new_lam
+        return u
+
+    def describe(self) -> str:
+        return "Ikonen-Toivanen operator splitting"
+
+
+def make_lcp(method: str, side: str = "left") -> object:
+    """Factory: ``'penalty'``, ``'psor'``, ``'brennan_schwartz'`` or ``'ikonen_toivanen'``."""
+    m = method.lower().replace("-", "_")
+    if m == "penalty":
+        return PenaltyLCP()
+    if m == "psor":
+        return PSORLCP()
+    if m in ("brennan_schwartz", "bs"):
+        return BrennanSchwartzLCP(side=side)
+    if m in ("ikonen_toivanen", "it", "splitting"):
+        return IkonenToivanenLCP()
+    raise ValueError("method must be 'penalty', 'psor', 'brennan_schwartz' or 'ikonen_toivanen'")

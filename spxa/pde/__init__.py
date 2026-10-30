@@ -13,6 +13,14 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
+from spxa.pde.american import (
+    BrennanSchwartzLCP,
+    IkonenToivanenLCP,
+    PenaltyLCP,
+    PSORLCP,
+    complementarity_residual,
+    make_lcp,
+)
 from spxa.pde.black_scholes import BlackScholesPDE, DiscreteDividend
 from spxa.pde.boundary import BoundaryCondition, Dirichlet, Linear, Natural, Neumann
 from spxa.pde.convergence import (
@@ -30,6 +38,12 @@ from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
     "BlackScholesPDE",
+    "BrennanSchwartzLCP",
+    "IkonenToivanenLCP",
+    "PenaltyLCP",
+    "PSORLCP",
+    "complementarity_residual",
+    "make_lcp",
     "BoundaryCondition",
     "ConvergenceStudy",
     "convergence_study",
