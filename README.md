@@ -12,7 +12,7 @@
 
 <p align="center">
   <strong>Stochastic processes as first-class algebraic and computational objects.</strong><br>
-  Exact Lévy–Khintchine arithmetic, DAG computational graph compilation, reverse-mode automatic differentiation, statistical information geometry, rough path signatures, and fractional Volterra rough volatility.
+  Exact Lévy–Khintchine arithmetic, DAG computational graph compilation, reverse-mode automatic differentiation, statistical information geometry, rough path signatures, fractional Volterra rough volatility, and exact model morphing.
 </p>
 
 ---
@@ -29,6 +29,7 @@
   - [4. Rough Paths & Hyperbolic Goursat Signature Kernel](#4-rough-paths--hyperbolic-goursat-signature-kernel)
   - [5. Rough Volatility: rBergomi & Fractional Riccati Solver](#5-rough-volatility-rbergomi--fractional-riccati-solver)
   - [6. High-Frequency Market Making & Inventory Control](#6-high-frequency-market-making--inventory-control)
+  - [7. Model Morphing](#7-model-morphing)
 - [Computational Graph Architecture & Duality Engine](#computational-graph-architecture--duality-engine)
 - [Exactness Guarantees & Mathematical Integrity](#exactness-guarantees--mathematical-integrity)
 - [Subpackage Ecosystem](#subpackage-ecosystem)
@@ -62,6 +63,7 @@ When an operation crosses the boundary of the Lévy realm (e.g. state-dependent 
 | **Information Geometry** | ❌ None | ❌ Limited to Euclidean gradient updates | **Riemannian parameter manifolds under the Fisher metric, geodesic shooting, and natural gradients** |
 | **Rough Paths & Signatures** | ❌ None | ⚠️ Third-party external wrappers | **Native tensor signatures, shuffle algebra, and 2D hyperbolic Goursat PDE kernel solver** |
 | **Rough Volatility** | ❌ Markovian models only | ❌ None | **Fractional Brownian motion, Riemann-Liouville kernels, rBergomi, and fractional Riccati ABM solvers** |
+| **Model Interpolation** | ❌ None (switch models by hand) | ❌ None | **Exact Lévy–Khintchine homotopies plus generator, Fisher–Rao and Wasserstein morphs, time- and state-dependent regime schedules, and model barycenters** |
 | **Mathematical Guarantees** | Silent approximation | Silent truncation | **Strict `ExactnessLevel` lattice (`EXACT` $\to$ `MOMENT` $\to$ `SIMULATION`) with mathematical audit logs (`__story__`)** |
 
 ---
@@ -74,7 +76,8 @@ When an operation crosses the boundary of the Lévy realm (e.g. state-dependent 
 4. **Statistical Information Geometry (`spxa.geom`, `spxa.graph.geom`)**: Treats parameter spaces as Riemannian manifolds endowed with the Fisher Information Metric (FIM). Evaluates Levi-Civita connections, Amari $\alpha$-connections, geodesic flows, hyperbolic Rao distances, and executes manifold-constrained natural gradient calibration.
 5. **Rough Paths & Tensor Signatures (`spxa.signature`, `spxa.graph.signature`)**: Non-parametric path representation capturing the order of market events. Provides truncated tensor signatures, shuffle product identities, log-signature Lie algebra dimension compression, an infinite-order 2D hyperbolic Goursat PDE kernel solver, and linear regression option pricing.
 6. **Rough Volatility & Volterra Calculus (`spxa.rough`, `spxa.graph.rough`)**: Non-Markovian, sub-diffusive stochastic volatility models driven by fractional Brownian motion with Hurst index $H \in (0, 1/2)$. Features Riemann–Liouville singular power kernels, Bennedsen–Lunde–Pakkanen hybrid convolutions, rough Bergomi (rBergomi) with power-law short-time skew blow-up, and fractional Adams–Bashforth–Moulton Riccati solvers.
-7. **Comprehensive Quantitative Toolchain**:
+7. **Model Morphing (`spxa.morph`, `spxa.graph.morph`)**: Continuous interpolation between any two processes along a chosen geometry. The triplet homotopy $\psi_\alpha = (1-\alpha)\psi_0 + \alpha\psi_1$ stays inside the Lévy class and keeps `EXACT` exactness. Generator, Fisher–Rao geodesic and Wasserstein (displacement) morphs cover diffusions and Gaussian marginals. Dynamic schedules (linear, cosine, smoothstep, sigmoidal, state-threshold) drive regime transitions inside a simulation, and `ModelBarycenter`, `ModelEnsemble` and `SurfaceMorphEngine` average models and volatility surfaces.
+8. **Comprehensive Quantitative Toolchain**:
    - **Stochastic Optimal Control (`spxa.control`)**: Merton portfolio problems, Avellaneda–Stoikov high-frequency market making, Almgren–Chriss optimal liquidation, and finite-difference Hamilton–Jacobi–Bellman (HJB) viscosity solvers.
    - **Econometric Calibration & Filtering (`spxa.calibration`)**: Volatility surface calibrators, maximum likelihood (MLE), GMM, Kalman and Particle state-space filters, Godambe sandwich standard errors, and surface arbitrage diagnostics.
    - **Copulas & Multi-Asset Dependence (`spxa.copula`)**: Archimedean (Clayton, Gumbel, Frank, Joe, AMH), Elliptic (Gaussian, Student-$t$), and Extreme Value copulas with tail dependence analysis.
@@ -237,6 +240,38 @@ print(f"Optimal Spread:    {spread:.4f}")
 print(f"Optimal Quotes:    Bid {bid:.4f} | Ask {ask:.4f}")
 ```
 
+### 7. Model Morphing
+
+Interpolate exactly between a calm and a stressed regime, measure how far apart they are, and simulate a smooth regime transition:
+
+```python
+import numpy as np
+from spxa import VarianceGamma, MertonJumpDiffusion
+from spxa.morph import CosineSchedule, DynamicMorphedProcess, gaussian_rao_distance
+
+calm = VarianceGamma(sigma=0.12, nu=0.2, theta=-0.05)
+stressed = MertonJumpDiffusion(sigma=0.20, rate=3.0, jump_mean=-0.08, jump_std=0.10)
+
+# 1. Lévy–Khintchine homotopy: psi_alpha = (1 - alpha) psi_0 + alpha psi_1
+mid = calm.morph(stressed, alpha=0.3, method="triplet")
+print(mid.exactness)                       # ExactnessLevel.EXACT
+k2 = mid.cumulants(order=2)
+print(k2[2], 0.7 * calm.cumulants(order=2)[2] + 0.3 * stressed.cumulants(order=2)[2])  # 0.03719 0.03719
+
+# 2. Fisher–Rao geodesic distance between Gaussian marginals N(mu, sigma^2)
+print(gaussian_rao_distance(0.0, 0.20, 0.05, 0.35))  # 0.8125
+
+# 3. Smooth calm -> stressed regime transition on [0.25, 0.75] with a cosine schedule
+regime = DynamicMorphedProcess(calm, stressed, schedule=CosineSchedule(t0=0.25, t1=0.75))
+paths, alphas = regime.simulate(n_steps=252, n_paths=1000, T=1.0,
+                                rng=np.random.default_rng(0), return_alpha_paths=True)
+print(paths.shape, alphas.shape, alphas[0, [0, 63, 126, 189, 251]])  # (1000, 253) (1000, 253) [0. 0. 0.5 1. 1.]
+
+print(mid.__story__())
+```
+
+Other geometries are one keyword away: `method` accepts `"triplet"`, `"generator"`, `"geodesic"`, `"wasserstein"` and `"convex_combination"`. See [Theory: Model Morphing](docs/theory/model_morphing.md) for when each one is exact.
+
 ---
 
 ## Computational Graph Architecture & Duality Engine
@@ -325,6 +360,7 @@ Unlike numerical libraries that silently approximate or introduce uncontrolled t
 | **Information Geometry** | `spxa.geom` | Differential geometry of statistical manifolds | `FisherInformationMetric`, `AffineConnection`, `GeodesicFlow` |
 | **Rough Paths** | `spxa.signature` | Path signatures, shuffle algebra, and PDE kernels | `PathSignature`, `SignatureAlgebra`, `SignatureKernel` |
 | **Rough Volatility** | `spxa.rough` | Fractional Brownian motion and Volterra calculus | `FractionalKernel`, `RoughBergomi`, `FractionalRiccatiSolver` |
+| **Model Morphing** | `spxa.morph` | Exact and geometric interpolation between processes, regime schedules, and barycenters | `MorphedProcess`, `DynamicMorphedProcess`, `CosineSchedule`, `ModelBarycenter`, `gaussian_rao_distance` |
 | **Stochastic Control** | `spxa.control` | Portfolio optimization, market making, and HJB solvers | `MertonPortfolio`, `AvellanedaStoikov`, `AlmgrenChriss`, `HJBSolver` |
 | **Model Calibration** | `spxa.calibration` | Volatility surface calibration, MLE, GMM, and filtering | `HestonCalibrator`, `CIRMaximumLikelihood`, `UnscentedKalmanFilter`, `ParticleFilter`, `sandwich_covariance_matrix` |
 | **Copula & Dependence** | `spxa.copula` | Multi-asset dependence and extreme value copulas | `ClaytonCopula`, `GumbelCopula`, `GaussianCopula`, `CoupledProcess` |
@@ -409,6 +445,13 @@ mypy spxa
 - **[Theory: Lévy–Khintchine Formula](docs/theory/levy_khintchine.md)**: Foundations of infinitely divisible distributions and triplet arithmetic.
 - **[Theory: Triplet Arithmetic under Composition](docs/theory/triplet_arithmetic.md)**: Compositional rules for linear combinations, scaling, and subordination.
 - **[Theory: Beyond the Lévy Regime](docs/theory/beyond_levy.md)**: Analysis of non-independent increments, memory kernels, and degradation lattices.
+- **[Theory: Model Morphing](docs/theory/model_morphing.md)**: Triplet, generator, Fisher–Rao and Wasserstein homotopies, exactness rules, and dynamic schedules.
+- **[Theory: Information Geometry](docs/theory/information_geometry.md)**: Fisher metric, α-connections, curvature, Rao distance, and natural-gradient calibration.
+- **[Theory: Rough Paths & Signatures](docs/theory/rough_paths_signatures.md)**: Tensor algebra, log-signatures, the Goursat signature kernel, and expected signatures.
+- **[Theory: Rough Volatility](docs/theory/rough_volatility.md)**: Volterra fBM, rough Bergomi and its ATM skew, and the rough Heston fractional Riccati equation.
+- **[Theory: Copulas & Dependence](docs/theory/copulas.md)**: Sklar's theorem, dependence measures, copula families, estimation, and coupled simulation.
+- **[Theory: Stochastic Control](docs/theory/stochastic_control.md)**: HJB, LQG, Merton, Almgren–Chriss, Avellaneda–Stoikov, and finite-difference HJB.
+- **[Theory: Estimation & Calibration](docs/theory/calibration.md)**: Exact MLE, GMM/ECF, filtering, surface calibration, and statistical inference.
 - **[Computational Graph Deep-Dive](docs/computational_graph.md)**: Architectural guide to DAG compilers, execution backends, and autodiff tapes.
 - **[Interactive Tutorials](docs/tutorials/)**: Jupyter notebooks covering introductory compositions, derivative pricing, and physical systems.
 - **[Changelog](CHANGELOG.md)**: Detailed version history and architectural evolution.
@@ -418,7 +461,7 @@ mypy spxa
 
 ## Citation
 
-If you use `spxa` in your academic research, quantitative modeling, or open-source projects, please cite it as follows:
+If you use `spxa` in your academic research, quantitative modeling, or open-source projects, please cite it. Citation metadata is in [`CITATION.cff`](CITATION.cff), so GitHub's **Cite this repository** button gives APA and BibTeX directly. Equivalently:
 
 ```bibtex
 @software{hapani2026spxa,
@@ -436,4 +479,6 @@ If you use `spxa` in your academic research, quantitative modeling, or open-sour
 
 ## License
 
-`spxa` is open-source software released under the [MIT License](https://opensource.org/licenses/MIT).
+`spxa` is open-source software released under the [MIT License](LICENSE).
+
+Participation in the project is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). Please report vulnerabilities privately as described in the [Security Policy](SECURITY.md).
