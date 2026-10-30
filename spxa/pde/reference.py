@@ -282,3 +282,106 @@ def double_barrier_price(
         if decay * float(np.sum(np.abs(weight))) < tol and n > 3:
             break
     return float(pref * total)
+
+
+# =====================================================================================
+# Binomial trees and perpetual options
+# =====================================================================================
+
+
+def _peizer_pratt(z: float, n: int) -> float:
+    return 0.5 + math.copysign(0.5, z) * math.sqrt(
+        1.0 - math.exp(-((z / (n + 1.0 / 3.0 + 0.1 / (n + 1.0))) ** 2) * (n + 1.0 / 6.0))
+    )
+
+
+def binomial_price(
+    S: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma: float,
+    q: float = 0.0,
+    option: str = "put",
+    american: bool = True,
+    n_steps: int = 1001,
+    tree: str = "lr",
+) -> float:
+    """European or American option on a binomial tree.
+
+    Parameters
+    ----------
+    tree : {'lr', 'crr'}
+        Leisen–Reimer (1996) tree with Peizer–Pratt inversion (method 2),
+        which converges at second order for European options and very
+        smoothly for American ones, or the Cox–Ross–Rubinstein tree.
+        Leisen–Reimer requires an odd number of steps; even ``n_steps`` is
+        increased by one.
+    """
+    opt = check_option_type(option)
+    for name, v in (("S", S), ("K", K), ("T", T), ("sigma", sigma)):
+        check_positive(name, v)
+    n = int(n_steps)
+    if n < 1:
+        raise ValueError("n_steps must be positive")
+    dt = T / n
+    growth = math.exp((r - q) * dt)
+    if tree == "crr":
+        u = math.exp(sigma * math.sqrt(dt))
+        d = 1.0 / u
+        p = (growth - d) / (u - d)
+    elif tree == "lr":
+        if n % 2 == 0:
+            n += 1
+            dt = T / n
+            growth = math.exp((r - q) * dt)
+        d1, d2 = _d1d2(S, K, T, r, sigma, q)
+        p = _peizer_pratt(float(d2), n)
+        pbar = _peizer_pratt(float(d1), n)
+        u = growth * pbar / p
+        d = (growth - p * u) / (1.0 - p)
+    else:
+        raise ValueError("tree must be 'lr' or 'crr'")
+    if not 0.0 < p < 1.0:
+        raise ValueError("risk-neutral probability outside (0, 1); increase n_steps")
+    disc = math.exp(-r * dt)
+    j = np.arange(n + 1)
+    s_t = S * u ** (n - j) * d**j
+    pay = (
+        (lambda s: np.maximum(s - K, 0.0)) if opt == "call" else (lambda s: np.maximum(K - s, 0.0))
+    )
+    v = pay(s_t)
+    for step in range(n - 1, -1, -1):
+        v = disc * (p * v[:-1] + (1.0 - p) * v[1:])
+        if american:
+            jj = np.arange(step + 1)
+            v = np.maximum(v, pay(S * u ** (step - jj) * d**jj))
+    return float(v[0])
+
+
+def perpetual_american_put(S: float, K: float, r: float, sigma: float, q: float = 0.0) -> float:
+    r"""Perpetual American put (McKean, 1965; Merton, 1973).
+
+    With :math:`\beta < 0` the negative root of
+    :math:`\tfrac12\sigma^2\beta(\beta - 1) + (r - q)\beta - r = 0`, the
+    exercise boundary is :math:`S^* = K\beta/(\beta - 1)` and
+    :math:`V = (K - S^*)(S/S^*)^\beta` for :math:`S > S^*`.
+    """
+    for name, v in (("S", S), ("K", K), ("r", r), ("sigma", sigma)):
+        check_positive(name, v)
+    s_star = perpetual_put_boundary(K, r, sigma, q)
+    if S <= s_star:
+        return K - S
+    beta = _perpetual_beta(r, sigma, q)
+    return (K - s_star) * (S / s_star) ** beta
+
+
+def _perpetual_beta(r: float, sigma: float, q: float) -> float:
+    m = r - q - 0.5 * sigma**2
+    return (-m - math.sqrt(m**2 + 2.0 * r * sigma**2)) / sigma**2
+
+
+def perpetual_put_boundary(K: float, r: float, sigma: float, q: float = 0.0) -> float:
+    """Optimal exercise level of the perpetual American put."""
+    beta = _perpetual_beta(r, sigma, q)
+    return K * beta / (beta - 1.0)
