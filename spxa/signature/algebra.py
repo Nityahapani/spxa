@@ -49,6 +49,16 @@ class SignatureAlgebra:
         Level 1 (dim 2): :math:`[X^1], [X^2]`
         Level 2 (dim 1): Lévy stochastic area :math:`A^{12} = \frac{1}{2}(S^{12} - S^{21})`
         Level 3 (dim 2): :math:`[[X^1, X^2], X^1]` and :math:`[[X^1, X^2], X^2]`.
+
+        For a Lie polynomial :math:`P` the pairing :math:`\langle S, P \rangle = \langle \log S, P \rangle`
+        holds for group-like :math:`S`. The level-3 basis elements expand as
+
+        .. math::
+
+            [[1, 2], 1] = 2 \cdot 121 - 112 - 211, \qquad [[1, 2], 2] = 122 - 2 \cdot 212 + 221,
+
+        are mutually orthogonal and have squared norm 6, so the coordinates are
+        :math:`\langle S^{(3)}, P \rangle / 6`.
         """
         log_sig: Dict[int, np.ndarray] = {}
 
@@ -65,11 +75,12 @@ class SignatureAlgebra:
         # Level 3: Hall basis commutators
         if 3 in sig and depth >= 3:
             s3 = sig[3].reshape((2, 2, 2))
-            # [ [1, 2], 1 ] = S^{121} - S^{211} - S^{112} + S^{121}...
-            # Dynkin / Magnus formula projection for Lyndon words (1, 1, 2) and (1, 2, 2)
-            c_112 = (s3[0, 0, 1] - 2.0 * s3[0, 1, 0] + s3[1, 0, 0]) / 3.0
-            c_122 = (s3[0, 1, 1] - 2.0 * s3[1, 0, 1] + s3[1, 1, 0]) / 3.0
-            log_sig[3] = np.array([c_112, c_122], dtype=np.float64)
+            # Orthogonal projection of log S onto the Hall basis at level 3:
+            # [[1, 2], 1] = 2*(121) - (112) - (211),  [[1, 2], 2] = (122) - 2*(212) + (221),
+            # each with squared norm 6; <S, P> = <log S, P> for Lie polynomials P.
+            c_121 = (2.0 * s3[0, 1, 0] - s3[0, 0, 1] - s3[1, 0, 0]) / 6.0
+            c_122 = (s3[0, 1, 1] - 2.0 * s3[1, 0, 1] + s3[1, 1, 0]) / 6.0
+            log_sig[3] = np.array([c_121, c_122], dtype=np.float64)
 
         return log_sig
 
@@ -80,13 +91,30 @@ class SignatureAlgebra:
         .. math::
             L_d(k) = \frac{1}{k} \sum_{m | k} \mu(m) d^{k/m}
         """
-        # Mobius function for small k
-        mobius = {1: 1, 2: -1, 3: -1, 4: 0, 5: -1, 6: 1}
         total_dim = 0
         for k in range(1, depth + 1):
             term = 0
             for m in range(1, k + 1):
                 if k % m == 0:
-                    term += mobius.get(m, 0) * (d ** (k // m))
+                    term += SignatureAlgebra.mobius(m) * (d ** (k // m))
             total_dim += term // k
         return total_dim
+
+    @staticmethod
+    def mobius(n: int) -> int:
+        r"""Möbius function :math:`\mu(n)`: 0 if :math:`n` has a squared prime factor,
+        otherwise :math:`(-1)^r` where :math:`r` is the number of prime factors."""
+        if n < 1:
+            raise ValueError(f"Möbius function requires n >= 1, got {n}")
+        result = 1
+        p = 2
+        while p * p <= n:
+            if n % p == 0:
+                n //= p
+                if n % p == 0:
+                    return 0
+                result = -result
+            p += 1
+        if n > 1:
+            result = -result
+        return result

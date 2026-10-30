@@ -3,6 +3,7 @@ Tests for rough paths, tensor signatures, shuffle algebra, and Goursat signature
 """
 
 import numpy as np
+import pytest
 
 from spxa.graph.signature.signature_nodes import (
     ExpectedSignatureNode,
@@ -122,3 +123,66 @@ def test_expected_signature_linear_pricing():
     # Mean Monte Carlo payoff
     mc_price = float(np.mean(payoffs))
     assert np.isclose(price, mc_price, rtol=0.10)
+
+
+def test_signature_kernel_converges_to_bessel_closed_form():
+    from scipy.special import iv
+
+    # For X_t = Y_t = t on [0, 1] (d = 1), K = sum_k 1 / (k!)^2 = I_0(2)
+    t = np.linspace(0.0, 1.0, 101)
+    assert SignatureKernel.evaluate(t, t) == pytest.approx(iv(0, 2.0), rel=1e-5)
+    # Single linear step: second-order accurate, I_0(2 sqrt(M)) = 1 + M + M^2 / 4 + O(M^3)
+    m = 0.01
+    k_one = SignatureKernel.evaluate(np.array([0.0, np.sqrt(m)]), np.array([0.0, np.sqrt(m)]))
+    assert k_one == pytest.approx(1.0 + m + m**2 / 4.0, abs=1e-6)
+
+
+def test_signature_kernel_matches_truncated_signature_inner_product():
+
+    rng = np.random.default_rng(0)
+    x = np.cumsum(rng.normal(0.0, 0.1, size=(30, 2)), axis=0)
+    y = np.cumsum(rng.normal(0.0, 0.1, size=(40, 2)), axis=0)
+    ps = PathSignature(depth=10)
+    trunc = ps.flatten_signature(ps.signature(x)) @ ps.flatten_signature(ps.signature(y))
+    assert SignatureKernel.evaluate(x, y) == pytest.approx(trunc, rel=1e-4)
+
+
+def test_log_signature_level3_matches_tensor_logarithm():
+
+    rng = np.random.default_rng(1)
+    path = np.cumsum(rng.normal(0.0, 0.5, size=(6, 2)), axis=0)
+    sig = PathSignature(depth=3).signature(path)
+    s1, s2, s3 = sig[1], sig[2].reshape(2, 2), sig[3].reshape(2, 2, 2)
+    l3 = (
+        s3
+        - 0.5 * (np.einsum("i,jk->ijk", s1, s2) + np.einsum("ij,k->ijk", s2, s1))
+        + np.einsum("i,j,k->ijk", s1, s1, s1) / 3.0
+    )
+    # Hall basis: [[1,2],1] = 2*121 - 112 - 211, [[1,2],2] = 122 - 2*212 + 221
+    p1 = np.zeros((2, 2, 2))
+    p1[0, 1, 0], p1[0, 0, 1], p1[1, 0, 0] = 2.0, -1.0, -1.0
+    p2 = np.zeros((2, 2, 2))
+    p2[0, 1, 1], p2[1, 0, 1], p2[1, 1, 0] = 1.0, -2.0, 1.0
+
+    c = SignatureAlgebra.log_signature_2d(sig, depth=3)[3]
+    np.testing.assert_allclose(c[0] * p1 + c[1] * p2, l3, atol=1e-12)
+
+
+def test_witt_dimension_and_mobius():
+    assert [SignatureAlgebra.mobius(n) for n in range(1, 13)] == [
+        1,
+        -1,
+        -1,
+        0,
+        -1,
+        1,
+        -1,
+        0,
+        0,
+        1,
+        -1,
+        0,
+    ]
+    # Necklace polynomial values for d = 2: 2, 1, 2, 3, 6, 9, 18, 30, 56, 99
+    assert SignatureAlgebra.log_signature_dimension(d=2, depth=10) == 226
+    assert SignatureAlgebra.log_signature_dimension(d=3, depth=4) == 32
