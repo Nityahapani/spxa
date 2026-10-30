@@ -46,6 +46,17 @@ class TestGrid1DConstruction:
         assert h_center < 0.25 * h.max()
         assert h_center < (400.0 / 200)
 
+    def test_sinh_places_center_on_node(self):
+        g = Grid1D.sinh(0.0, 400.0, 101, center=100.0, alpha=20.0)
+        j = int(np.argmin(np.abs(g.nodes - 100.0)))
+        assert g.nodes[j] == 100.0
+        ratio = g.spacing[j] / g.spacing[j - 1]
+        assert abs(ratio - 1.0) < 0.05
+        free = Grid1D.sinh(0.0, 400.0, 101, center=100.0, alpha=20.0, align_center=False)
+        assert np.all(np.diff(free.nodes) > 0)
+        outside = Grid1D.sinh(0.0, 1.0, 11, center=2.0, alpha=0.5)
+        assert outside.lo == 0.0 and outside.hi == 1.0
+
     def test_sinh_is_smooth_map(self):
         # successive spacing ratios tend to 1 under refinement (smooth stretching)
         g = Grid1D.sinh(0.0, 1.0, 401, center=0.3, alpha=0.05)

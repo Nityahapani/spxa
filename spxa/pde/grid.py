@@ -75,6 +75,7 @@ class Grid1D:
         n_nodes: int,
         center: float,
         alpha: Optional[float] = None,
+        align_center: bool = True,
     ) -> "Grid1D":
         r"""Sinh-stretched grid concentrated around ``center``.
 
@@ -89,6 +90,14 @@ class Grid1D:
         alpha : float, optional
             Stretching scale :math:`\alpha > 0`. Defaults to
             ``(hi - lo) / 10``. Smaller values give stronger clustering.
+        align_center : bool
+            When ``center`` lies inside the domain, place it exactly on a
+            node. The map is applied separately on either side of the node
+            nearest to :math:`\xi_c = -c_1/(c_2 - c_1)`, which keeps the
+            spacing ratio across the centre at :math:`1 + O(1/n)`. This
+            avoids snapping a node onto the strike afterwards, which would
+            perturb the local spacing by up to half a cell and make the
+            convergence of digital payoffs erratic.
         """
         if hi <= lo:
             raise ValueError("hi must exceed lo")
@@ -97,8 +106,16 @@ class Grid1D:
         a = (hi - lo) / 10.0 if alpha is None else check_positive("alpha", alpha)
         c1 = np.arcsinh((lo - center) / a)
         c2 = np.arcsinh((hi - center) / a)
-        xi = np.linspace(0.0, 1.0, int(n_nodes))
-        nodes = center + a * np.sinh(c2 * xi + c1 * (1.0 - xi))
+        n = int(n_nodes)
+        if align_center and lo < center < hi:
+            j = int(np.clip(round(-c1 / (c2 - c1) * (n - 1)), 1, n - 2))
+            left = center + a * np.sinh(c1 * (1.0 - np.arange(j + 1) / j))
+            right = center + a * np.sinh(c2 * np.arange(1, n - j) / (n - 1 - j))
+            nodes = np.concatenate([left, right])
+            nodes[j] = center
+        else:
+            xi = np.linspace(0.0, 1.0, n)
+            nodes = center + a * np.sinh(c2 * xi + c1 * (1.0 - xi))
         nodes[0], nodes[-1] = lo, hi
         return cls(nodes)
 
