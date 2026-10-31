@@ -176,7 +176,7 @@ $$
 P = V^{-1}A^\top V,
 $$
 
-where $V$ holds the control-volume widths. Because $\mathbf{1}^\top A = 0$ row-wise for a generator, this gives $\frac{d}{dt}\sum_i V_ip_i = 0$, so total mass is conserved to machine precision. It also makes forward and backward prices consistent: $\sum_i V_i p_i(T)\,g_i$ equals the backward solution at $x_0$. The tests check Ornstein–Uhlenbeck and CIR densities in $L^1$ ($3\times10^{-5}$ for OU) and verify mass conservation to $10^{-14}$.
+where $V$ holds the control-volume widths. Because $\mathbf{1}^\top A = 0$ row-wise for a generator, this gives $\frac{d}{dt}\sum_i V_ip_i = 0$, so total mass is conserved to machine precision. It also makes forward and backward prices consistent: $\sum_i V_i p_i(T)\,g_i$ equals the backward solution at $x_0$. The tests check Ornstein–Uhlenbeck and CIR densities in $L^1$ ($3\times10^{-5}$ for OU) and verify mass conservation to $10^{-12}$.
 
 ---
 
@@ -201,7 +201,7 @@ where $\omega = \int (e^y - 1)\,\nu(dy)$ is the martingale correction. `LevyJump
 | Model | Reference | Error |
 | :--- | :--- | :--- |
 | Merton put | series | $9\times10^{-5}$, second order |
-| Kou | Lewis formula | $\le 7\times10^{-5}$ |
+| Kou | Kou (2002) closed form; Lewis formula for puts and Greeks | $\le 8\times10^{-5}$ for calls |
 | Variance Gamma, CGMY ($Y = 0.5, 1.5$), NIG | Lewis formula | $\le 3\times10^{-4}$ |
 | American Merton puts | d'Halluin–Forsyth–Labahn / compact-scheme references | $\le 1.4\times10^{-4}$ |
 
