@@ -39,6 +39,10 @@ Discretisation (uniform grid in :math:`x`, spacing :math:`h`):
   integral is iterated to a fixed point at every step (d'Halluin, Forsyth &
   Vetzal, 2005), which contracts with factor at most
   :math:`\theta\Delta\tau\tilde\lambda / (1 + \theta\Delta\tau(r + \tilde\lambda))`.
+* **American** constraints are enforced inside the same iteration with any of
+  the LCP solvers (the stateful Ikonen–Toivanen splitting wraps the whole
+  fixed-point solve and is applied once per step).
+
 References: Cont & Voltchkova (2005), *SIAM J. Numer. Anal.* 43(4);
 d'Halluin, Forsyth & Vetzal (2005), *IMA J. Numer. Anal.* 25(1);
 Asmussen & Rosiński (2001), *J. Appl. Probab.* 38(2).
@@ -55,9 +59,10 @@ from scipy.integrate import quad
 from scipy.signal import fftconvolve
 
 from spxa.pde._utils import check_option_type, check_positive
+from spxa.pde.american import IkonenToivanenLCP, make_lcp
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.payoffs import Payoff, project_payoff, vanilla
-from spxa.pde.solution import PDEPricingResult, PDESolution1D
+from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 
 __all__ = ["LevyJumpOperator", "LevyPIDE"]
 
@@ -191,7 +196,7 @@ class LevyJumpOperator:
 
 
 class LevyPIDE:
-    r"""European options under exponential Lévy dynamics.
+    r"""European and American options under exponential Lévy dynamics.
 
     Parameters
     ----------
@@ -260,7 +265,7 @@ class LevyPIDE:
         lo = k - j * h
         return Grid1D(lo + h * np.arange(n))
 
-    def far_field(self, K: float, option: str) -> tuple[FarField, FarField]:
+    def far_field(self, K: float, option: str, american: bool) -> tuple[FarField, FarField]:
         """Asymptotic values used outside the domain and as Dirichlet data."""
         r, q = self.r, self.q
         if option == "call":
@@ -269,11 +274,15 @@ class LevyPIDE:
                 return np.zeros_like(x)
 
             def right(x: np.ndarray, tau: float) -> np.ndarray:
+                if american:
+                    return np.maximum(np.exp(x) - K, np.exp(x - q * tau) - K * math.exp(-r * tau))
                 return np.exp(x - q * tau) - K * math.exp(-r * tau)
 
         else:
 
             def left(x: np.ndarray, tau: float) -> np.ndarray:
+                if american:
+                    return K - np.exp(x)
                 return K * math.exp(-r * tau) - np.exp(x - q * tau)
 
             def right(x: np.ndarray, tau: float) -> np.ndarray:
@@ -291,6 +300,8 @@ class LevyPIDE:
         n_time: int = 200,
         theta: float = 0.5,
         rannacher_steps: int = 2,
+        lcp: Any = None,
+        obstacle: Optional[Callable[[np.ndarray, float], np.ndarray]] = None,
         tol: float = 1e-10,
         max_iter: int = 100,
         max_jump: Optional[float] = None,
@@ -313,6 +324,9 @@ class LevyPIDE:
         n_time, theta, rannacher_steps :
             Time grid size, theta (0.5 is Crank-Nicolson) and the number of
             fully implicit half-step pairs at the start.
+        lcp, obstacle :
+            Optional complementarity solver and obstacle ``(x, tau) -> g``
+            for early exercise.
         tol, max_iter :
             Stopping rule of the jump fixed-point iteration (relative to
             ``max(1, max|u|)``).
@@ -404,6 +418,8 @@ class LevyPIDE:
             )
 
         n_iter_total = 0
+        if lcp is not None:
+            lcp.reset(n)
 
         def fixed_point(
             inner: Callable[[np.ndarray, np.ndarray], np.ndarray],
@@ -423,18 +439,40 @@ class LevyPIDE:
                     return v
             raise RuntimeError("jump fixed-point iteration did not converge")
 
+        def base_bc(base: np.ndarray) -> np.ndarray:
+            out = base.copy()
+            out[0], out[-1] = state["g"]
+            return out
+
         state: dict[str, Any] = {}
 
         def step(u: np.ndarray, t0: float, t1: float, th: float) -> np.ndarray:
             dt = t1 - t0
-            _, lu = system(dt, th)
+            M, lu = system(dt, th)
             base = u.copy()
             if th < 1.0:
                 base += (1.0 - th) * dt * (L @ u + J(u, t0))
             state.update(th_dt=th * dt, t1=t1, g=boundary_values(t1))
-            return fixed_point(lambda rhs, guess: lu.solve(rhs), base, u.copy())
+            g_obs = obstacle(x, t1) if obstacle is not None else None
+            v = u.copy()
+            if isinstance(lcp, IkonenToivanenLCP):
+                # the splitting is stateful: apply it once per step around a
+                # linear solve that itself iterates the jump term to convergence
+                def solve_full(r: np.ndarray) -> np.ndarray:
+                    return fixed_point(lambda rhs, guess: lu.solve(rhs), r, v)
+
+                return lcp.step(M, solve_full, base_bc(base), g_obs, u, dt, free)
+
+            def inner(rhs: np.ndarray, guess: np.ndarray) -> np.ndarray:
+                if lcp is None:
+                    return lu.solve(rhs)
+                return lcp.step(M, lu.solve, rhs, g_obs, guess, dt, free)
+
+            return fixed_point(inner, base, v)
 
         u = project_payoff(payoff, grid, transform=np.exp, inverse=np.log, method="kink")
+        if obstacle is not None:
+            u = np.maximum(u, obstacle(x, 0.0))
         tg = TimeGrid.uniform(T, n_time)
         times = tg.times
         prev = u
@@ -489,7 +527,7 @@ class LevyPIDE:
         T = check_positive("T", T)
         spot = check_positive("spot", spot)
         grid = self._grid(spot, K, T, n_space, half_width)
-        fl, fr = self.far_field(K, opt)
+        fl, fr = self.far_field(K, opt, american=False)
         sol = self.solve(vanilla(K, opt), T, grid, fl, fr, n_time=n_time, **kwargs)
         g = sol.greeks(spot)
         return PDEPricingResult(
@@ -500,4 +538,65 @@ class LevyPIDE:
             spot=spot,
             solution=sol,
             method=f"{self.name} PIDE European {opt}",
+        )
+
+    def american(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        option: str = "put",
+        method: str = "penalty",
+        n_space: int = 801,
+        n_time: int = 200,
+        half_width: Optional[float] = None,
+        **kwargs: Any,
+    ) -> PDEPricingResult:
+        """American call or put: the LCP is solved inside the jump fixed point."""
+        opt = check_option_type(option)
+        T = check_positive("T", T)
+        spot = check_positive("spot", spot)
+        grid = self._grid(spot, K, T, n_space, half_width)
+        payoff = vanilla(K, opt)
+        fl, fr = self.far_field(K, opt, american=True)
+        side = "left" if opt == "put" else "right"
+        lcp = make_lcp(method, side=side)
+        taus: list[float] = []
+        locs: list[float] = []
+        s_nodes = np.exp(grid.nodes)
+
+        def record(k: int, tau: float, u: np.ndarray) -> None:
+            g = payoff(s_nodes)
+            ex = (u - g <= 1e-7 * max(1.0, K)) & (g > 0.0)
+            taus.append(tau)
+            if not np.any(ex):
+                locs.append(float("nan"))
+            else:
+                locs.append(float(np.max(s_nodes[ex]) if side == "left" else np.min(s_nodes[ex])))
+
+        sol = self.solve(
+            payoff,
+            T,
+            grid,
+            fl,
+            fr,
+            n_time=n_time,
+            lcp=lcp,
+            obstacle=lambda x, tau: payoff(np.exp(x)),
+            callback=record,
+            **kwargs,
+        )
+        eb = ExerciseBoundary(np.array(taus), np.array(locs), side)
+        sol.exercise_boundary = eb
+        sol.info["lcp"] = lcp.describe()
+        g = sol.greeks(spot)
+        return PDEPricingResult(
+            price=g["value"],
+            delta=g["delta"],
+            gamma=g["gamma"],
+            theta=g.get("theta", float("nan")),
+            spot=spot,
+            solution=sol,
+            exercise_boundary=eb,
+            method=f"{self.name} PIDE American {opt} ({method})",
         )

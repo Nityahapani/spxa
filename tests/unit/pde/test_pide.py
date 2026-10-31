@@ -55,12 +55,16 @@ class TestConstruction:
     def test_far_field(self):
         P = LevyPIDE(0.05, 0.02, 0.2, no_jumps)
         x = np.log(np.array([10.0, 1000.0]))
-        cl, cr = P.far_field(100.0, "call")
+        cl, cr = P.far_field(100.0, "call", american=False)
         assert cl(x, 1.0)[0] == 0.0
         assert cr(x, 1.0)[1] == pytest.approx(1000 * math.exp(-0.02) - 100 * math.exp(-0.05))
-        pl, pr = P.far_field(100.0, "put")
+        pl, pr = P.far_field(100.0, "put", american=False)
         assert pl(x, 1.0)[0] == pytest.approx(100 * math.exp(-0.05) - 10 * math.exp(-0.02))
         assert pr(x, 1.0)[1] == 0.0
+        al, _ = P.far_field(100.0, "put", american=True)
+        assert al(x, 1.0)[0] == pytest.approx(90.0)
+        _, ar = P.far_field(100.0, "call", american=True)
+        assert ar(x, 1.0)[1] == pytest.approx(900.0)
 
 
 class TestSolve:
@@ -103,7 +107,7 @@ class TestSolve:
 
     def test_grid_and_scheme_validation(self):
         P = LevyPIDE(0.05, 0.0, 0.2, merton_density)
-        fl, fr = P.far_field(100.0, "call")
+        fl, fr = P.far_field(100.0, "call", american=False)
         bad = Grid1D(np.log(np.linspace(50.0, 200.0, 101)))
         with pytest.raises(ValueError, match="uniform"):
             P.solve(vanilla(100.0), 1.0, bad, fl, fr)
@@ -130,3 +134,31 @@ class TestSolve:
         assert c.delta - p.delta == pytest.approx(1.0, abs=1e-3)
         assert c.theta < 0
         assert "PIDE European call" in c.method
+
+
+class TestAmericanUnit:
+    def test_methods_and_result(self):
+        P = LevyPIDE(0.05, 0.0, 0.2, merton_density)
+        res = P.american(100.0, 0.5, 95.0, "put", n_space=201, n_time=50)
+        eu = P.european(100.0, 0.5, 95.0, "put", n_space=201, n_time=50)
+        assert res.price >= eu.price
+        assert res.exercise_boundary is res.solution.exercise_boundary
+        assert res.exercise_boundary.taus.size == 51
+        assert "Penalty" in res.solution.info["lcp"] or "penalty" in res.solution.info["lcp"]
+        assert "American put (penalty)" in res.method
+        with pytest.raises(ValueError):
+            P.american(100.0, 0.5, 95.0, method="simplex", n_space=101)
+
+    def test_value_dominates_obstacle(self):
+        P = LevyPIDE(0.05, 0.0, 0.2, merton_density)
+        res = P.american(100.0, 1.0, 100.0, "put", n_space=201, n_time=50, method="psor")
+        s = np.exp(res.solution.grid.nodes)
+        assert np.all(res.solution.values >= np.maximum(100.0 - s, 0.0) - 1e-8)
+
+    def test_american_call_with_dividends_has_right_boundary(self):
+        P = LevyPIDE(0.02, 0.08, 0.25, merton_density)
+        am = P.american(100.0, 1.0, 100.0, "call", n_space=401, n_time=100)
+        eu = P.european(100.0, 1.0, 100.0, "call", n_space=401, n_time=100)
+        assert am.price > eu.price + 1e-3
+        assert am.exercise_boundary.side == "right"
+        assert np.nanmin(am.exercise_boundary.locations) > 100.0
