@@ -33,6 +33,12 @@ from spxa.pde.two_asset import (
     TwoAssetBlackScholesPDE,
     TwoAssetPDEResult,
 )
+from spxa.pde.lsm import (
+    LSMResult,
+    longstaff_schwartz,
+    gbm_paths,
+    lsm_american,
+)
 from spxa.pde.american import (
     BrennanSchwartzLCP,
     IkonenToivanenLCP,
@@ -68,6 +74,10 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "LSMResult",
+    "longstaff_schwartz",
+    "gbm_paths",
+    "lsm_american",
     "TwoAssetBlackScholesPDE",
     "TwoAssetPDEResult",
     "HestonPDE",
