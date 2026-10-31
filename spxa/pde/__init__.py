@@ -39,6 +39,12 @@ from spxa.pde.lsm import (
     gbm_paths,
     lsm_american,
 )
+from spxa.pde.instruments import (
+    PDEQuote,
+    pde_price,
+    pde_pricing_fn,
+    supported_instruments,
+)
 from spxa.pde.american import (
     BrennanSchwartzLCP,
     IkonenToivanenLCP,
@@ -74,6 +80,10 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "PDEQuote",
+    "pde_price",
+    "pde_pricing_fn",
+    "supported_instruments",
     "LSMResult",
     "longstaff_schwartz",
     "gbm_paths",
