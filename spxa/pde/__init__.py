@@ -33,6 +33,7 @@ from spxa.pde.convergence import (
 )
 from spxa.pde.fokker_planck import DensitySolution, FokkerPlanck1D
 from spxa.pde.generator import DiffusionPDE, to_pde
+from spxa.pde.pide import LevyJumpOperator, LevyPIDE
 from spxa.pde.grid import Grid1D, TimeGrid
 from spxa.pde.local_vol import (
     DupirePDE,
@@ -47,6 +48,8 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "LevyJumpOperator",
+    "LevyPIDE",
     "DiffusionPDE",
     "to_pde",
     "DensitySolution",
