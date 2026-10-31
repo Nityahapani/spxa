@@ -57,6 +57,8 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 - `zoo.levy.NIG`: the triplet drift and tail integrated the NIG probability density instead of the
   Lévy density. The drift now follows from $\mathbb{E}[X_1] = \mu + \delta\beta/\gamma$, and the tail
   integrates the Lévy density.
+- `zoo.levy.KouJumpDiffusion`: `char_func` now uses the closed-form exponent. The inherited numerical
+  Lévy–Khintchine integral returned `nan` at complex arguments such as $u = -i$.
 
 ## [1.0.1] — 2026-10-30
 
