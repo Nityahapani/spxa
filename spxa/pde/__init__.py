@@ -13,6 +13,15 @@ This subpackage discretises such equations with second-order accurate,
 verified finite-difference schemes.
 """
 
+from spxa.pde.adi import (
+    Grid2D,
+    Dirichlet2D,
+    Neumann2D,
+    Natural2D,
+    Linear2D,
+    LinearPDE2D,
+    DiscreteOperator2D,
+)
 from spxa.pde.american import (
     BrennanSchwartzLCP,
     IkonenToivanenLCP,
@@ -48,6 +57,13 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "Grid2D",
+    "Dirichlet2D",
+    "Neumann2D",
+    "Natural2D",
+    "Linear2D",
+    "LinearPDE2D",
+    "DiscreteOperator2D",
     "LevyJumpOperator",
     "LevyPIDE",
     "DiffusionPDE",
