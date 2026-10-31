@@ -70,6 +70,22 @@ class LSMResult:
     def __float__(self) -> float:
         return float(self.price)
 
+    def __story__(self) -> str:
+        """Plain-language summary of the estimate."""
+        lo, hi = self.confidence_interval()
+        passes = (
+            "two-pass (independent regression paths)" if self.info.get("two_pass") else "one-pass"
+        )
+        return "\n".join(
+            [
+                f"Least-squares Monte Carlo, {passes}",
+                f"  price = {self.price:.6f} +/- {self.std_error:.6f} (95% CI [{lo:.6f}, {hi:.6f}])",
+                f"  {self.n_paths} valuation paths, {self.info.get('n_dates')} exercise dates, "
+                f"{self.info.get('basis')} basis of degree {self.info.get('degree')}",
+                f"  early exercise on {100 * self.exercise_probability:.1f}% of paths",
+            ]
+        )
+
     def confidence_interval(self, z: float = 1.96) -> tuple[float, float]:
         """Normal confidence interval ``price -/+ z * std_error``."""
         return (self.price - z * self.std_error, self.price + z * self.std_error)

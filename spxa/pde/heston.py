@@ -91,6 +91,18 @@ class HestonPDEResult:
     exercise_boundary: Optional[ExerciseBoundary] = None
     method: str = ""
 
+    def __story__(self) -> str:
+        """Plain-language summary of the valuation."""
+        lines = [
+            f"{self.method} at S = {self.spot:g}, v = {self.v0:g}",
+            f"  price = {self.price:.8f}, delta = {self.delta:.6f}, gamma = {self.gamma:.6f}, "
+            f"theta = {self.theta:.6f}, u_v = {self.dv:.6f}, vega = {self.vega:.6f}",
+        ]
+        if self.exercise_boundary is not None and self.exercise_boundary.taus.size:
+            lines.append(f"  exercise boundary today: {self.exercise_boundary.locations[-1]:.6g}")
+        lines.append(self.solution.__story__())
+        return "\n".join(lines)
+
     def __float__(self) -> float:
         return float(self.price)
 

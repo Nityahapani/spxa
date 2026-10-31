@@ -510,6 +510,27 @@ class PDESolution2D:
         out = (-du / self.dt_last).reshape(xa.shape)
         return float(out) if out.ndim == 0 else out
 
+    def __story__(self) -> str:
+        """Plain-language account of how the solution was obtained."""
+        g = self.grid
+        vx, vy = self.variables
+        lines = [
+            self.label,
+            f"  grid: {g.x.n} x {g.y.n} nodes, {vx} in [{g.x.lo:.6g}, {g.x.hi:.6g}], "
+            f"{vy} in [{g.y.lo:.6g}, {g.y.hi:.6g}]",
+        ]
+        info = self.info
+        if "scheme" in info:
+            lines.append(
+                f"  time stepping: {info['scheme']} ADI (theta={info.get('theta', float('nan')):.4g}), "
+                f"{info.get('n_steps', '?')} steps, {info.get('damping_steps', 0)} damping steps"
+            )
+        if info.get("american"):
+            lines.append("  early exercise: Ikonen-Toivanen splitting")
+        if "edges" in info:
+            lines.append(f"  edges: {info['edges']}")
+        return "\n".join(lines)
+
     def __repr__(self) -> str:
         return f"PDESolution2D({self.label}, grid={self.grid!r})"
 
@@ -744,6 +765,7 @@ class ADISolver:
             "damping_steps": self.damping_steps,
             "n_factorisations": self._n_factorisations,
             "american": obstacle is not None,
+            "edges": {k: type(v).__name__ for k, v in self.operator.edges.items()},
         }
         return ADIResult(
             values=U.reshape(g.shape),

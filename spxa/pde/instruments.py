@@ -66,6 +66,16 @@ class PDEQuote:
     def __float__(self) -> float:
         return float(self.price)
 
+    def __story__(self) -> str:
+        """Plain-language summary of the quote."""
+        lines = [f"{self.instrument_id}: {self.method}", f"  value = {self.price:.8f}"]
+        for uid in self.delta:
+            extra = f", vega = {self.vega[uid]:.6f}" if self.vega else ""
+            lines.append(
+                f"  {uid}: delta = {self.delta[uid]:.6f}, gamma = {self.gamma[uid]:.6f}{extra}"
+            )
+        return "\n".join(lines)
+
 
 def supported_instruments() -> tuple[str, ...]:
     """Names of the instrument classes :func:`pde_price` accepts."""

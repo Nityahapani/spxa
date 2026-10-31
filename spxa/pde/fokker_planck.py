@@ -55,6 +55,18 @@ class DensitySolution:
     times: Optional[np.ndarray] = None
     info: dict[str, Any] = field(default_factory=dict)
 
+    def __story__(self) -> str:
+        """Plain-language summary of the density."""
+        lines = [
+            f"Transition density at t = {self.time:g} on {self.grid.n} nodes "
+            f"[{self.grid.lo:.6g}, {self.grid.hi:.6g}]",
+            f"  mass = {self.mass():.12f}, mean = {self.mean():.8f}, variance = {self.variance():.8f}",
+        ]
+        for key in ("scheme", "n_steps", "boundary"):
+            if key in self.info:
+                lines.append(f"  {key}: {self.info[key]}")
+        return "\n".join(lines)
+
     @property
     def weights(self) -> np.ndarray:
         """Control-volume widths used as quadrature weights."""

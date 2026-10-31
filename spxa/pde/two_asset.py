@@ -65,6 +65,18 @@ class TwoAssetPDEResult:
     def __float__(self) -> float:
         return float(self.price)
 
+    def __story__(self) -> str:
+        """Plain-language summary of the valuation."""
+        return "\n".join(
+            [
+                f"{self.method} at S1 = {self.spots[0]:g}, S2 = {self.spots[1]:g}",
+                f"  price = {self.price:.8f}, delta = ({self.delta[0]:.6f}, {self.delta[1]:.6f}), "
+                f"gamma = ({self.gamma[0]:.6f}, {self.gamma[1]:.6f}), "
+                f"cross gamma = {self.cross_gamma:.6f}",
+                self.solution.__story__(),
+            ]
+        )
+
 
 class TwoAssetBlackScholesPDE:
     """Two correlated geometric Brownian motions under the risk-neutral measure."""
