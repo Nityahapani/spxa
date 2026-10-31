@@ -65,3 +65,15 @@ class TestBrownianMotion:
             digital(0.5), 1.0, discount=0.02
         )
         assert sol.value(0.0) == pytest.approx(math.exp(-0.02) * norm.sf(0.5), abs=2e-5)
+
+
+class TestLevyBridge:
+    def test_merton_through_to_pde(self):
+        from spxa.pde.reference import merton_price
+        from spxa.zoo.levy import MertonJumpDiffusion
+
+        proc = MertonJumpDiffusion(drift=0.3, sigma=0.15, rate=0.1, jump_mean=-0.9, jump_std=0.45)
+        # the physical drift is irrelevant: the PIDE is risk neutral
+        res = to_pde(proc, r=0.05).european(100.0, 0.25, 100.0, "put", n_space=801)
+        ref = merton_price(100.0, 100.0, 0.25, 0.05, 0.15, 0.1, -0.9, 0.45, option="put")
+        assert res.price == pytest.approx(ref, abs=2e-4)

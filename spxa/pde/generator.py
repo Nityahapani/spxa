@@ -224,21 +224,25 @@ def to_pde(process: Any = None, **kwargs: Any) -> Any:
     Parameters
     ----------
     process : Process, optional
-        A zoo process. Supported: ``BrownianMotion`` (pure diffusion),
+        A zoo process. Diffusions: ``BrownianMotion``,
         ``OrnsteinUhlenbeckProcess``, ``CIRProcess`` and ``CEVProcess``.
+        Lévy processes with jumps (Merton, Kou, VG, CGMY, NIG, ...) map to
+        the exponential-Lévy pricing PIDE when ``r`` is given.
     **kwargs
         Without ``process``: ``drift``, ``volatility``, ``x0`` and optional
-        :class:`DiffusionPDE` fields. With ``process``: overrides such as
-        ``domain``.
+        :class:`DiffusionPDE` fields. With a diffusion: overrides such as
+        ``domain``. With a jump process: ``r`` and optionally ``q``.
 
     Returns
     -------
-    DiffusionPDE
+    DiffusionPDE or LevyPIDE
 
     Raises
     ------
+    ValueError
+        For a jump process without ``r``.
     NotImplementedError
-        For processes whose generator is not a local diffusion operator.
+        For processes with no registered PDE (e.g. stochastic volatility).
     """
     if process is None:
         try:
@@ -296,9 +300,18 @@ def to_pde(process: Any = None, **kwargs: Any) -> Any:
         except Exception:  # processes without an exact Levy triplet raise here
             triplet = None
         if triplet is not None and getattr(triplet, "nu", None) is not None:
-            raise NotImplementedError(
-                f"{cls} has jumps; its generator is an integro-differential operator"
-            )
+            if "r" not in kwargs:
+                raise ValueError(
+                    f"{cls} has jumps; its generator is an integro-differential operator. "
+                    "Pass r= (and optionally q=) to obtain the exponential-Levy pricing "
+                    "PIDE (LevyPIDE) with S = S0 exp((r - q)t + X_t)."
+                )
+            from spxa.pde.pide import LevyPIDE
+
+            extra = set(kwargs) - {"r", "q"}
+            if extra:
+                raise TypeError(f"unexpected arguments for a Levy process: {sorted(extra)}")
+            return LevyPIDE.from_process(process, kwargs["r"], kwargs.get("q", 0.0))
         raise NotImplementedError(f"no PDE representation is registered for {cls}")
     spec["name"] = getattr(process, "name", cls) or cls
     spec.update(kwargs)

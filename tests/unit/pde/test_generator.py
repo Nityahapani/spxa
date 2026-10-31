@@ -7,8 +7,9 @@ import pytest
 
 from spxa.pde.boundary import Linear, Natural
 from spxa.pde.generator import DiffusionPDE, to_pde
+from spxa.pde.pide import LevyPIDE
 from spxa.zoo.beyond import CIRProcess, HestonProcess, OrnsteinUhlenbeckProcess
-from spxa.zoo.levy import BrownianMotion, MertonJumpDiffusion
+from spxa.zoo.levy import BrownianMotion, MertonJumpDiffusion, VarianceGamma
 
 
 class TestToPde:
@@ -35,16 +36,25 @@ class TestToPde:
         assert d.truncated_domain(1.0) == (-5.0, 9.0)
 
     def test_unsupported_processes(self):
-        with pytest.raises(NotImplementedError, match="jumps"):
-            to_pde(
-                MertonJumpDiffusion(drift=0.0, sigma=0.2, rate=0.5, jump_mean=-0.1, jump_std=0.1)
-            )
+        merton = MertonJumpDiffusion(drift=0.0, sigma=0.2, rate=0.5, jump_mean=-0.1, jump_std=0.1)
+        with pytest.raises(ValueError, match="jumps"):
+            to_pde(merton)
+        with pytest.raises(TypeError, match="unexpected"):
+            to_pde(merton, r=0.05, domain=lambda T: (0.0, 1.0))
         with pytest.raises(NotImplementedError):
             to_pde(
                 HestonProcess(
                     v0=0.04, kappa=1.0, theta=0.04, sigma_v=0.3, rho=-0.5, mu=0.0, s0=100.0
                 )
             )
+
+    def test_jump_process_gives_pide(self):
+        merton = MertonJumpDiffusion(drift=0.0, sigma=0.2, rate=0.5, jump_mean=-0.1, jump_std=0.1)
+        pide = to_pde(merton, r=0.05, q=0.01)
+        assert isinstance(pide, LevyPIDE)
+        assert (pide.r, pide.q, pide.sigma) == (0.05, 0.01, pytest.approx(0.2))
+        vg = to_pde(VarianceGamma(sigma=0.12, nu=0.2, theta=-0.14), r=0.03)
+        assert isinstance(vg, LevyPIDE) and vg.sigma == 0.0
 
 
 class TestDiffusionPDE:
