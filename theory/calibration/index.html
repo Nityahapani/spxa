@@ -1,0 +1,1949 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/calibration/">
+      
+      
+        <link rel="prev" href="../pde/">
+      
+      
+        <link rel="next" href="../../tutorials/01_first_composition/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Estimation & calibration - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#estimation-and-calibration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Estimation & calibration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-maximum-likelihood-from-transition-densities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Maximum likelihood from transition densities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-moment-and-characteristic-function-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Moment and characteristic-function methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Moment and characteristic-function methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-gmm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 GMM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-empirical-characteristic-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Empirical characteristic function
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-latent-states-filtering-and-quasi-likelihood" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Latent states: filtering and quasi-likelihood
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Latent states: filtering and quasi-likelihood">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-unscented-kalman-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Unscented Kalman filter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-bootstrap-particle-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Bootstrap particle filter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-model-specific-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Model-specific filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-inference-standard-errors-and-model-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Inference, standard errors and model selection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Inference, standard errors and model selection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-information-matrices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Information matrices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-wald-and-profile-likelihood-intervals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Wald and profile-likelihood intervals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-information-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Information criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-smile-and-surface-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Smile and surface calibration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Smile and surface calibration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Models
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-loss-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 Loss functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-optimisers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 Optimisers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-fit-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 Fit diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-forecast-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Forecast diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="estimation-and-calibration">Estimation and Calibration</h1>
+<p>There are two separate problems here. <strong>Estimation</strong> fits a model to the historical path of an observed (or partly observed) time series. <strong>Calibration</strong> fits a pricing model to today's cross-section of option quotes. <code>spxa.calibration</code> covers both. It has exact-likelihood estimators, moment and characteristic-function methods, nonlinear filters for latent states, smile and surface calibrators, and diagnostics that report uncertainty and goodness of fit.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Object</th>
+<th style="text-align: left;">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Exact transition-density MLE</td>
+<td style="text-align: left;"><code>OrnsteinUhlenbeckMLE</code>, <code>VasicekMLE</code>, <code>BrownianMotionMLE</code>, <code>GeometricBrownianMotionMLE</code>, <code>CIRMaximumLikelihood</code>, <code>BESQMaximumLikelihood</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Heavy-tailed innovations</td>
+<td style="text-align: left;"><code>StudentTInnovationsMLE</code>, <code>NormalInverseGaussianMLE</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Generalised method of moments</td>
+<td style="text-align: left;"><code>GMMEstimator</code>, <code>OrnsteinUhlenbeckGMM</code>, <code>CIRGMM</code>, <code>newey_west_hac</code>, <code>hansen_j_test</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Empirical characteristic function</td>
+<td style="text-align: left;"><code>ECFEstimator</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Latent-state filtering and QMLE</td>
+<td style="text-align: left;"><code>UnscentedKalmanFilter</code>, <code>BootstrapParticleFilter</code>, <code>QuasiMaximumLikelihoodEstimator</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Model-specific filters</td>
+<td style="text-align: left;"><code>HestonVarianceFilter</code>, <code>SchwartzTwoFactorFilter</code>, <code>DefaultIntensityFilter</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Smile and surface calibration</td>
+<td style="text-align: left;"><code>SABRCalibrator</code>, <code>HestonCalibrator</code>, <code>BatesCalibrator</code>, <code>DoubleHestonCalibrator</code>, <code>CEVHestonCalibrator</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Inference and model selection</td>
+<td style="text-align: left;"><code>fisher_information_matrix</code>, <code>sandwich_covariance_matrix</code>, <code>compute_parameter_inference</code>, <code>compute_profile_likelihood</code>, <code>ModelComparisonTable</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Forecast and fit diagnostics</td>
+<td style="text-align: left;"><code>compute_pit_values</code>, <code>evaluate_pit_diagnostics</code>, <code>compute_residual_diagnostics</code>, <code>analyze_surface_residuals</code>, <code>CalibrationReport</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-maximum-likelihood-from-transition-densities">1. Maximum likelihood from transition densities</h2>
+<p>Let <span class="arithmatex">\(X_0, X_\Delta, \dots, X_{N\Delta}\)</span> be observed on a regular grid. For a Markov diffusion the likelihood factorises into transition densities:</p>
+<div class="arithmatex">\[
+\ell(\theta) = \sum_{k=1}^{N} \log p_\theta\big(X_{k\Delta} \mid X_{(k-1)\Delta}\big).
+\]</div>
+<p>Whenever <span class="arithmatex">\(p_\theta\)</span> is known in closed form, the estimators in <code>spxa.calibration.mle</code> use it. They do <strong>not</strong> use an Euler (Gaussian) approximation, so the MLE has no discretisation bias at any sampling frequency. Without a closed-form density one would need approximations such as the Aït-Sahalia (2002) expansion, which <code>spxa</code> does not currently implement.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Model</th>
+<th style="text-align: left;">Dynamics</th>
+<th style="text-align: left;">Exact transition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Brownian motion</td>
+<td style="text-align: left;"><span class="arithmatex">\(dX = \mu\,dt + \sigma\,dW\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\mathcal N(X + \mu\Delta,\ \sigma^2\Delta)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">GBM</td>
+<td style="text-align: left;"><span class="arithmatex">\(dS = \mu S\,dt + \sigma S\,dW\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\log S' \sim \mathcal N\big(\log S + (\mu-\tfrac12\sigma^2)\Delta,\ \sigma^2\Delta\big)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">OU / Vasicek</td>
+<td style="text-align: left;"><span class="arithmatex">\(dX = \kappa(\theta - X)\,dt + \sigma\,dW\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\mathcal N\big(X e^{-\kappa\Delta} + \theta(1-e^{-\kappa\Delta}),\ \tfrac{\sigma^2}{2\kappa}(1-e^{-2\kappa\Delta})\big)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">CIR</td>
+<td style="text-align: left;"><span class="arithmatex">\(dr = \kappa(\theta - r)\,dt + \sigma\sqrt r\,dW\)</span></td>
+<td style="text-align: left;">scaled non-central <span class="arithmatex">\(\chi^2\)</span> (below)</td>
+</tr>
+<tr>
+<td style="text-align: left;">BESQ<span class="arithmatex">\(^\delta\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(dX = \delta\,dt + 2\sqrt X\,dW\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(X'/\Delta \sim \chi^2_\delta(X/\Delta)\)</span></td>
+</tr>
+</tbody>
+</table>
+<p><strong>CIR.</strong> Set <span class="arithmatex">\(c = 2\kappa / \big(\sigma^2(1 - e^{-\kappa\Delta})\big)\)</span>. Then <span class="arithmatex">\(2c\,r_{t+\Delta}\)</span> given <span class="arithmatex">\(r_t\)</span> is non-central <span class="arithmatex">\(\chi^2\)</span> with <span class="arithmatex">\(4\kappa\theta/\sigma^2\)</span> degrees of freedom and non-centrality <span class="arithmatex">\(2c\,r_t e^{-\kappa\Delta}\)</span>. Write <span class="arithmatex">\(u = c\,r_t e^{-\kappa\Delta}\)</span>, <span class="arithmatex">\(v = c\,r_{t+\Delta}\)</span> and <span class="arithmatex">\(q = 2\kappa\theta/\sigma^2 - 1\)</span>. The density is</p>
+<div class="arithmatex">\[
+p(r_{t+\Delta}\mid r_t) = c\, e^{-u-v}\Big(\frac{v}{u}\Big)^{q/2} I_q\big(2\sqrt{uv}\big).
+\]</div>
+<p><code>CIRMaximumLikelihood</code> evaluates <span class="arithmatex">\(I_q\)</span> through the exponentially scaled Bessel function <code>scipy.special.ive</code>. This keeps <span class="arithmatex">\(\log I_q(z) = \log \mathrm{ive}_q(z) + z\)</span> finite for large <span class="arithmatex">\(uv\)</span>. The log-likelihood matches <code>scipy.stats.ncx2.logpdf</code> (with Jacobian <span class="arithmatex">\(2c\)</span>) to machine precision.</p>
+<p><strong>Heavy tails.</strong> <code>StudentTInnovationsMLE</code> fits location, scale and degrees of freedom <span class="arithmatex">\(\nu\)</span> to i.i.d. returns. <code>NormalInverseGaussianMLE</code> fits the four-parameter NIG law, whose density involves <span class="arithmatex">\(K_1\)</span>. Both are i.i.d. return models. For a Lévy <em>process</em> observed at frequency <span class="arithmatex">\(\Delta\)</span>, the increment law is the <span class="arithmatex">\(\Delta\)</span>-convolution power, which is the setting of §2.2.</p>
+<div class="admonition note">
+<p class="admonition-title">Numerical optimisation</p>
+<p>Every <code>TimeSeriesEstimator</code> maximises <span class="arithmatex">\(\ell\)</span> with L-BFGS-B from <code>default_initial_guess</code> within <code>default_bounds</code>. It returns an <code>EstimationResult</code> with the parameters, standard errors, log-likelihood, AIC/BIC and the number of observations. These can be fed straight into §4.</p>
+</div>
+<hr />
+<h2 id="2-moment-and-characteristic-function-methods">2. Moment and characteristic-function methods</h2>
+<h3 id="21-gmm">2.1 GMM</h3>
+<p>Suppose a model implies <span class="arithmatex">\(\mathbb E[m(X_t;\theta_0)] = 0\)</span> for an <span class="arithmatex">\(m\)</span>-vector of moment functions, with <span class="arithmatex">\(m \ge k = \dim\theta\)</span>. Let <span class="arithmatex">\(g_N(\theta) = \frac1N\sum_t m(X_t;\theta)\)</span>. <code>GMMEstimator</code> implements <strong>two-step feasible GMM</strong> (Hansen 1982):</p>
+<div class="arithmatex">\[
+\hat\theta = \arg\min_\theta\ g_N(\theta)^\top W\, g_N(\theta),
+\qquad W^{(1)} = I,\quad W^{(2)} = \hat\Omega^{-1}.
+\]</div>
+<p>Here <span class="arithmatex">\(\hat\Omega\)</span> estimates the long-run covariance <span class="arithmatex">\(\sum_{j\in\mathbb Z}\operatorname{Cov}(m_t, m_{t-j})\)</span> at the first-step estimate. With the efficient weight, <span class="arithmatex">\(\sqrt N(\hat\theta - \theta_0) \Rightarrow \mathcal N\big(0, (G^\top\Omega^{-1}G)^{-1}\big)\)</span>, where <span class="arithmatex">\(G = \mathbb E[\partial m/\partial\theta^\top]\)</span>.</p>
+<p><code>OrnsteinUhlenbeckGMM</code> uses the stationary mean, variance, lag-one autocovariance and third central moment:</p>
+<div class="arithmatex">\[
+\mathbb E[X-\theta]=0,\quad
+\mathbb E[(X-\theta)^2]=\tfrac{\sigma^2}{2\kappa},\quad
+\mathbb E[(X_t-\theta)(X_{t-\Delta}-\theta)]=\tfrac{\sigma^2}{2\kappa}e^{-\kappa\Delta},\quad
+\mathbb E[(X-\theta)^3]=0.
+\]</div>
+<p><code>CIRGMM</code> uses the analogous conditions with stationary variance <span class="arithmatex">\(\sigma^2\theta/(2\kappa)\)</span>.</p>
+<p><strong>HAC covariance.</strong> <code>newey_west_hac</code> returns</p>
+<div class="arithmatex">\[
+\hat\Omega = \hat\Gamma_0 + \sum_{j\ge1} k\!\Big(\frac{j}{L+1}\Big)\big(\hat\Gamma_j + \hat\Gamma_j^\top\big),
+\qquad \hat\Gamma_j = \frac1N\sum_t \tilde m_t \tilde m_{t-j}^\top,
+\]</div>
+<p>where <span class="arithmatex">\(\tilde m\)</span> is the demeaned moment series. The default lag is <span class="arithmatex">\(L = \lfloor 4(N/100)^{2/9}\rfloor\)</span>. Two kernels are available: Bartlett, <span class="arithmatex">\(k(x) = 1-x\)</span> on <span class="arithmatex">\([0,1]\)</span> (Newey &amp; West 1987), and quadratic-spectral, <span class="arithmatex">\(k(x) = \frac{25}{12\pi^2x^2}\big(\frac{\sin(6\pi x/5)}{6\pi x/5} - \cos(6\pi x/5)\big)\)</span> over all lags (Andrews 1991). The result is projected onto the positive semi-definite cone by eigenvalue clipping.</p>
+<p><strong>Over-identification.</strong> <code>hansen_j_test</code> computes <span class="arithmatex">\(J = N\,g_N(\hat\theta)^\top\hat\Omega^{-1}g_N(\hat\theta) \Rightarrow \chi^2_{m-k}\)</span> under correct specification. With <span class="arithmatex">\(m = k\)</span> the model is exactly identified and <span class="arithmatex">\(J\)</span> is uninformative.</p>
+<h3 id="22-empirical-characteristic-function">2.2 Empirical characteristic function</h3>
+<p>For Lévy and affine jump models the density is often unavailable, but the characteristic function <span class="arithmatex">\(\varphi_\theta(u) = \mathbb E[e^{iuX_\Delta}]\)</span> is known through Lévy–Khintchine. <code>ECFEstimator</code> minimises</p>
+<div class="arithmatex">\[
+\hat\theta = \arg\min_\theta \int \big|\hat\varphi_N(u) - \varphi_\theta(u)\big|^2 w(u)\,du,
+\qquad \hat\varphi_N(u) = \frac1N\sum_{j=1}^N e^{iuX_j}.
+\]</div>
+<p>The integral is a quadrature on a grid, by default 41 points on <span class="arithmatex">\([-10,10]\)</span>. The weight is Gaussian, <span class="arithmatex">\(w(u)=e^{-u^2/2}\)</span>, or uniform. Any process in the zoo with a <code>char_func</code> can be plugged in. The estimator is consistent and asymptotically normal for i.i.d. increments (Feuerverger &amp; McDunnough 1981; Yu 2004). Its efficiency depends on the grid and the weight.</p>
+<hr />
+<h2 id="3-latent-states-filtering-and-quasi-likelihood">3. Latent states: filtering and quasi-likelihood</h2>
+<p>Many models have unobserved state, such as stochastic variance, convenience yield or default intensity. Write the discrete state-space model</p>
+<div class="arithmatex">\[
+x_k = f(x_{k-1}) + \eta_k,\ \ \eta_k\sim(0, Q(x_{k-1})),
+\qquad
+y_k = h(x_k) + \varepsilon_k,\ \ \varepsilon_k\sim\mathcal N(0, R).
+\]</div>
+<p>Every filter returns a <code>FilteredTrajectory</code> with the filtered means and covariances, the innovations and a log-likelihood.</p>
+<h3 id="31-unscented-kalman-filter">3.1 Unscented Kalman filter</h3>
+<p><code>UnscentedKalmanFilter</code> uses the scaled sigma-point set of van der Merwe. For state dimension <span class="arithmatex">\(L\)</span>, <span class="arithmatex">\(\lambda = \alpha^2(L+\kappa) - L\)</span>, and the <span class="arithmatex">\(2L+1\)</span> points are</p>
+<div class="arithmatex">\[
+\mathcal X_0 = \bar x,\qquad
+\mathcal X_{\pm i} = \bar x \pm \big(\sqrt{(L+\lambda)P}\big)_i,
+\]</div>
+<p>with weights</p>
+<div class="arithmatex">\[
+W^{m}_0 = \tfrac{\lambda}{L+\lambda},\quad
+W^{c}_0 = W^m_0 + 1 - \alpha^2 + \beta,\quad
+W^{m}_i = W^{c}_i = \tfrac{1}{2(L+\lambda)}.
+\]</div>
+<p>The defaults are <span class="arithmatex">\(\alpha = 10^{-3}\)</span>, <span class="arithmatex">\(\beta = 2\)</span> and <span class="arithmatex">\(\kappa = 0\)</span>. Propagating the points through <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(h\)</span> gives the predicted mean and covariance, <span class="arithmatex">\(P_{yy}\)</span> and <span class="arithmatex">\(P_{xy}\)</span>. These are correct to second order for any smooth nonlinearity, and <strong>exact when <span class="arithmatex">\(f\)</span> and <span class="arithmatex">\(h\)</span> are affine</strong>, in which case the UKF is the Kalman filter. The log-likelihood is the prediction-error decomposition</p>
+<div class="arithmatex">\[
+\ell = -\tfrac12\sum_k\Big(\log\det(2\pi S_k) + v_k^\top S_k^{-1}v_k\Big),
+\qquad v_k = y_k - \hat y_{k|k-1},\ S_k = P_{yy,k}.
+\]</div>
+<p><code>QuasiMaximumLikelihoodEstimator</code> maximises this <span class="arithmatex">\(\ell\)</span> over the model parameters. When the model is not linear-Gaussian this is a <em>quasi</em>-likelihood. The estimator is still consistent under standard conditions, but standard errors should use the sandwich form of §4.</p>
+<h3 id="32-bootstrap-particle-filter">3.2 Bootstrap particle filter</h3>
+<p><code>BootstrapParticleFilter</code> implements sequential importance resampling (Gordon, Salmond &amp; Smith 1993) with <span class="arithmatex">\(N\)</span> particles (500 by default). Each step does the following:</p>
+<ol>
+<li>Propagate <span class="arithmatex">\(x_k^{(i)} \sim p(x_k\mid x_{k-1}^{(i)})\)</span>.</li>
+<li>Update the weights, <span class="arithmatex">\(w_k^{(i)} \propto w_{k-1}^{(i)}\,p(y_k\mid x_k^{(i)})\)</span>, in log-space.</li>
+<li>Accumulate <span class="arithmatex">\(\log\hat p(y_k\mid y_{1:k-1}) = \log\sum_i w_{k-1}^{(i)}p(y_k\mid x_k^{(i)})\)</span>.</li>
+<li>Resample systematically if <span class="arithmatex">\(\mathrm{ESS} = 1/\sum_i (w_k^{(i)})^2 &lt; 0.5N\)</span>, then reset the weights to <span class="arithmatex">\(1/N\)</span>.</li>
+</ol>
+<p>The product of the incremental terms is an <strong>unbiased</strong> estimator of the likelihood (Del Moral 2004). This is what particle-marginal Metropolis–Hastings requires. Its logarithm is biased downwards by about half its variance. <code>systematic_resample</code>, <code>stratified_resample</code> and <code>effective_sample_size</code> are exported separately.</p>
+<div class="admonition note">
+<p class="admonition-title">Optimising a particle likelihood</p>
+<p><span class="arithmatex">\(\hat\ell(\theta)\)</span> is a random, non-smooth function of <span class="arithmatex">\(\theta\)</span>. To maximise it, fix the random seed (common random numbers) and prefer derivative-free optimisers.</p>
+</div>
+<h3 id="33-model-specific-filters">3.3 Model-specific filters</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Filter</th>
+<th style="text-align: left;">State</th>
+<th style="text-align: left;">Observation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>HestonVarianceFilter</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(x = \log v\)</span>, with Euler drift <span class="arithmatex">\(\big(\kappa(\theta-v) - \tfrac12\sigma^2\big)/v\)</span> and variance <span class="arithmatex">\(\approx\sigma^2\Delta/v\)</span> (Itô on <span class="arithmatex">\(\log v\)</span>)</td>
+<td style="text-align: left;">volatility proxy <span class="arithmatex">\(y\approx\sqrt v = e^{x/2}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SchwartzTwoFactorFilter</code></td>
+<td style="text-align: left;"><span class="arithmatex">\((\log S, \delta)\)</span> with <span class="arithmatex">\(d\log S = (r-\delta-\tfrac12\sigma_1^2)dt + \sigma_1dW_1\)</span> and <span class="arithmatex">\(d\delta = \kappa(\alpha-\delta)dt + \sigma_2dW_2\)</span></td>
+<td style="text-align: left;">log-futures, affine in the state through <span class="arithmatex">\(B(\tau) = (1-e^{-\kappa\tau})/\kappa\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DefaultIntensityFilter</code></td>
+<td style="text-align: left;">CIR intensity <span class="arithmatex">\(\lambda\)</span> (Duffie–Singleton)</td>
+<td style="text-align: left;">CDS spread <span class="arithmatex">\(\approx \mathrm{LGD}\cdot\big(\theta + (\lambda-\theta)\frac{1-e^{-\kappa T}}{\kappa T}\big)\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Working in <span class="arithmatex">\(\log v\)</span> keeps the variance filter positive. The Schwartz measurement equation is affine, so its UKF is the exact Kalman filter for the Euler-discretised state.</p>
+<hr />
+<h2 id="4-inference-standard-errors-and-model-selection">4. Inference, standard errors and model selection</h2>
+<h3 id="41-information-matrices">4.1 Information matrices</h3>
+<p>Let <span class="arithmatex">\(\hat\theta\)</span> maximise <span class="arithmatex">\(\ell(\theta) = \sum_t \ell_t(\theta)\)</span>. Let <span class="arithmatex">\(H = \nabla^2\ell(\hat\theta)\)</span> be the observed Hessian and <span class="arithmatex">\(s_t = \nabla\ell_t(\hat\theta)\)</span> the per-observation scores.</p>
+<p><code>fisher_information_matrix</code> returns the observed information <span class="arithmatex">\(\mathcal I = -H\)</span>, using <code>compute_numerical_hessian</code> (central differences). Under correct specification, <span class="arithmatex">\(\widehat{\operatorname{Var}}(\hat\theta) = \mathcal I^{-1}\)</span>.</p>
+<p><code>sandwich_covariance_matrix</code> returns the robust (Huber–White) estimator (White 1982):</p>
+<div class="arithmatex">\[
+\widehat{\operatorname{Var}}(\hat\theta) = H^{-1}\Big(\sum_t s_ts_t^\top\Big)H^{-1}.
+\]</div>
+<p>This remains valid under misspecification, including QMLE (§3.1) and heavy-tailed returns fitted with a Gaussian likelihood. If the model is correct, the information-matrix equality makes the two estimators agree asymptotically.</p>
+<p>Both use the Moore–Penrose pseudo-inverse. A near-singular <span class="arithmatex">\(H\)</span> signals weak identification, and its standard errors should not be trusted. <a href="../information_geometry/">Information Geometry</a> interprets <span class="arithmatex">\(\mathcal I\)</span> as the Fisher–Rao metric.</p>
+<h3 id="42-wald-and-profile-likelihood-intervals">4.2 Wald and profile-likelihood intervals</h3>
+<p><code>compute_parameter_inference</code> turns a covariance matrix into standard errors <span class="arithmatex">\(\mathrm{se}_j = \sqrt{\hat V_{jj}}\)</span>, <span class="arithmatex">\(z\)</span>-statistics <span class="arithmatex">\(\hat\theta_j/\mathrm{se}_j\)</span>, two-sided normal <span class="arithmatex">\(p\)</span>-values and Wald intervals <span class="arithmatex">\(\hat\theta_j \pm z_{1-\alpha/2}\,\mathrm{se}_j\)</span>.</p>
+<p>Wald intervals are symmetric by construction, so they can cross parameter bounds or misstate the uncertainty when <span class="arithmatex">\(\ell\)</span> is skewed. This happens, for example, with a mean-reversion speed estimated from a short sample. <code>compute_profile_likelihood</code> instead evaluates</p>
+<div class="arithmatex">\[
+\ell_p(\psi) = \max_{\lambda}\ \ell(\psi, \lambda)
+\]</div>
+<p>on a grid of the target parameter <span class="arithmatex">\(\psi\)</span>, re-optimising the nuisance parameters <span class="arithmatex">\(\lambda\)</span> at each point. It reports the likelihood-ratio interval</p>
+<div class="arithmatex">\[
+\Big\{\psi : 2\big(\ell(\hat\theta) - \ell_p(\psi)\big) \le \chi^2_{1,1-\alpha}\Big\},
+\]</div>
+<p>which is invariant to reparametrisation and can be asymmetric.</p>
+<h3 id="43-information-criteria">4.3 Information criteria</h3>
+<p>With <span class="arithmatex">\(k\)</span> parameters, <span class="arithmatex">\(n\)</span> observations and maximised log-likelihood <span class="arithmatex">\(\hat\ell\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Criterion</th>
+<th style="text-align: left;">Function</th>
+<th style="text-align: left;">Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">AIC</td>
+<td style="text-align: left;"><code>akaike_information_criterion</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(2k - 2\hat\ell\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">AICc</td>
+<td style="text-align: left;"><code>corrected_aic</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(\mathrm{AIC} + \dfrac{2k(k+1)}{n-k-1}\)</span> (infinite if <span class="arithmatex">\(n \le k+1\)</span>)</td>
+</tr>
+<tr>
+<td style="text-align: left;">BIC</td>
+<td style="text-align: left;"><code>bayesian_information_criterion</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(k\log n - 2\hat\ell\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">HQIC</td>
+<td style="text-align: left;"><code>hannan_quinn_criterion</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(2k\log\log n - 2\hat\ell\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Smaller is better. AIC targets predictive Kullback–Leibler risk and is not consistent. BIC and HQIC are consistent for the true model when it is in the candidate set. <code>ModelComparisonTable</code> ranks fitted models by AIC and reports the differences <span class="arithmatex">\(\Delta_i\)</span> and the Akaike weights <span class="arithmatex">\(e^{-\Delta_i/2}/\sum_j e^{-\Delta_j/2}\)</span> (Burnham &amp; Anderson 2002), with <span class="arithmatex">\(\Delta_i = \mathrm{AIC}_i - \min_j\mathrm{AIC}_j\)</span>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Comparable likelihoods only</p>
+<p>Information criteria compare likelihoods of <strong>the same data</strong>. Do not compare a model of prices with a model of log-returns, or an exact likelihood with a filter quasi-likelihood, without correcting for the transformation.</p>
+</div>
+<hr />
+<h2 id="5-smile-and-surface-calibration">5. Smile and surface calibration</h2>
+<p>A <code>MarketSurface</code> holds the spot, rate, dividend yield and a list of <code>MarketSlice</code>s of <code>MarketQuote</code>s (strike, maturity, quoted value and its <code>quote_type</code>, optional bid/ask, vega, forward and discount factor). A <code>SurfaceCalibrator</code> solves</p>
+<div class="arithmatex">\[
+\hat\theta = \arg\min_{\theta\in\Theta}\ \mathcal L\big(\sigma^{\text{model}}(K_i,T_i;\theta),\ \sigma^{\text{mkt}}_i\big) + \text{penalty}(\theta).
+\]</div>
+<h3 id="51-models">5.1 Models</h3>
+<p><strong>SABR.</strong> <code>SABRCalibrator</code> uses the Hagan et al. (2002) expansion for the Black implied vol. At the money it reduces to</p>
+<div class="arithmatex">\[
+\sigma_{\text{ATM}} \approx \frac{\alpha}{F^{1-\beta}}\Big[1 + \Big(\frac{(1-\beta)^2\alpha^2}{24F^{2-2\beta}} + \frac{\rho\beta\nu\alpha}{4F^{1-\beta}} + \frac{2-3\rho^2}{24}\nu^2\Big)T\Big].
+\]</div>
+<p><span class="arithmatex">\(\beta\)</span> is usually fixed by convention (<code>fixed_beta=1</code> for equity and FX, <span class="arithmatex">\(0.5\)</span> for rates) because it is poorly identified jointly with <span class="arithmatex">\(\rho\)</span>. <code>estimate_initial_alpha</code> gives the leading-order start <span class="arithmatex">\(\alpha_0 = \sigma_{\text{ATM}}F^{1-\beta}\)</span>. The expansion is an asymptotic approximation and can imply a negative density far out of the money at long maturities.</p>
+<p><strong>Heston family.</strong> Calls are priced from the characteristic function of <span class="arithmatex">\(\log S_T\)</span> through the Gil-Pelaez / Heston (1993) form</p>
+<div class="arithmatex">\[
+C = S_0P_1 - Ke^{-rT}P_2,\qquad
+P_1 = \tfrac12 + \tfrac1\pi\int_0^\infty \operatorname{Re}\frac{e^{-iu\log K}\varphi(u-i)}{iu\,\varphi(-i)}du,\qquad
+P_2 = \tfrac12 + \tfrac1\pi\int_0^\infty \operatorname{Re}\frac{e^{-iu\log K}\varphi(u)}{iu}du,
+\]</div>
+<p>where <span class="arithmatex">\(\varphi(-i) = \mathbb E[S_T] = S_0e^{rT}\)</span>. The integral uses Gauss–Legendre quadrature on <span class="arithmatex">\([0, 80]\)</span>. <span class="arithmatex">\(\varphi\)</span> is evaluated in the Albrecher et al. (2007) "little trap" form, which avoids the complex-logarithm branch-cut discontinuity at long maturities. Model prices are then inverted to Black–Scholes implied vols by bounded root-finding.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Calibrator</th>
+<th style="text-align: left;">Parameters</th>
+<th style="text-align: left;">Characteristic function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>HestonCalibrator</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(v_0,\kappa,\theta,\sigma,\rho\)</span></td>
+<td style="text-align: left;">Heston (1993)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>BatesCalibrator</code></td>
+<td style="text-align: left;">+ <span class="arithmatex">\(\lambda, \mu_J, \sigma_J\)</span></td>
+<td style="text-align: left;">Heston × Merton log-normal jumps (Bates 1996)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DoubleHestonCalibrator</code></td>
+<td style="text-align: left;">two independent variance factors</td>
+<td style="text-align: left;">product of two Heston factors (Christoffersen et al. 2009)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CEVHestonCalibrator</code></td>
+<td style="text-align: left;">+ CEV exponent <span class="arithmatex">\(\gamma\)</span> (<span class="arithmatex">\(dS = rS\,dt + S^\gamma\sqrt v\,dW\)</span>)</td>
+<td style="text-align: left;">heuristic: the Heston pricer with the local factor frozen at <span class="arithmatex">\(\sqrt{S_0K}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The CEV-Heston quote freezes <span class="arithmatex">\(S^{\gamma-1}\)</span> at <span class="arithmatex">\(\sqrt{S_0K}\)</span>, i.e. it prices Heston with <span class="arithmatex">\(v_0\)</span> and <span class="arithmatex">\(\theta\)</span> multiplied by <span class="arithmatex">\((S_0K)^{\gamma-1}\)</span>. The vol-of-vol is <em>not</em> rescaled, so this is a fast heuristic rather than a convergent expansion. Validate it by Monte Carlo before relying on it away from <span class="arithmatex">\(\gamma = 1\)</span>.</p>
+<p>The Heston, Bates and double-Heston pricers reduce to Black–Scholes as <span class="arithmatex">\(\sigma\to0\)</span> with <span class="arithmatex">\(v_0=\theta\)</span>, and the Bates pricer reduces to the Merton (1976) series. Both limits are covered by exactness tests at non-zero rates. For other zoo processes, <code>spxa.analytics.fourier.european_call_price</code> gives Carr–Madan pricing from any <code>char_func</code>.</p>
+<h3 id="52-loss-functions">5.2 Loss functions</h3>
+<p>With errors <span class="arithmatex">\(e_i = \sigma^{\text{model}}_i - \sigma^{\text{mkt}}_i\)</span>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Loss</th>
+<th style="text-align: left;">Residual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>RMSELoss</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(e_i\)</span>, optionally <span class="arithmatex">\(\times\sqrt{w_i/\bar w}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>VegaWeightedLoss</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(e_i\sqrt{\mathcal V_i/\bar{\mathcal V}}\)</span>, with vegas floored at <code>min_vega</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>RelativeErrorLoss</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(e_i/\sigma^{\text{mkt}}_i\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ArbitragePenalizedLoss</code></td>
+<td style="text-align: left;">base loss plus penalties for violating the Feller condition <span class="arithmatex">\(2\kappa\theta\ge\sigma^2\)</span> and for <span class="arithmatex">\(\lvert\rho\rvert\to1\)</span>, plus an optional user penalty</td>
+</tr>
+</tbody>
+</table>
+<p>Vega weighting approximates a price-space fit, because <span class="arithmatex">\(\Delta C \approx \mathcal V\,\Delta\sigma\)</span>, while staying well scaled across strikes. The Feller penalty is a <em>preference</em>, not a no-arbitrage requirement. Equity-index Heston fits routinely violate it, and the CIR variance then touches zero but stays non-negative.</p>
+<h3 id="53-optimisers">5.3 Optimisers</h3>
+<p>Box constraints are handled by <code>ParameterTransform</code>, the logit map <span class="arithmatex">\(u = \log\frac{x-a}{b-x}\)</span> and its logistic inverse. This lets unconstrained optimisers work in <span class="arithmatex">\(\mathbb R^k\)</span>.</p>
+<ul>
+<li><code>LeastSquaresOptimizer</code>: bounded trust-region reflective least squares (<code>scipy.optimize.least_squares</code>, method <code>trf</code>). Fast but only local.</li>
+<li><code>DifferentialEvolutionOptimizer</code>: global and derivative-free. Robust to the flat valleys typical of Heston (<span class="arithmatex">\(\kappa\)</span>–<span class="arithmatex">\(\theta\)</span> and <span class="arithmatex">\(\sigma\)</span>–<span class="arithmatex">\(\rho\)</span> trade-offs).</li>
+<li><code>HybridOptimizer</code>: differential evolution followed by a TRF polish. This is the recommended default for stochastic-volatility models.</li>
+</ul>
+<h3 id="54-fit-diagnostics">5.4 Fit diagnostics</h3>
+<p><code>analyze_surface_residuals</code> reports RMSE, MAE, maximum error, mean relative error and per-tenor RMSE. It also counts static-arbitrage violations in the fitted surface:</p>
+<ul>
+<li><strong>calendar</strong>: total variance <span class="arithmatex">\(w = \sigma^2T\)</span> must be non-decreasing in <span class="arithmatex">\(T\)</span>, checked at strikes common to adjacent maturities. This is exact for zero carry. With carry, the condition holds at fixed forward moneyness.</li>
+<li><strong>butterfly</strong>: call prices must be convex in strike.</li>
+</ul>
+<hr />
+<h2 id="6-forecast-diagnostics">6. Forecast diagnostics</h2>
+<p>A fitted model is a sequence of one-step-ahead predictive distributions <span class="arithmatex">\(F_t\)</span>. If the model is correct, the <strong>probability integral transforms</strong> <span class="arithmatex">\(u_t = F_t(y_t)\)</span> are i.i.d. <span class="arithmatex">\(\mathcal U(0,1)\)</span> (Rosenblatt 1952; Diebold, Gunther &amp; Tay 1998). <code>compute_pit_values</code> computes <span class="arithmatex">\(u_t\)</span>, clipped to <span class="arithmatex">\([10^{-6}, 1-10^{-6}]\)</span>. <code>evaluate_pit_diagnostics</code> then runs two tests:</p>
+<ul>
+<li><strong>Kolmogorov–Smirnov</strong> test of uniformity.</li>
+<li><strong>Berkowitz (2001)</strong> likelihood-ratio test, described below.</li>
+</ul>
+<p>For the Berkowitz test, map <span class="arithmatex">\(z_t = \Phi^{-1}(u_t)\)</span> and fit the Gaussian AR(1) model <span class="arithmatex">\(z_t - \mu = \rho(z_{t-1}-\mu) + \sigma\varepsilon_t\)</span>. Then test <span class="arithmatex">\(H_0: \mu=0,\ \rho=0,\ \sigma^2=1\)</span> with</p>
+<div class="arithmatex">\[
+\mathrm{LR} = 2\big(\ell(\hat\mu,\hat\rho,\hat\sigma^2) - \ell(0,0,1)\big) \Rightarrow \chi^2_3.
+\]</div>
+<p>Berkowitz has much more power than KS in small samples and also detects serial dependence, which KS cannot.</p>
+<p><code>compute_residual_diagnostics</code> applies Jarque–Bera (normality) and Ljung–Box (serial correlation, 10 lags by default) to standardised residuals or filter innovations. <code>CalibrationReport</code> collects parameters, standard errors, criteria and diagnostics into one summary, and <code>plot_smile_overlay</code>, <code>plot_surface_error_heatmap</code> and <code>plot_filtered_trajectory</code> visualise them.</p>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>Aït-Sahalia, Y. (2002). Maximum likelihood estimation of discretely sampled diffusions: a closed-form approximation approach. <em>Econometrica</em>, 70(1), 223–262.</li>
+<li>Albrecher, H., Mayer, P., Schoutens, W. &amp; Tistaert, J. (2007). The little Heston trap. <em>Wilmott Magazine</em>, January, 83–92.</li>
+<li>Andrews, D. W. K. (1991). Heteroskedasticity and autocorrelation consistent covariance matrix estimation. <em>Econometrica</em>, 59(3), 817–858.</li>
+<li>Bates, D. S. (1996). Jumps and stochastic volatility: exchange rate processes implicit in Deutsche Mark options. <em>Review of Financial Studies</em>, 9(1), 69–107.</li>
+<li>Berkowitz, J. (2001). Testing density forecasts, with applications to risk management. <em>Journal of Business &amp; Economic Statistics</em>, 19(4), 465–474.</li>
+<li>Burnham, K. P. &amp; Anderson, D. R. (2002). <em>Model Selection and Multimodel Inference</em> (2nd ed.). Springer.</li>
+<li>Carr, P. &amp; Madan, D. (1999). Option valuation using the fast Fourier transform. <em>Journal of Computational Finance</em>, 2(4), 61–73.</li>
+<li>Christoffersen, P., Heston, S. &amp; Jacobs, K. (2009). The shape and term structure of the index option smirk: why multifactor stochastic volatility models work so well. <em>Management Science</em>, 55(12), 1914–1932.</li>
+<li>Del Moral, P. (2004). <em>Feynman–Kac Formulae: Genealogical and Interacting Particle Systems with Applications</em>. Springer.</li>
+<li>Diebold, F. X., Gunther, T. A. &amp; Tay, A. S. (1998). Evaluating density forecasts with applications to financial risk management. <em>International Economic Review</em>, 39(4), 863–883.</li>
+<li>Feuerverger, A. &amp; McDunnough, P. (1981). On the efficiency of empirical characteristic function procedures. <em>Journal of the Royal Statistical Society B</em>, 43(1), 20–27.</li>
+<li>Gordon, N. J., Salmond, D. J. &amp; Smith, A. F. M. (1993). Novel approach to nonlinear/non-Gaussian Bayesian state estimation. <em>IEE Proceedings F</em>, 140(2), 107–113.</li>
+<li>Hagan, P. S., Kumar, D., Lesniewski, A. S. &amp; Woodward, D. E. (2002). Managing smile risk. <em>Wilmott Magazine</em>, September, 84–108.</li>
+<li>Hansen, L. P. (1982). Large sample properties of generalized method of moments estimators. <em>Econometrica</em>, 50(4), 1029–1054.</li>
+<li>Heston, S. L. (1993). A closed-form solution for options with stochastic volatility with applications to bond and currency options. <em>Review of Financial Studies</em>, 6(2), 327–343.</li>
+<li>Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. <em>Journal of Financial Economics</em>, 3(1–2), 125–144.</li>
+<li>Newey, W. K. &amp; West, K. D. (1987). A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix. <em>Econometrica</em>, 55(3), 703–708.</li>
+<li>Schwartz, E. S. (1997). The stochastic behavior of commodity prices: implications for valuation and hedging. <em>Journal of Finance</em>, 52(3), 923–973.</li>
+<li>Rosenblatt, M. (1952). Remarks on a multivariate transformation. <em>Annals of Mathematical Statistics</em>, 23(3), 470–472.</li>
+<li>Wan, E. A. &amp; van der Merwe, R. (2000). The unscented Kalman filter for nonlinear estimation. <em>Proc. IEEE Adaptive Systems for Signal Processing, Communications, and Control Symposium</em>, 153–158.</li>
+<li>White, H. (1982). Maximum likelihood estimation of misspecified models. <em>Econometrica</em>, 50(1), 1–25.</li>
+<li>Yu, J. (2004). Empirical characteristic function estimation and its applications. <em>Econometric Reviews</em>, 23(2), 93–123.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

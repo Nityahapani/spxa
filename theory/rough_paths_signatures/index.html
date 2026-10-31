@@ -1,0 +1,1658 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/rough_paths_signatures/">
+      
+      
+        <link rel="prev" href="../information_geometry/">
+      
+      
+        <link rel="next" href="../rough_volatility/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Rough paths & signatures - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rough-paths-and-path-signatures" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Rough paths & signatures
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-tensor-algebra-and-the-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The tensor algebra and the signature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. The tensor algebra and the signature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-linear-segments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Linear segments
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-chens-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Chen's identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-properties-used-in-practice" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Properties used in practice
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-shuffle-algebra-and-log-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Shuffle algebra and log-signature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Shuffle algebra and log-signature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-shuffle-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 Shuffle identity
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-group-like-elements-and-the-free-lie-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Group-like elements and the free Lie algebra
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-witts-formula" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Witt's formula
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-signature-kernel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The signature kernel
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. The signature kernel">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-discretisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Discretisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-derived-quantities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Derived quantities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-expected-signature-and-linear-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Expected signature and linear pricing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-relation-to-rough-paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Relation to rough paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="rough-paths-and-path-signatures">Rough Paths and Path Signatures</h1>
+<p>The <strong>signature</strong> of a path is the sequence of its iterated integrals. It is a graded, coordinate-free summary that determines the path up to tree-like equivalence (Hambly &amp; Lyons 2010). It also linearises every continuous function of the path: any such function can be approximated by a linear functional of the signature. <code>spxa.signature</code> implements truncated signatures, the shuffle and Lie algebra structure, and the signature kernel computed by solving a Goursat PDE.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Object</th>
+<th style="text-align: left;">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Truncated signature <span class="arithmatex">\(S^{(M)}(X)\)</span>, Chen products</td>
+<td style="text-align: left;"><code>spxa.signature.PathSignature</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Shuffles, log-signature, Witt dimensions</td>
+<td style="text-align: left;"><code>spxa.signature.SignatureAlgebra</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Signature kernel <span class="arithmatex">\(\langle S(X), S(Y)\rangle\)</span></td>
+<td style="text-align: left;"><code>spxa.signature.SignatureKernel</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Graph nodes</td>
+<td style="text-align: left;"><code>spxa.graph.signature.PathSignatureNode</code>, <code>SignatureKernelNode</code>, <code>ExpectedSignatureNode</code>, <code>SignatureLinearPricerNode</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-the-tensor-algebra-and-the-signature">1. The tensor algebra and the signature</h2>
+<p>Let <span class="arithmatex">\(X:[0,T]\to\mathbb{R}^d\)</span> have bounded variation. Its signature over <span class="arithmatex">\([s,t]\)</span> is the element of the tensor algebra <span class="arithmatex">\(T((\mathbb{R}^d)) = \prod_{k\ge0}(\mathbb{R}^d)^{\otimes k}\)</span></p>
+<div class="arithmatex">\[
+S(X)_{s,t} = \Big(1,\; \int_{s&lt;u_1&lt;t} dX_{u_1},\; \int_{s&lt;u_1&lt;u_2&lt;t} dX_{u_1}\otimes dX_{u_2},\; \dots\Big).
+\]</div>
+<p>Coordinate <span class="arithmatex">\((i_1,\dots,i_k)\)</span> at level <span class="arithmatex">\(k\)</span> is <span class="arithmatex">\(S^{i_1\cdots i_k}_{s,t} = \int_{s&lt;u_1&lt;\dots&lt;u_k&lt;t} dX^{i_1}_{u_1}\cdots dX^{i_k}_{u_k}\)</span>. Truncating at depth <span class="arithmatex">\(M\)</span> leaves</p>
+<div class="arithmatex">\[
+\dim T^{(M)}(\mathbb{R}^d) = \sum_{k=0}^M d^k = \frac{d^{M+1}-1}{d-1}
+\]</div>
+<p>coordinates (<code>PathSignature.signature_dimension</code>). Levels are stored as flattened arrays in row-major (lexicographic word) order. For example, <code>sig[2].reshape(d, d)[i, j]</code> is <span class="arithmatex">\(S^{ij}\)</span>.</p>
+<h3 id="11-linear-segments">1.1 Linear segments</h3>
+<p>For a single linear segment with increment <span class="arithmatex">\(\Delta\)</span>, every iterated integral can be computed in closed form:</p>
+<div class="arithmatex">\[
+S(\Delta) = \exp_\otimes(\Delta) = \sum_{k\ge0}\frac{\Delta^{\otimes k}}{k!}.
+\]</div>
+<h3 id="12-chens-identity">1.2 Chen's identity</h3>
+<p>Concatenating paths corresponds to multiplying their signatures in the tensor algebra:</p>
+<div class="arithmatex">\[
+S(X)_{s,u} = S(X)_{s,t}\otimes S(X)_{t,u},
+\qquad
+(A\otimes B)^{(k)} = \sum_{j=0}^k A^{(j)}\otimes B^{(k-j)} .
+\]</div>
+<p><code>PathSignature.signature</code> evaluates the signature of a piecewise-linear interpolation of the sample points exactly, as the product <span class="arithmatex">\(\bigotimes_i \exp_\otimes(\Delta X_i)\)</span>. <code>verify_chen_identity</code> checks the identity numerically by splitting a path. No discretisation error is introduced. The only approximation is the piecewise-linear interpolation of the data.</p>
+<h3 id="13-properties-used-in-practice">1.3 Properties used in practice</h3>
+<ul>
+<li><strong>Invariance under reparametrisation.</strong> <span class="arithmatex">\(S(X\circ\phi) = S(X)\)</span> for increasing <span class="arithmatex">\(\phi\)</span>, so the signature ignores the speed at which a path is traversed. To keep time information, add time as an extra coordinate: <span class="arithmatex">\(\hat X_t = (t, X_t)\)</span>.</li>
+<li><strong>Uniqueness.</strong> Up to tree-like equivalence, <span class="arithmatex">\(S(X)\)</span> determines <span class="arithmatex">\(X\)</span>. For time-augmented paths it determines <span class="arithmatex">\(X\)</span> exactly.</li>
+<li><strong>Universality.</strong> On compact sets of paths, linear functionals <span class="arithmatex">\(\langle \ell, S(X)\rangle\)</span> are dense in the continuous functions. This is why signature regression works for path-dependent payoffs.</li>
+<li><strong>Factorial decay.</strong> <span class="arithmatex">\(\|S^{(k)}(X)\| \le \|X\|_{1\text{-var}}^k / k!\)</span>, so truncation error decays super-exponentially in <span class="arithmatex">\(M\)</span>.</li>
+</ul>
+<hr />
+<h2 id="2-shuffle-algebra-and-log-signature">2. Shuffle algebra and log-signature</h2>
+<h3 id="21-shuffle-identity">2.1 Shuffle identity</h3>
+<p>For words <span class="arithmatex">\(u, v\)</span>, the shuffle product <span class="arithmatex">\(u \sqcup\!\sqcup\, v\)</span> is the sum of all interleavings that keep the order within <span class="arithmatex">\(u\)</span> and within <span class="arithmatex">\(v\)</span> (<code>SignatureAlgebra.shuffles</code>). The signature is a <em>character</em> of the shuffle algebra:</p>
+<div class="arithmatex">\[
+\langle S(X), u\rangle\,\langle S(X), v\rangle = \langle S(X), u \sqcup\!\sqcup\, v\rangle .
+\]</div>
+<p>In particular <span class="arithmatex">\(S^i S^j = S^{ij} + S^{ji}\)</span>. Products of signature coordinates are therefore again linear in the signature, which is the algebraic basis of universality.</p>
+<h3 id="22-group-like-elements-and-the-free-lie-algebra">2.2 Group-like elements and the free Lie algebra</h3>
+<p>Signatures are <em>group-like</em>: <span class="arithmatex">\(\log_\otimes S(X)\)</span> lies in the free Lie algebra <span class="arithmatex">\(\mathfrak{g}(\mathbb{R}^d)\)</span>, the space spanned by iterated commutators <span class="arithmatex">\([e_i, e_j] = e_i\otimes e_j - e_j\otimes e_i\)</span>. Up to level 3,</p>
+<div class="arithmatex">\[
+\log S = S^{(1)} + \Big(S^{(2)} - \tfrac12 S^{(1)}\otimes S^{(1)}\Big)
++ \Big(S^{(3)} - \tfrac12\big(S^{(1)}\otimes S^{(2)} + S^{(2)}\otimes S^{(1)}\big) + \tfrac13 (S^{(1)})^{\otimes3}\Big) + \cdots
+\]</div>
+<p>For <span class="arithmatex">\(d = 2\)</span>, <code>SignatureAlgebra.log_signature_2d</code> returns coordinates in the Hall basis:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Level</th>
+<th style="text-align: left;">Basis</th>
+<th style="text-align: left;">Coordinate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;"><span class="arithmatex">\(e_1, e_2\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(S^1, S^2\)</span> (total increment)</td>
+</tr>
+<tr>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;"><span class="arithmatex">\([e_1,e_2]\)</span></td>
+<td style="text-align: left;">Lévy area <span class="arithmatex">\(A^{12} = \tfrac12(S^{12}-S^{21})\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;"><span class="arithmatex">\([[e_1,e_2],e_1],\ [[e_1,e_2],e_2]\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\tfrac16\langle S^{(3)}, 2\cdot121 - 112 - 211\rangle,\ \tfrac16\langle S^{(3)}, 122 - 2\cdot212 + 221\rangle\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>The level-3 formulas rely on two facts. First, <span class="arithmatex">\(\langle S, P\rangle = \langle\log S, P\rangle\)</span> for every Lie polynomial <span class="arithmatex">\(P\)</span>. Second, the two level-3 basis polynomials are orthogonal, each with squared norm 6. The test suite checks the reconstruction <span class="arithmatex">\(\log S^{(3)} = c_1[[e_1,e_2],e_1] + c_2[[e_1,e_2],e_2]\)</span> against the tensor logarithm to machine precision.</p>
+<h3 id="23-witts-formula">2.3 Witt's formula</h3>
+<p>The dimension of the level-<span class="arithmatex">\(k\)</span> component of the free Lie algebra on <span class="arithmatex">\(d\)</span> generators is the necklace polynomial</p>
+<div class="arithmatex">\[
+L_d(k) = \frac1k\sum_{m\mid k}\mu(m)\, d^{k/m},
+\]</div>
+<p>where <span class="arithmatex">\(\mu\)</span> is the Möbius function. <code>log_signature_dimension(d, M)</code> returns <span class="arithmatex">\(\sum_{k\le M}L_d(k)\)</span>. For <span class="arithmatex">\(d=2\)</span> the level dimensions are <span class="arithmatex">\(2,1,2,3,6,9,18,30,56,99,\dots\)</span>, so at depth 10 the log-signature has 226 coordinates against 2046 for the signature.</p>
+<hr />
+<h2 id="3-the-signature-kernel">3. The signature kernel</h2>
+<p>For paths <span class="arithmatex">\(X\)</span> and <span class="arithmatex">\(Y\)</span>, the signature kernel <span class="arithmatex">\(K(X,Y) = \langle S(X), S(Y)\rangle\)</span> (using the inner product induced by the Euclidean inner product on each level) solves a linear hyperbolic <strong>Goursat problem</strong> (Salvi, Cass, Foster, Lyons &amp; Yang 2021):</p>
+<div class="arithmatex">\[
+\frac{\partial^2 K}{\partial s\,\partial t}(s,t) = \langle \dot X_s, \dot Y_t\rangle\, K(s,t),
+\qquad K(s,0) = K(0,t) = 1,
+\]</div>
+<p>and <span class="arithmatex">\(K(X,Y) = K(T_X, T_Y)\)</span>. This is the <em>untruncated</em> inner product, and evaluating it costs <span class="arithmatex">\(O(NM\,d)\)</span> for paths with <span class="arithmatex">\(N\)</span> and <span class="arithmatex">\(M\)</span> segments.</p>
+<h3 id="31-discretisation">3.1 Discretisation</h3>
+<p>For piecewise-linear paths, <span class="arithmatex">\(\langle\dot X,\dot Y\rangle\)</span> is constant on each grid cell, with cell value <span class="arithmatex">\(M_{ij} = \langle\Delta X_i, \Delta Y_j\rangle\)</span> after scaling to unit cells. Integrating the PDE over a cell gives the exact identity</p>
+<div class="arithmatex">\[
+K_{i+1,j+1} - K_{i+1,j} - K_{i,j+1} + K_{i,j} = M_{ij}\cdot\overline{K}_{\text{cell}} .
+\]</div>
+<p>Approximating the cell mean <span class="arithmatex">\(\overline K\)</span> by the average of the four corners gives the implicit trapezoidal scheme implemented in <code>SignatureKernel.solve_goursat_pde</code>:</p>
+<div class="arithmatex">\[
+K_{i+1,j+1} = \frac{K_{i+1,j} + K_{i,j+1} - K_{i,j} + \tfrac14 M_{ij}\,(K_{i,j}+K_{i+1,j}+K_{i,j+1})}{1 - \tfrac14 M_{ij}} .
+\]</div>
+<p>The scheme is second-order accurate. For one-dimensional linear paths <span class="arithmatex">\(X_t = Y_t = t\)</span> the exact kernel is <span class="arithmatex">\(\sum_k 1/(k!)^2 = I_0(2)\)</span>. The solver gives <span class="arithmatex">\(2.33\)</span> on a single cell, <span class="arithmatex">\(2.27994\)</span> on 10 cells and <span class="arithmatex">\(2.2795888\)</span> on 100 cells, against <span class="arithmatex">\(I_0(2) = 2.2795853\)</span>. For coarse samples with large increments, refine the paths dyadically before solving.</p>
+<h3 id="32-derived-quantities">3.2 Derived quantities</h3>
+<ul>
+<li><strong>Gram matrices.</strong> <code>compute_gram_matrix(paths)</code> returns <span class="arithmatex">\(G_{ij} = K(X^{(i)}, X^{(j)})\)</span>. <span class="arithmatex">\(G\)</span> is positive semi-definite, so it can be used directly in kernel ridge regression, SVMs, MMD two-sample tests and Gaussian processes on path space.</li>
+<li><strong>Feature-space distance.</strong> <code>normalized_distance(X, Y)</code> returns
+  $<span class="arithmatex">\(\|S(X)-S(Y)\| = \sqrt{K(X,X) - 2K(X,Y) + K(Y,Y)} .\)</span>$
+  This is a metric on tree-like equivalence classes of paths.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.signature</span><span class="w"> </span><span class="kn">import</span> <span class="n">PathSignature</span><span class="p">,</span> <span class="n">SignatureKernel</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">ps</span> <span class="o">=</span> <span class="n">PathSignature</span><span class="p">(</span><span class="n">depth</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">truncated</span> <span class="o">=</span> <span class="n">ps</span><span class="o">.</span><span class="n">flatten_signature</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="o">@</span> <span class="n">ps</span><span class="o">.</span><span class="n">flatten_signature</span><span class="p">(</span><span class="n">ps</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">truncated</span><span class="p">,</span> <span class="n">SignatureKernel</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>   <span class="c1"># agree to ~1e-4 relative</span>
+</code></pre></div>
+<h3 id="33-expected-signature-and-linear-pricing">3.3 Expected signature and linear pricing</h3>
+<p>Universality (§1.3) means a path-dependent payoff can be approximated as <span class="arithmatex">\(F(X) \approx \langle \ell, S^{(M)}(\hat X)\rangle\)</span>. Expectation is linear, so</p>
+<div class="arithmatex">\[
+\mathbb{E}^{\mathbb{Q}}[F(X)] \approx \big\langle \ell,\ \mathbb{E}^{\mathbb{Q}}[S^{(M)}(\hat X)]\big\rangle .
+\]</div>
+<p>Once the <em>expected signature</em> has been computed from simulated or model paths (<code>ExpectedSignatureNode</code>), pricing any payoff in the span reduces to a dot product (<code>SignatureLinearPricerNode</code>). The weights <span class="arithmatex">\(\ell\)</span> are fitted by regression on sample paths. Under mild conditions the expected signature characterises the law of the path (Chevyrev &amp; Lyons 2016).</p>
+<hr />
+<h2 id="4-relation-to-rough-paths">4. Relation to rough paths</h2>
+<p>For Brownian paths and other paths with finite <span class="arithmatex">\(p\)</span>-variation, <span class="arithmatex">\(p \in [2,3)\)</span>, the iterated integrals at level 2 are not defined pathwise. Lyons' theory makes them so by <em>lifting</em> <span class="arithmatex">\(X\)</span> to a rough path <span class="arithmatex">\((X, \mathbb{X})\)</span>, where <span class="arithmatex">\(\mathbb{X}_{s,t}\)</span> plays the role of <span class="arithmatex">\(S^{(2)}_{s,t}\)</span> and Chen's identity is imposed as an axiom. Solutions of rough differential equations then depend continuously on the lift. For Brownian motion the Stratonovich lift <span class="arithmatex">\(\mathbb{X}^{ij}_{s,t} = \int_s^t (W^i_u - W^i_s)\circ dW^j_u\)</span> is the limit of the signatures of piecewise-linear interpolations. This limit is exactly what <code>PathSignature</code> computes on sampled data. The antisymmetric part of <span class="arithmatex">\(\mathbb{X}\)</span> is the Lévy area, the level-2 log-signature coordinate above.</p>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>Chevyrev, I. &amp; Lyons, T. (2016). Characteristic functions of measures on geometric rough paths. <em>Annals of Probability</em>, 44(6), 4049–4082.</li>
+<li>Chen, K.-T. (1957). Integration of paths, geometric invariants and a generalized Baker–Hausdorff formula. <em>Annals of Mathematics</em>, 65(1), 163–178.</li>
+<li>Hambly, B. &amp; Lyons, T. (2010). Uniqueness for the signature of a path of bounded variation and the reduced path group. <em>Annals of Mathematics</em>, 171(1), 109–167.</li>
+<li>Lyons, T. (1998). Differential equations driven by rough signals. <em>Revista Matemática Iberoamericana</em>, 14(2), 215–310.</li>
+<li>Reutenauer, C. (1993). <em>Free Lie Algebras</em>. Oxford University Press.</li>
+<li>Salvi, C., Cass, T., Foster, J., Lyons, T. &amp; Yang, W. (2021). The signature kernel is the solution of a Goursat PDE. <em>SIAM Journal on Mathematics of Data Science</em>, 3(3), 873–899.</li>
+<li>Friz, P. &amp; Hairer, M. (2020). <em>A Course on Rough Paths</em> (2nd ed.). Springer.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

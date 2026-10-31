@@ -1,0 +1,1553 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/stochastic_control/">
+      
+      
+        <link rel="prev" href="../copulas/">
+      
+      
+        <link rel="next" href="../pde/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Stochastic control - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stochastic-optimal-control" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Stochastic control
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-dynamic-programming-and-the-hjb-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Dynamic programming and the HJB equation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-linearquadraticgaussian-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Linear–quadratic–Gaussian control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mertons-portfolio-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Merton's portfolio problem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-almgrenchriss-optimal-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Almgren–Chriss optimal execution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-avellanedastoikov-market-making" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Avellaneda–Stoikov market making
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-finite-difference-hjb-solver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Finite-difference HJB solver
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="stochastic-optimal-control">Stochastic Optimal Control</h1>
+<p>Many problems in quantitative finance are stochastic control problems: choosing a portfolio, liquidating a position, or quoting a two-sided market. A controller steers an SDE to optimise an expected criterion. <code>spxa.control</code> implements the dynamic-programming framework, four canonical problems with closed-form solutions, and a monotone finite-difference HJB solver for problems without them.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Problem</th>
+<th style="text-align: left;">Implementation</th>
+<th style="text-align: left;">Aliases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Abstract problem and Monte Carlo evaluation</td>
+<td style="text-align: left;"><code>ControlProblem</code>, <code>ControlledTrajectory</code></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">Linear–quadratic–Gaussian regulator</td>
+<td style="text-align: left;"><code>LinearQuadraticGaussian</code></td>
+<td style="text-align: left;"><code>LQG</code>, <code>LinearQuadraticRegulator</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Merton consumption–investment</td>
+<td style="text-align: left;"><code>MertonPortfolioControl</code></td>
+<td style="text-align: left;"><code>MertonPortfolio</code>, <code>MertonControl</code>, <code>OptimalConsumptionInvestment</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Almgren–Chriss optimal execution</td>
+<td style="text-align: left;"><code>AlmgrenChrissExecution</code></td>
+<td style="text-align: left;"><code>AlmgrenChriss</code>, <code>AlmgrenChrissModel</code>, <code>OptimalExecution</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Avellaneda–Stoikov market making</td>
+<td style="text-align: left;"><code>AvellanedaStoikovMarketMaker</code></td>
+<td style="text-align: left;"><code>AvellanedaStoikov</code>, <code>OptimalMarketMaking</code>, <code>HighFrequencyMarketMaker</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">1D HJB viscosity solver</td>
+<td style="text-align: left;"><code>FiniteDifferenceHJB</code></td>
+<td style="text-align: left;"><code>HJBSolver</code>, <code>HamiltonJacobiBellman</code>, <code>ViscosityHJBSolver</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-dynamic-programming-and-the-hjb-equation">1. Dynamic programming and the HJB equation</h2>
+<p>A controlled diffusion <span class="arithmatex">\(dX_s = \mu(s,X_s,u_s)\,ds + \sigma(s,X_s,u_s)\,dW_s\)</span> with admissible controls <span class="arithmatex">\(u_s\in U\)</span> has value function</p>
+<div class="arithmatex">\[
+V(t,x) = \inf_{u}\ \mathbb{E}\Big[\int_t^T e^{-\rho(s-t)} f(s,X_s,u_s)\,ds + e^{-\rho(T-t)}g(X_T)\ \Big|\ X_t = x\Big].
+\]</div>
+<p>Bellman's principle of optimality gives the <strong>Hamilton–Jacobi–Bellman equation</strong></p>
+<div class="arithmatex">\[
+\partial_t V - \rho V + \inf_{u\in U}\Big\{\mu(t,x,u)\,\partial_x V + \tfrac12\sigma^2(t,x,u)\,\partial_{xx}V + f(t,x,u)\Big\} = 0,\qquad V(T,\cdot) = g .
+\]</div>
+<p>For maximisation problems, replace <span class="arithmatex">\(\inf\)</span> by <span class="arithmatex">\(\sup\)</span>. <strong>Verification theorem:</strong> if a smooth solution exists and the pointwise minimiser <span class="arithmatex">\(u^*(t,x)\)</span> gives an admissible feedback control, then <span class="arithmatex">\(V\)</span> is the value function and <span class="arithmatex">\(u^*\)</span> is optimal. Without classical solutions, <span class="arithmatex">\(V\)</span> is the unique <strong>viscosity solution</strong> under standard comparison conditions (Crandall–Lions; Fleming &amp; Soner 2006).</p>
+<p>Each <code>ControlProblem</code> exposes <code>drift</code>, <code>diffusion</code>, <code>running_cost</code>, <code>terminal_cost</code>, <code>optimal_control</code> and <code>value_function</code>. <code>simulate(x0, num_steps, num_paths, seed)</code> runs an Euler–Maruyama Monte Carlo under the feedback policy <span class="arithmatex">\(u^*(t,X_t)\)</span> and returns a <code>ControlledTrajectory</code> holding states, controls and realised discounted payoffs. Comparing <code>mean_cost</code> with <code>value_function(0, x0)</code> checks the closed form against simulation.</p>
+<hr />
+<h2 id="2-linearquadraticgaussian-control">2. Linear–quadratic–Gaussian control</h2>
+<p>Consider linear dynamics <span class="arithmatex">\(dX = (AX + Bu)\,dt + C\,dW\)</span> with quadratic cost</p>
+<div class="arithmatex">\[
+J(u) = \mathbb{E}\Big[\int_0^T (X^\top QX + u^\top Ru)\,dt + X_T^\top M X_T\Big], \qquad Q\succeq0,\ R\succ0,\ M\succeq0 .
+\]</div>
+<p>Substituting the ansatz <span class="arithmatex">\(V(t,x) = x^\top P(t)x + s(t)\)</span> into the HJB equation gives the backward <strong>matrix Riccati equation</strong></p>
+<div class="arithmatex">\[
+-\dot P = PA + A^\top P - PBR^{-1}B^\top P + Q,\qquad P(T) = M,
+\]</div>
+<p>the optimal linear feedback <span class="arithmatex">\(u^*(t,x) = -R^{-1}B^\top P(t)\,x\)</span>, and <span class="arithmatex">\(s(t) = \int_t^T \operatorname{tr}(CC^\top P(\tau))\,d\tau\)</span>. The optimal gain does not depend on the noise <span class="arithmatex">\(C\)</span> (certainty equivalence). Noise only adds the constant <span class="arithmatex">\(s(t)\)</span>. <code>LinearQuadraticGaussian</code> integrates the Riccati ODE backwards. <code>steady_state_riccati</code> solves the continuous algebraic Riccati equation <span class="arithmatex">\(PA + A^\top P - PBR^{-1}B^\top P + Q = 0\)</span>, which is the <span class="arithmatex">\(T\to\infty\)</span> limit when <span class="arithmatex">\((A,B)\)</span> is stabilisable and <span class="arithmatex">\((A,Q^{1/2})\)</span> is detectable.</p>
+<hr />
+<h2 id="3-mertons-portfolio-problem">3. Merton's portfolio problem</h2>
+<p>An agent with wealth <span class="arithmatex">\(W\)</span> invests <span class="arithmatex">\(\pi_t\)</span> in a risky asset (<span class="arithmatex">\(\mu\)</span>, <span class="arithmatex">\(\sigma\)</span>), keeps the remainder at the risk-free rate <span class="arithmatex">\(r\)</span>, and consumes at rate <span class="arithmatex">\(c_t\)</span>:</p>
+<div class="arithmatex">\[
+dW_t = \big[rW_t + \pi_t(\mu - r) - c_t\big]dt + \pi_t\sigma\,dB_t .
+\]</div>
+<p>The agent maximises CRRA utility <span class="arithmatex">\(U(c) = c^{1-\gamma}/(1-\gamma)\)</span> (<span class="arithmatex">\(\gamma&gt;0\)</span>, <span class="arithmatex">\(\gamma\neq1\)</span>) with discount rate <span class="arithmatex">\(\rho\)</span> and bequest weight <span class="arithmatex">\(\varepsilon\)</span>:</p>
+<div class="arithmatex">\[
+\sup_{\pi,c}\ \mathbb{E}\Big[\int_t^T e^{-\rho(s-t)}\frac{c_s^{1-\gamma}}{1-\gamma}ds + \varepsilon\,e^{-\rho(T-t)}\frac{W_T^{1-\gamma}}{1-\gamma}\Big].
+\]</div>
+<p>Homotheticity reduces the HJB equation to an ODE. Its solution (Merton 1969, 1971) is</p>
+<div class="arithmatex">\[
+\frac{\pi^*_t}{W_t} = \alpha^* = \frac{\mu - r}{\gamma\sigma^2},
+\qquad
+\frac{c^*_t}{W_t} = \kappa(t) = \frac{\nu}{1 + (\varepsilon^{1/\gamma}\nu - 1)\,e^{-\nu(T-t)}},
+\qquad
+V(t,W) = \kappa(t)^{-\gamma}\,\frac{W^{1-\gamma}}{1-\gamma},
+\]</div>
+<p>with</p>
+<div class="arithmatex">\[
+\nu = \frac{\rho - (1-\gamma)\Big(r + \frac{(\mu-r)^2}{2\gamma\sigma^2}\Big)}{\gamma}.
+\]</div>
+<p>The Merton fraction <span class="arithmatex">\(\alpha^*\)</span> is constant in both time and wealth. As <span class="arithmatex">\(T\to\infty\)</span>, the consumption rate <span class="arithmatex">\(\kappa(t)\)</span> tends to <span class="arithmatex">\(\nu\)</span> (<code>infinite_horizon_consumption_propensity</code>). Well-posedness requires <span class="arithmatex">\(\nu &gt; 0\)</span>. <code>MertonPortfolioControl.simulate</code> advances log-wealth (a log-Euler step), which keeps wealth strictly positive.</p>
+<hr />
+<h2 id="4-almgrenchriss-optimal-execution">4. Almgren–Chriss optimal execution</h2>
+<p>The trader liquidates <span class="arithmatex">\(Q_0\)</span> shares over <span class="arithmatex">\([0,T]\)</span> at trading rate <span class="arithmatex">\(v_t = \dot q_t\)</span>. Permanent impact moves the price by <span class="arithmatex">\(\gamma\,v_t\,dt\)</span> and temporary impact makes the execution price <span class="arithmatex">\(\tilde S_t = S_t + \eta v_t\)</span>, with <span class="arithmatex">\(dS_t = \gamma v_t\,dt + \sigma\,dW_t\)</span>. Minimising the mean–variance criterion <span class="arithmatex">\(\mathbb{E}[\text{cost}] + \lambda\operatorname{Var}[\text{cost}]\)</span> over deterministic schedules leads to the Euler–Lagrange equation <span class="arithmatex">\(\ddot q = \kappa^2 q\)</span>, where</p>
+<div class="arithmatex">\[
+\kappa = \sqrt{\frac{\lambda\sigma^2}{\eta}}
+\]</div>
+<p>is the <strong>urgency</strong>. The solution is</p>
+<div class="arithmatex">\[
+q^*(t) = Q_0\frac{\sinh(\kappa(T-t))}{\sinh(\kappa T)},\qquad
+v^*(t) = -Q_0\kappa\frac{\cosh(\kappa(T-t))}{\sinh(\kappa T)}.
+\]</div>
+<p>The expected cost and its variance are</p>
+<div class="arithmatex">\[
+\mathbb{E}[C] = \tfrac12\gamma Q_0^2 + \tfrac12\eta Q_0^2\kappa\,\frac{\sinh(\kappa T)\cosh(\kappa T) + \kappa T}{\sinh^2(\kappa T)},
+\qquad
+\operatorname{Var}[C] = \sigma^2 Q_0^2\,\frac{\sinh(2\kappa T) - 2\kappa T}{4\kappa\sinh^2(\kappa T)}.
+\]</div>
+<p>As <span class="arithmatex">\(\lambda\to0\)</span>, <span class="arithmatex">\(q^*\)</span> becomes linear (TWAP, <code>is_twap</code>). Sweeping <span class="arithmatex">\(\lambda\)</span> traces the <strong>efficient frontier</strong> of expected cost against variance (<code>efficient_frontier</code>).</p>
+<hr />
+<h2 id="5-avellanedastoikov-market-making">5. Avellaneda–Stoikov market making</h2>
+<p>A dealer quotes bid and ask prices <span class="arithmatex">\(s - \delta^b\)</span> and <span class="arithmatex">\(s + \delta^a\)</span> around a mid-price <span class="arithmatex">\(dS = \sigma\,dW\)</span>. Orders arrive as Poisson processes with intensity <span class="arithmatex">\(\lambda(\delta) = A e^{-k\delta}\)</span>. The dealer has CARA utility with risk aversion <span class="arithmatex">\(\gamma\)</span> over terminal wealth and inventory <span class="arithmatex">\(q\)</span>. Avellaneda &amp; Stoikov (2008) derive the approximate solution</p>
+<div class="arithmatex">\[
+r(s,q,t) = s - q\,\gamma\sigma^2(T-t)
+\qquad\text{(reservation price)},
+\]</div>
+<div class="arithmatex">\[
+\delta^a + \delta^b = \gamma\sigma^2(T-t) + \frac2\gamma\ln\Big(1 + \frac\gamma k\Big)
+\qquad\text{(total spread)},
+\]</div>
+<div class="arithmatex">\[
+\delta^{a} = \tfrac12(\delta^a+\delta^b) - q\,\gamma\sigma^2(T-t),\qquad
+\delta^{b} = \tfrac12(\delta^a+\delta^b) + q\,\gamma\sigma^2(T-t).
+\]</div>
+<p>The quotes are centred on the reservation price, not the mid-price. A long inventory therefore shifts both quotes down, encouraging sells and discouraging buys. The spread does not depend on inventory. <code>optimal_quotes</code> additionally refuses to quote on the side that would exceed <code>max_inventory</code>. Over a step <span class="arithmatex">\(\Delta t\)</span> the fill probabilities are <span class="arithmatex">\(1 - e^{-\lambda(\delta)\Delta t}\)</span> (<code>fill_probabilities</code>). <code>simulate</code> runs the joint mid-price, fill and inventory dynamics.</p>
+<hr />
+<h2 id="6-finite-difference-hjb-solver">6. Finite-difference HJB solver</h2>
+<p><code>FiniteDifferenceHJB</code> solves one-dimensional problems of the form in §1 on a grid <span class="arithmatex">\(x_i = x_{\min} + i\,\Delta x\)</span>, <span class="arithmatex">\(t_n = n\,\Delta t\)</span>, marching backwards from <span class="arithmatex">\(V^N = g\)</span>:</p>
+<div class="arithmatex">\[
+V^{n}_i = V^{n+1}_i + \Delta t\Big(\operatorname*{opt}_{u\in\mathcal{U}_h}\big\{\mu\,D^{\pm}V^{n+1}_i + \tfrac12\sigma^2 D^2 V^{n+1}_i + f\big\} - \rho\,V^{n+1}_i\Big),
+\]</div>
+<p>where:</p>
+<ul>
+<li><span class="arithmatex">\(D^{+}\)</span> (forward difference) is used where <span class="arithmatex">\(\mu\ge0\)</span> and <span class="arithmatex">\(D^{-}\)</span> (backward difference) where <span class="arithmatex">\(\mu&lt;0\)</span> (upwinding);</li>
+<li><span class="arithmatex">\(D^2\)</span> is the central second difference;</li>
+<li><span class="arithmatex">\(\mathcal{U}_h\)</span> is a finite set of candidate controls (<code>control_candidates</code>), searched exhaustively at every node.</li>
+</ul>
+<p>The scheme is explicit and <strong>monotone</strong> whenever the CFL-type condition</p>
+<div class="arithmatex">\[
+\Delta t\left(\frac{|\mu|}{\Delta x} + \frac{\sigma^2}{\Delta x^2} + \rho\right) \le 1
+\]</div>
+<p>holds over all grid points and controls. Monotonicity, stability and consistency together imply convergence to the viscosity solution (Barles &amp; Souganidis 1991). <strong>The solver does not enforce this condition.</strong> Choose <code>n_time</code> large enough, or the scheme can oscillate and diverge. Boundary nodes use Neumann (zero-gradient) or Dirichlet conditions. <code>value(t, x)</code> and <code>optimal_control(t, x)</code> interpolate the solution off-grid. For a <code>ControlProblem</code> instance, <code>solve_problem(problem)</code> reads the drift, diffusion and costs directly from the problem. The closed-form problems above serve as regression tests for the numerical solver.</p>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>Almgren, R. &amp; Chriss, N. (2000). Optimal execution of portfolio transactions. <em>Journal of Risk</em>, 3(2), 5–39.</li>
+<li>Avellaneda, M. &amp; Stoikov, S. (2008). High-frequency trading in a limit order book. <em>Quantitative Finance</em>, 8(3), 217–224.</li>
+<li>Barles, G. &amp; Souganidis, P. E. (1991). Convergence of approximation schemes for fully nonlinear second order equations. <em>Asymptotic Analysis</em>, 4(3), 271–283.</li>
+<li>Fleming, W. H. &amp; Soner, H. M. (2006). <em>Controlled Markov Processes and Viscosity Solutions</em> (2nd ed.). Springer.</li>
+<li>Guéant, O., Lehalle, C.-A. &amp; Fernandez-Tapia, J. (2013). Dealing with the inventory risk: a solution to the market making problem. <em>Mathematics and Financial Economics</em>, 7(4), 477–507.</li>
+<li>Kushner, H. J. &amp; Dupuis, P. (2001). <em>Numerical Methods for Stochastic Control Problems in Continuous Time</em>. Springer.</li>
+<li>Merton, R. C. (1969). Lifetime portfolio selection under uncertainty: the continuous-time case. <em>Review of Economics and Statistics</em>, 51(3), 247–257.</li>
+<li>Merton, R. C. (1971). Optimum consumption and portfolio rules in a continuous-time model. <em>Journal of Economic Theory</em>, 3(4), 373–413.</li>
+<li>Pham, H. (2009). <em>Continuous-time Stochastic Control and Optimization with Financial Applications</em>. Springer.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

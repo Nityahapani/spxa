@@ -1,0 +1,2167 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/contributing/">
+      
+      
+        <link rel="prev" href="../calculus/">
+      
+      
+        <link rel="next" href="../changelog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Contributing - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contributing-to-spxa" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contributing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../theory/levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codebase-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Codebase map
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contribution-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contribution types
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contribution types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-new-levy-process-zoolevy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. New Lévy process (zoo/levy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-new-beyond-levy-process-zoobeyond" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. New beyond-Lévy process (zoo/beyond)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-new-operation-ops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C. New operation (ops/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d-new-analytic-tool-analytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D. New analytic tool (analytics/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e-new-simulation-algorithm-sim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E. New simulation algorithm (sim/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#f-new-multivariate-process-zoomultivariate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        F. New multivariate process (zoo/multivariate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#g-core-change-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        G. Core change (core/)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#h-bug-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        H. Bug fix
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I. Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-exactness-test-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The exactness test suite
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code style
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commit-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commit conventions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#versioning-and-deprecation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Versioning and deprecation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="contributing-to-spxa">Contributing to spxa</h1>
+<p>spxa is research infrastructure for stochastic process algebra. Correctness
+and mathematical honesty are non-negotiable. Every contribution must be
+grounded in a published result, and the library must never silently return
+an incorrect answer.</p>
+<p>This document is the authoritative guide for every type of contribution.
+Read the section for what you want to add, then follow it exactly.</p>
+<p>By participating in this project you agree to abide by the
+<a href="https://github.com/Nityahapani/spxa/blob/main/CODE_OF_CONDUCT.md">Code of Conduct</a>.
+Security vulnerabilities must be reported privately as described in the
+<a href="https://github.com/Nityahapani/spxa/blob/main/SECURITY.md">Security Policy</a>,
+never through public issues.</p>
+<hr />
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#setup">Setup</a></li>
+<li><a href="#codebase-map">Codebase map</a></li>
+<li><a href="#contribution-types">Contribution types</a></li>
+<li><a href="#a-new-levy-process-zoolevy">A. New Lévy process (zoo/levy)</a></li>
+<li><a href="#b-new-beyond-levy-process-zoobeyond">B. New beyond-Lévy process (zoo/beyond)</a></li>
+<li><a href="#c-new-operation-ops">C. New operation (ops/)</a></li>
+<li><a href="#d-new-analytic-tool-analytics">D. New analytic tool (analytics/)</a></li>
+<li><a href="#e-new-simulation-algorithm-sim">E. New simulation algorithm (sim/)</a></li>
+<li><a href="#f-new-multivariate-process-zoomultivariate">F. New multivariate process (zoo/multivariate)</a></li>
+<li><a href="#g-core-change-core">G. Core change (core/)</a></li>
+<li><a href="#h-bug-fix">H. Bug fix</a></li>
+<li><a href="#i-documentation">I. Documentation</a></li>
+<li><a href="#the-exactness-test-suite">The exactness test suite</a></li>
+<li><a href="#code-style">Code style</a></li>
+<li><a href="#commit-conventions">Commit conventions</a></li>
+<li><a href="#versioning-and-deprecation">Versioning and deprecation</a></li>
+</ol>
+<hr />
+<h2 id="setup">Setup</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Nityahapani/spxa.git
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">cd</span><span class="w"> </span>spxa
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pre-commit<span class="w"> </span>install
+</code></pre></div>
+<p>Dev dependencies: <code>pytest</code>, <code>pytest-cov</code>, <code>sympy</code>, <code>numpy</code>, <code>scipy</code>,
+<code>ruff</code>, <code>mypy</code>, <code>pre-commit</code>.</p>
+<p>Run the full test suite before and after any change:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-q
+</code></pre></div>
+<p>All 235+ tests must pass. Never submit a PR that breaks existing tests.</p>
+<hr />
+<h2 id="codebase-map">Codebase map</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>spxa/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── core/               # The algebraic engine — change with extreme care
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│   ├── exactness.py    # ExactnessLevel enum and combine()
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   ├── exceptions.py   # ExactnessError, SpxaDegradationWarning
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   ├── levy_measure.py # LevyMeasure hierarchy
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   ├── process.py      # Base Process class, operators, _ScaledProcess, _ComposedProcess
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│   ├── properties.py   # ProcessProperties lattice and propagation rules
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>│   └── triplet.py      # LevyTriplet dataclass and arithmetic
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>├── story/
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>│   └── narrator.py     # CompositionNode, narrate(), narrate_latex(), story_latex()
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>├── zoo/
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>│   ├── levy/           # Lévy processes (EXACT triplet)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>│   │   ├── brownian.py
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>│   │   ├── gamma.py
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>│   │   ├── vg.py
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>│   │   ├── nig.py
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>│   │   ├── cgmy.py
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>│   │   ├── stable.py
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>│   │   ├── meixner.py
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>│   │   ├── poisson.py
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>│   │   ├── inverse_gaussian.py
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>│   │   └── __init__.py
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>│   ├── beyond/         # Non-Lévy processes (MOMENT_PROPAGATION)
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>│   │   ├── fbm.py
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>│   │   ├── hawkes.py
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>│   │   ├── ou_levy.py
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>│   │   └── __init__.py
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>│   ├── multivariate.py # Multivariate processes
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>│   └── __init__.py
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>├── ops/                # Operations on processes
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>│   ├── addition.py
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>│   ├── scaling.py
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>│   ├── subordination.py
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>│   ├── product.py
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>│   ├── integral.py
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>│   └── __init__.py
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>├── analytics/          # Analytical tools
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>│   ├── cumulants.py
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>│   ├── divergence.py
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>│   ├── fourier.py
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>│   └── __init__.py
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>├── sim/                # Simulation backends
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>│   ├── euler.py
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>│   ├── exact.py
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>│   ├── bridge.py
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>│   └── __init__.py
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>└── __init__.py         # Top-level public API
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>tests/
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>├── exactness/          # SACRED — closed-form formulas vs published results
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>├── integration/        # End-to-end pipelines
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>└── unit/               # Module-level unit tests
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>docs/
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>└── theory/             # Mathematical derivations (Markdown with LaTeX)
+<a id="__codelineno-2-56" name="__codelineno-2-56" href="#__codelineno-2-56"></a>
+<a id="__codelineno-2-57" name="__codelineno-2-57" href="#__codelineno-2-57"></a>PROCESS_REGISTRY.md     # Table of all implemented processes — keep up to date
+</code></pre></div>
+<hr />
+<h2 id="contribution-types">Contribution types</h2>
+<hr />
+<h3 id="a-new-levy-process-zoolevy">A. New Lévy process (zoo/levy)</h3>
+<p><strong>Open a Process Proposal issue first.</strong> The proposal must contain:
+1. The Lévy–Khintchine triplet <span class="arithmatex">\((b, \sigma^2, \nu)\)</span> in closed form, with derivation or citation
+2. Cumulant formulas (at minimum <span class="arithmatex">\(\kappa_1\)</span> and <span class="arithmatex">\(\kappa_2\)</span>) with citation
+3. The primary reference (original journal paper — not a textbook)
+4. Proposed <code>ExactnessLevel</code> (must be <code>EXACT</code> for a Lévy process with known triplet)
+5. The simulation algorithm with complexity per step</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Create <code>spxa/zoo/levy/&lt;name&gt;.py</code></strong></p>
+<p>The file must contain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Module-level docstring with full mathematical specification:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="c1"># - Lévy density k(x)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># - Triplet (b, σ², ν)</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># - Cumulant formulas</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># - All primary references</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_levy_measure</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DensityLevyMeasure</span><span class="p">:</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="sd">    Lévy density function.</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">    Cite the exact equation number and reference.</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="sd">    """</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">density</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">tail</span><span class="p">(</span><span class="n">xv</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">moment_n</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>   <span class="c1"># for each n you know exactly</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="k">return</span> <span class="n">DensityLevyMeasure</span><span class="p">(</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="n">_density_fn</span><span class="o">=</span><span class="n">density</span><span class="p">,</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="n">_total_mass</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>        <span class="c1"># or finite for compound Poisson</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>        <span class="n">_tail_fn</span><span class="o">=</span><span class="n">tail</span><span class="p">,</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>        <span class="n">_moment_fns</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="n">moment_1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="n">moment_2</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>    <span class="p">)</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>
+<a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a>
+<a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+<a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">param2</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a>        <span class="c1"># validate parameters</span>
+<a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a>        <span class="c1"># store self.param1, self.param2</span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a>        <span class="c1"># build CompositionNode with math_note and reference</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">exactness</span><span class="o">=</span><span class="n">ExactnessLevel</span><span class="o">.</span><span class="n">EXACT</span><span class="p">,</span> <span class="n">_node</span><span class="o">=</span><span class="n">node</span><span class="p">)</span>
+<a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>
+<a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_triplet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LevyTriplet</span><span class="p">:</span>
+<a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a>        <span class="c1"># Return LevyTriplet(b=..., sigma_sq=..., nu=...)</span>
+<a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a>        <span class="c1"># b must be consistent with the truncation h(x) = 1_{|x|≤1}</span>
+<a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>        <span class="c1"># If b is computed by quadrature, use an exact formula (like E_1)</span>
+<a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a>        <span class="c1"># when available. See gamma.py for the pattern.</span>
+<a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a>
+<a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessProperties</span><span class="p">:</span>
+<a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a>        <span class="k">return</span> <span class="n">ProcessProperties</span><span class="p">(</span>
+<a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a>            <span class="n">has_stationary_increments</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a>            <span class="n">has_independent_increments</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a>            <span class="n">is_martingale</span><span class="o">=...</span><span class="p">,</span>      <span class="c1"># True only if drift=0 and ∫_{|x|&gt;1} x ν(dx) = 0</span>
+<a id="__codelineno-3-42" name="__codelineno-3-42" href="#__codelineno-3-42"></a>            <span class="n">has_finite_variance</span><span class="o">=...</span><span class="p">,</span>
+<a id="__codelineno-3-43" name="__codelineno-3-43" href="#__codelineno-3-43"></a>            <span class="n">has_finite_mean</span><span class="o">=...</span><span class="p">,</span>
+<a id="__codelineno-3-44" name="__codelineno-3-44" href="#__codelineno-3-44"></a>            <span class="n">self_similarity_index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>   <span class="c1"># fill if self-similar</span>
+<a id="__codelineno-3-45" name="__codelineno-3-45" href="#__codelineno-3-45"></a>            <span class="n">tail_index</span><span class="o">=...</span><span class="p">,</span>               <span class="c1"># α such that ν((x,∞)) ~ x^{-α}, or None</span>
+<a id="__codelineno-3-46" name="__codelineno-3-46" href="#__codelineno-3-46"></a>            <span class="n">is_subordinator</span><span class="o">=...</span><span class="p">,</span>          <span class="c1"># True only if support ⊂ (0,∞)</span>
+<a id="__codelineno-3-47" name="__codelineno-3-47" href="#__codelineno-3-47"></a>        <span class="p">)</span>
+<a id="__codelineno-3-48" name="__codelineno-3-48" href="#__codelineno-3-48"></a>
+<a id="__codelineno-3-49" name="__codelineno-3-49" href="#__codelineno-3-49"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">cumulants</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-3-50" name="__codelineno-3-50" href="#__codelineno-3-50"></a>        <span class="c1"># Override with exact closed-form formulas where known.</span>
+<a id="__codelineno-3-51" name="__codelineno-3-51" href="#__codelineno-3-51"></a>        <span class="c1"># Fall back to super().cumulants() only if no formula exists.</span>
+<a id="__codelineno-3-52" name="__codelineno-3-52" href="#__codelineno-3-52"></a>        <span class="o">...</span>
+<a id="__codelineno-3-53" name="__codelineno-3-53" href="#__codelineno-3-53"></a>
+<a id="__codelineno-3-54" name="__codelineno-3-54" href="#__codelineno-3-54"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">char_func_exact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-3-55" name="__codelineno-3-55" href="#__codelineno-3-55"></a>        <span class="c1"># If the characteristic function has a closed form, implement it here</span>
+<a id="__codelineno-3-56" name="__codelineno-3-56" href="#__codelineno-3-56"></a>        <span class="c1"># and override char_func() to call it.</span>
+<a id="__codelineno-3-57" name="__codelineno-3-57" href="#__codelineno-3-57"></a>        <span class="o">...</span>
+<a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a>
+<a id="__codelineno-3-59" name="__codelineno-3-59" href="#__codelineno-3-59"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">char_func</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-3-60" name="__codelineno-3-60" href="#__codelineno-3-60"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">char_func_exact</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="n">u</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">)</span>  <span class="c1"># if closed form exists</span>
+<a id="__codelineno-3-61" name="__codelineno-3-61" href="#__codelineno-3-61"></a>
+<a id="__codelineno-3-62" name="__codelineno-3-62" href="#__codelineno-3-62"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_paths</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-3-63" name="__codelineno-3-63" href="#__codelineno-3-63"></a>        <span class="c1"># Use the most efficient exact algorithm known.</span>
+<a id="__codelineno-3-64" name="__codelineno-3-64" href="#__codelineno-3-64"></a>        <span class="c1"># Return shape (n_paths, n_steps + 1), paths[:, 0] == 0.</span>
+<a id="__codelineno-3-65" name="__codelineno-3-65" href="#__codelineno-3-65"></a>        <span class="o">...</span>
+<a id="__codelineno-3-66" name="__codelineno-3-66" href="#__codelineno-3-66"></a>
+<a id="__codelineno-3-67" name="__codelineno-3-67" href="#__codelineno-3-67"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-3-68" name="__codelineno-3-68" href="#__codelineno-3-68"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">"MyProcess(param1=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">param1</span><span class="si">}</span><span class="s2">, param2=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">param2</span><span class="si">}</span><span class="s2">)"</span>
+</code></pre></div>
+<p><strong>2. Add to <code>spxa/zoo/levy/__init__.py</code></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo.levy.</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">MyProcess</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># add to __all__</span>
+</code></pre></div>
+<p><strong>3. Add to <code>spxa/zoo/__init__.py</code></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo.levy</span><span class="w"> </span><span class="kn">import</span> <span class="o">...</span><span class="p">,</span> <span class="n">MyProcess</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># add to __all__</span>
+</code></pre></div>
+<p><strong>4. Add to <code>spxa/__init__.py</code></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo</span><span class="w"> </span><span class="kn">import</span> <span class="o">...</span><span class="p">,</span> <span class="n">MyProcess</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># add to __all__</span>
+</code></pre></div>
+<p><strong>5. Create <code>tests/exactness/test_&lt;name&gt;.py</code></strong></p>
+<p>Every test must have <code>@pytest.mark.exactness</code> and cite the formula being
+verified. Minimum required tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_no_gaussian_component</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="sd">"""σ²=0 for pure-jump processes. &lt;Primary reference&gt;."""</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="o">...</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_char_func_at_zero</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="sd">"""φ(0;t)=1. Definition of characteristic function."""</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="o">...</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_char_func_time_additivity</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="sd">"""φ(u;s+t)=φ(u;s)·φ(u;t). Sato (1999), Definition 1.6."""</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="o">...</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_cumulant_1</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span><span class="sd">"""κ₁ = &lt;formula&gt;. &lt;Reference, equation number&gt;."""</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="o">...</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_cumulant_2</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">    </span><span class="sd">"""κ₂ = &lt;formula&gt;. &lt;Reference, equation number&gt;."""</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="o">...</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_simulate_mean</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">    </span><span class="sd">"""Empirical mean converges to κ₁. Law of large numbers."""</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>    <span class="o">...</span>
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_simulate_variance</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="w">    </span><span class="sd">"""Empirical variance converges to κ₂."""</span>
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>If the process is a subordinator, also add:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_is_subordinator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="sd">"""Paths are non-decreasing. &lt;Reference&gt;."""</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="o">...</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">exactness</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="n">_simulate_non_decreasing</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span><span class="sd">"""All increments non-negative."""</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><strong>6. Add to <code>PROCESS_REGISTRY.md</code></strong></p>
+<p>Add a row to the table with: class name, exactness level, available
+cumulants, simulation algorithm, primary reference.</p>
+<p><strong>Pattern to copy:</strong> <code>spxa/zoo/levy/gamma.py</code> and
+<code>tests/exactness/test_gamma.py</code> are the reference implementation.</p>
+<hr />
+<h3 id="b-new-beyond-levy-process-zoobeyond">B. New beyond-Lévy process (zoo/beyond)</h3>
+<p>Beyond-Lévy processes (fBM, Hawkes, OU-Lévy) violate stationarity or
+independence of increments and therefore have no Lévy–Khintchine triplet.</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Create <code>spxa/zoo/beyond/&lt;name&gt;.py</code></strong></p>
+<p>Key differences from a Lévy process:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBeyondProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        <span class="c1"># ExactnessLevel is MOMENT_PROPAGATION, not EXACT</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">exactness</span><span class="o">=</span><span class="n">ExactnessLevel</span><span class="o">.</span><span class="n">MOMENT_PROPAGATION</span><span class="p">,</span> <span class="n">_node</span><span class="o">=</span><span class="n">node</span><span class="p">)</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_triplet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LevyTriplet</span><span class="p">:</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="c1"># MUST raise ExactnessError with a clear explanation of</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="c1"># which Lévy property is violated and why no triplet exists.</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="k">raise</span> <span class="n">ExactnessError</span><span class="p">(</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>            <span class="n">method</span><span class="o">=</span><span class="s2">"triplet"</span><span class="p">,</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>            <span class="n">required</span><span class="o">=</span><span class="s2">"EXACT"</span><span class="p">,</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>            <span class="n">actual</span><span class="o">=</span><span class="s2">"MOMENT_PROPAGATION"</span><span class="p">,</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>            <span class="n">reason</span><span class="o">=</span><span class="s2">"&lt;process name&gt; violates &lt;stationary/independent&gt; increments "</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>                   <span class="s2">"because &lt;mathematical reason&gt;. No Lévy–Khintchine triplet exists. "</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>                   <span class="s2">"Use &lt;what to use instead&gt;."</span><span class="p">,</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>        <span class="p">)</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessProperties</span><span class="p">:</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>        <span class="k">return</span> <span class="n">ProcessProperties</span><span class="p">(</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>            <span class="n">has_stationary_increments</span><span class="o">=...</span><span class="p">,</span>   <span class="c1"># likely False or process-specific</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>            <span class="n">has_independent_increments</span><span class="o">=...</span><span class="p">,</span>  <span class="c1"># likely False</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>            <span class="o">...</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>            <span class="n">notes</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>                <span class="s2">"Human-readable explanation of why this is beyond Lévy."</span><span class="p">,</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>                <span class="s2">"What analytical quantities ARE available."</span><span class="p">,</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>            <span class="p">],</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>        <span class="p">)</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>
+<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_moment_propagation_cumulants</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>        <span class="c1"># Implement what you CAN compute: typically κ₁ and κ₂ exactly,</span>
+<a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>        <span class="c1"># and float('nan') for higher orders that are intractable.</span>
+<a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>        <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>            <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span>
+<a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>        <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>            <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span>
+<a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+<a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>            <span class="n">result</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">'nan'</span><span class="p">)</span>
+<a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>        <span class="k">return</span> <span class="n">result</span>
+<a id="__codelineno-9-40" name="__codelineno-9-40" href="#__codelineno-9-40"></a>
+<a id="__codelineno-9-41" name="__codelineno-9-41" href="#__codelineno-9-41"></a>    <span class="c1"># Add domain-specific analytical methods beyond what Process provides:</span>
+<a id="__codelineno-9-42" name="__codelineno-9-42" href="#__codelineno-9-42"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-9-43" name="__codelineno-9-43" href="#__codelineno-9-43"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-9-44" name="__codelineno-9-44" href="#__codelineno-9-44"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">autocovariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<p><strong>2. Add to <code>spxa/zoo/beyond/__init__.py</code>, <code>spxa/zoo/__init__.py</code>, <code>spxa/__init__.py</code></strong></p>
+<p>Same pattern as Lévy processes.</p>
+<p><strong>3. Create <code>tests/exactness/test_beyond.py</code> entries</strong></p>
+<p>Add a class <code>TestMyBeyondProcess</code> to the existing
+<code>tests/exactness/test_beyond.py</code>. Required tests:</p>
+<ul>
+<li><code>test_&lt;name&gt;_triplet_raises</code> — verifies <code>ExactnessError</code> is raised</li>
+<li><code>test_&lt;name&gt;_&lt;analytical_property&gt;</code> — verifies each formula you implement
+  against its cited source</li>
+<li><code>test_&lt;name&gt;_simulate_*</code> — verifies simulation statistics</li>
+</ul>
+<p><strong>Pattern to copy:</strong> <code>spxa/zoo/beyond/fbm.py</code> (fBM) and the
+<code>TestFractionalBrownianMotion</code> class in <code>tests/exactness/test_beyond.py</code>.</p>
+<hr />
+<h3 id="c-new-operation-ops">C. New operation (ops/)</h3>
+<p>Operations are functions that take Process objects and return a new Process,
+or take a LevyTriplet and return a new LevyTriplet.</p>
+<p><strong>Before implementing, open an issue stating:</strong>
+- The mathematical definition of the operation
+- Whether the result is exact for independent Lévy processes, or approximate
+- The theorem or cited result justifying the computation
+- The ExactnessLevel propagation rule</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Create <code>spxa/ops/&lt;operation&gt;.py</code></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="sd">"""</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="sd">&lt;Operation name&gt;.</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="sd">Mathematical basis</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="sd">------------------</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="sd">State the theorem. Cite author, year, theorem number.</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="sd">Exact for: &lt;conditions under which result is EXACT&gt;</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="sd">Approximate for: &lt;conditions under which it degrades and why&gt;</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="sd">"""</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="k">def</span><span class="w"> </span><span class="o">&lt;</span><span class="n">operation</span><span class="o">&gt;</span><span class="p">(</span><span class="n">X</span><span class="p">:</span> <span class="n">Process</span><span class="p">,</span> <span class="n">Y</span><span class="p">:</span> <span class="n">Process</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Process</span><span class="p">:</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="sd">    Brief description.</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="sd">    Parameters / Returns / Raises / References sections.</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="sd">    """</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>Rules:
+- If the operation is exact for independent Lévy processes, include a
+  proof sketch or theorem citation in the docstring
+- If the result degrades ExactnessLevel, emit <code>SpxaDegradationWarning</code>
+  with a mathematical reason — never silently degrade
+- If the operation requires conditions (e.g. Y must be a subordinator),
+  check them explicitly and raise <code>ValueError</code> with a helpful message</p>
+<p><strong>2. Add to <code>spxa/ops/__init__.py</code></strong></p>
+<p>Add the function/class to the imports and <code>__all__</code>.</p>
+<p><strong>3. Add tests to <code>tests/unit/test_ops.py</code></strong></p>
+<p>Add a new test class. At minimum:</p>
+<ul>
+<li>Correctness tests: verify the output against known exact values</li>
+<li>Exactness tests: verify <code>ExactnessLevel</code> is set correctly</li>
+<li>Error tests: verify that invalid inputs raise the right exceptions</li>
+<li>Warning tests: verify that degradation emits <code>SpxaDegradationWarning</code></li>
+</ul>
+<p>If the operation touches the triplet, add a test that verifies the triplet
+arithmetic against Sato (1999) directly.</p>
+<p><strong>Pattern to copy:</strong> <code>spxa/ops/subordination.py</code> and the
+<code>TestSubordination</code> class in <code>tests/unit/test_ops.py</code>.</p>
+<hr />
+<h3 id="d-new-analytic-tool-analytics">D. New analytic tool (analytics/)</h3>
+<p>Analytic tools compute quantities derived from the characteristic function
+or cumulants of a process.</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Add to an existing <code>spxa/analytics/&lt;module&gt;.py</code> or create a new one</strong></p>
+<p>Every function must:
+- State clearly whether the result is exact or approximate
+- Say which processes it works for (EXACT only? MOMENT_PROPAGATION too?)
+- Raise <code>ExactnessError</code> if called on a process whose exactness level
+  is insufficient
+- Cite the mathematical result being implemented</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_analytic_function</span><span class="p">(</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">process</span><span class="p">:</span> <span class="n">Process</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="o">...</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="sd">    Brief description.</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="sd">    Exact for EXACT processes via &lt;formula&gt;.</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="sd">    Requires: &lt;conditions&gt;.</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="sd">    ----------</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="sd">    ...</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="sd">    References</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="sd">    ----------</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="sd">    Author (year), equation/theorem number.</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="sd">    """</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>    <span class="k">if</span> <span class="n">process</span><span class="o">.</span><span class="n">exactness</span> <span class="o">==</span> <span class="n">ExactnessLevel</span><span class="o">.</span><span class="n">SIMULATION_ONLY</span><span class="p">:</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>        <span class="k">raise</span> <span class="n">ExactnessError</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><strong>2. Add to <code>spxa/analytics/__init__.py</code></strong></p>
+<p><strong>3. Add tests to <code>tests/unit/test_ops.py</code> or a new <code>tests/unit/test_analytics.py</code></strong></p>
+<p>At minimum: a test against a known value, a test for the correct error
+when called on an unsupported process.</p>
+<p><strong>Pattern to copy:</strong> <code>spxa/analytics/divergence.py</code> and the
+<code>TestAnalyticsPipeline</code> class in <code>tests/integration/test_composition.py</code>.</p>
+<hr />
+<h3 id="e-new-simulation-algorithm-sim">E. New simulation algorithm (sim/)</h3>
+<p>Simulation functions produce sample paths or random variates. The bar is
+high: if you claim a sampler is "exact", it must be exact in distribution —
+not an approximation.</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Add to an existing <code>spxa/sim/&lt;module&gt;.py</code> or create a new one</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">sample_</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="p">(</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">param1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">param2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">n_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">n_paths</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">rng</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">Generator</span><span class="p">,</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="sd">"""</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="sd">    Exact increments of &lt;process name&gt; via &lt;algorithm name&gt;.</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="sd">    Algorithm (&lt;primary citation&gt;):</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="sd">      1. ...</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="sd">      2. ...</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="sd">    ----------</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="sd">    ...</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="sd">    Returns</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="sd">    -------</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="sd">    np.ndarray</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="sd">        Increments, shape (n_paths, n_steps). Call increments_to_paths()</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="sd">        to prepend x0 and convert to paths.</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="sd">    References</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="sd">    ----------</span>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="sd">    &lt;Full citation, year, algorithm number if applicable&gt;</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a><span class="sd">    """</span>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a>    <span class="o">...</span>
+</code></pre></div>
+<p>Conventions:
+- Standalone samplers return <strong>increments</strong> of shape <code>(n_paths, n_steps)</code>,
+  not paths. Use <code>increments_to_paths()</code> from <code>sim/exact.py</code> to convert.
+- If the algorithm is approximate (e.g. Euler-Maruyama approximation to
+  an SDE), state the strong convergence order and conditions in the docstring.
+- If the algorithm is exact, cite the theorem guaranteeing this.</p>
+<p><strong>2. Add to <code>spxa/sim/__init__.py</code></strong></p>
+<p><strong>3. Add tests to <code>tests/unit/test_sim.py</code></strong></p>
+<p>Required:
+- Shape test: <code>assert increments.shape == (n_paths, n_steps)</code>
+- Mean test: empirical mean vs theoretical mean (use <code>pytest.approx</code>)
+- Variance test: empirical variance vs theoretical variance
+- If the process is a subordinator: non-negativity test, monotonicity test</p>
+<p>Statistical tests must use <code>n_paths ≥ 5000</code> and loose tolerances
+(<code>rel=0.05</code> or <code>abs=0.1</code>) — they are Monte Carlo, not exactness tests.</p>
+<p><strong>Pattern to copy:</strong> <code>spxa/sim/exact.py</code> (<code>sample_gamma</code>, <code>sample_vg</code>)
+and <code>tests/unit/test_sim.py</code> (<code>TestExactSamplers</code>).</p>
+<hr />
+<h3 id="f-new-multivariate-process-zoomultivariate">F. New multivariate process (zoo/multivariate)</h3>
+<p>Multivariate processes live in <code>spxa/zoo/multivariate.py</code> and use
+<code>MultivariateLevyTriplet</code> (matrix <span class="arithmatex">\(\Sigma\)</span>) rather than <code>LevyTriplet</code>
+(scalar <span class="arithmatex">\(\sigma^2\)</span>).</p>
+<p><strong>Files to create or modify:</strong></p>
+<p><strong>1. Add to <code>spxa/zoo/multivariate.py</code></strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyMultivariateProcess</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>        <span class="o">...</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">exactness</span><span class="o">=</span><span class="n">ExactnessLevel</span><span class="o">.</span><span class="n">EXACT</span><span class="p">,</span> <span class="n">_node</span><span class="o">=</span><span class="n">node</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_triplet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LevyTriplet</span><span class="p">:</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="c1"># Return a 1-d projection triplet (e.g. trace of Σ as σ²)</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="c1"># for compatibility with the base class.</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="o">...</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">multivariate_triplet</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MultivariateLevyTriplet</span><span class="p">:</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        <span class="c1"># Return the full d-dimensional triplet.</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>        <span class="o">...</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">simulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_steps</span><span class="p">,</span> <span class="n">n_paths</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>        <span class="c1"># Return shape (n_paths, n_steps + 1, dim).</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>        <span class="c1"># paths[:, 0, :] == 0.</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>        <span class="o">...</span>
+</code></pre></div>
+<p><strong>2. Add to <code>spxa/zoo/__init__.py</code></strong></p>
+<p><strong>3. Add tests to <code>tests/unit/test_multivariate.py</code></strong></p>
+<p>Required:
+- Shape test: <code>assert paths.shape == (n_paths, n_steps + 1, dim)</code>
+- Starts at zero: <code>np.testing.assert_array_equal(paths[:, 0, :], 0.0)</code>
+- Covariance recovery: for a BM-based process, empirical covariance should
+  match the theoretical <span class="arithmatex">\(\Sigma\)</span> (use <code>np.testing.assert_allclose(..., atol=0.1)</code>)</p>
+<p><strong>Pattern to copy:</strong> <code>MultivariateBrownianMotion</code> in <code>multivariate.py</code> and
+<code>TestMultivariateBrownianMotion</code> in <code>tests/unit/test_multivariate.py</code>.</p>
+<hr />
+<h3 id="g-core-change-core">G. Core change (core/)</h3>
+<p><code>core/</code> is the algebraic foundation. Any change requires:</p>
+<ol>
+<li><strong>Open an RFC issue</strong> using the RFC template in <code>.github/ISSUE_TEMPLATE/rfc.md</code>.
+   The RFC must state: motivation, proposed change, backward compatibility
+   impact, and alternatives considered.</li>
+<li><strong>Two maintainer approvals</strong> before implementation begins.</li>
+<li><strong>Full backward compatibility</strong> or a deprecation plan spanning two minor
+   versions (see <a href="#versioning-and-deprecation">Versioning</a>).</li>
+</ol>
+<p><strong>Files in <code>core/</code> and what they own:</strong></p>
+<ul>
+<li><code>exactness.py</code> — the <code>ExactnessLevel</code> enum and <code>combine()</code>. Only add a
+  new level if it is mathematically distinct from the three existing ones.</li>
+<li><code>exceptions.py</code> — <code>SpxaError</code>, <code>ExactnessError</code>, <code>SpxaDegradationWarning</code>.
+  New exception subclasses must have a specific mathematical reason.</li>
+<li><code>levy_measure.py</code> — <code>LevyMeasure</code> hierarchy. New subclasses must implement
+  <code>density()</code>, <code>total_mass()</code>, <code>tail()</code>, and <code>moment()</code>.</li>
+<li><code>process.py</code> — <code>Process</code> base class and operators. The operator signatures
+  (<code>__add__</code>, <code>__mul__</code>, <code>__matmul__</code>) are frozen after <code>1.0.0</code>.</li>
+<li><code>properties.py</code> — <code>ProcessProperties</code> and propagation rules. Adding a new
+  property requires updating all three <code>combine_*</code> static methods and all
+  existing processes that set that property.</li>
+<li><code>triplet.py</code> — <code>LevyTriplet</code>. The <code>b</code>, <code>sigma_sq</code>, <code>nu</code> fields and the
+  <code>__add__</code>, <code>scale()</code>, <code>char_exp()</code>, <code>cumulant()</code> methods are frozen after
+  <code>1.0.0</code>.</li>
+</ul>
+<p><strong>Test requirements for core changes:</strong></p>
+<ul>
+<li>All existing tests must still pass</li>
+<li>New behavior must be covered by tests in <code>tests/unit/test_core.py</code></li>
+<li>If the change affects exactness propagation, add a test that verifies
+  the exact ExactnessLevel of a composed process after the change</li>
+</ul>
+<hr />
+<h3 id="h-bug-fix">H. Bug fix</h3>
+<p><strong>Open a bug report issue first</strong> using the bug report template. If the bug
+is an exactness violation (spxa returned an analytically wrong value), add
+the label <code>exactness-violation</code> — this is the highest priority category.</p>
+<p><strong>Files to modify:</strong></p>
+<ol>
+<li>Fix the bug in the relevant source file</li>
+<li>Add a test in the appropriate test file that would have caught the bug.
+   For exactness violations, the test goes in <code>tests/exactness/</code>.</li>
+<li>Add an entry to <code>CHANGELOG.md</code> under <code>## Unreleased</code> → <code>### Fixed</code></li>
+</ol>
+<p><strong>For exactness violations specifically:</strong></p>
+<p>The new test must cite the published formula that contradicts the wrong
+value spxa was returning. This test must go in <code>tests/exactness/</code> and
+carry <code>@pytest.mark.exactness</code>. The fix must be verified against the
+published formula in the test, not just against the "fixed" code.</p>
+<hr />
+<h3 id="i-documentation">I. Documentation</h3>
+<p><strong>Theory docs</strong> (<code>docs/theory/</code>) are formal mathematical write-ups. They
+must be self-contained, cite primary sources, and match the code exactly —
+every formula in a theory doc must be implemented in the code and verified
+by an exactness test.</p>
+<p><strong>Tutorials</strong> (<code>docs/tutorials/</code>) are Jupyter notebooks. They must be
+runnable (<code>jupyter nbconvert --to notebook --execute</code>) and committed with
+outputs cleared.</p>
+<p><strong>API docs</strong> are auto-generated from docstrings via <code>mkdocstrings</code>. Improve
+API docs by improving the docstring in the source file, not by editing
+generated files.</p>
+<p><strong>Docstring format:</strong> NumPy style throughout. Every public function and
+class must have: a one-line summary, a <code>Parameters</code> section, a <code>Returns</code>
+section, and a <code>References</code> section citing the primary source. Equation
+numbers in citations are required for any non-obvious formula.</p>
+<hr />
+<h2 id="the-exactness-test-suite">The exactness test suite</h2>
+<p><code>tests/exactness/</code> is sacred. It is the mechanism by which spxa guarantees
+it never silently returns a wrong mathematical result.</p>
+<p><strong>Invariants that must never be violated:</strong></p>
+<ol>
+<li>
+<p>No test in <code>tests/exactness/</code> may carry <code>@pytest.mark.skip</code>,
+   <code>@pytest.mark.skipif</code>, or <code>@pytest.mark.xfail</code> for any reason. If a
+   formula is wrong, fix the formula. If a test is wrong, fix the test.
+   The <code>scripts/check_exactness_markers.py</code> script enforces this in CI.</p>
+</li>
+<li>
+<p>Every test must have <code>@pytest.mark.exactness</code>.</p>
+</li>
+<li>
+<p>Every test docstring must cite the exact theorem, equation, or section
+   being verified. The citation must include author, year, and location
+   (equation number, theorem number, or page). Example:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="sd">"""κ₂(X₁) = σ² + θ²ν for VG. Madan, Carr &amp; Chang (1998), Section 2."""</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>The test must verify a closed-form result, not just "it runs without
+   error" or "the output is positive". Compare against the mathematical
+   formula, not against what the code produces.</p>
+</li>
+<li>
+<p>Statistical tests (empirical mean/variance) belong in
+   <code>tests/exactness/</code> only when verifying that the simulation converges
+   to a theoretically known value. Use <code>n_paths ≥ 10000</code> and tolerances
+   <code>abs=0.05</code> or <code>rel=0.05</code> — small enough to catch real bugs, loose
+   enough that they don't flake.</p>
+</li>
+</ol>
+<hr />
+<h2 id="code-style">Code style</h2>
+<p><strong>Linting:</strong> <code>ruff</code> for linting and formatting — enforced by pre-commit
+and CI. Configuration in <code>pyproject.toml</code>.</p>
+<p><strong>Type checking:</strong> <code>mypy</code> in strict mode — enforced by CI.</p>
+<p><strong>Naming:</strong>
+- Process classes: <code>PascalCase</code> (e.g. <code>VarianceGamma</code>, <code>NIG</code>)
+- Functions: <code>snake_case</code>
+- Private helpers: <code>_snake_case</code>
+- Lévy measure constructors: <code>_&lt;processname&gt;_levy_measure()</code></p>
+<p><strong>No comment line breaks.</strong> Lines like <code># ====</code> or <code># ----</code> are
+prohibited. Section structure comes from function/class definitions.</p>
+<p><strong>No commented-out code in PRs.</strong> Use git history.</p>
+<p><strong>No unnecessary comments.</strong> A comment that restates what the code
+obviously does is noise. Comments should explain <em>why</em>, especially for
+non-obvious mathematical choices.</p>
+<p><strong>Docstrings are not optional.</strong> Every public function, class, and
+method must have a NumPy-style docstring with a References section.</p>
+<hr />
+<h2 id="commit-conventions">Commit conventions</h2>
+<p>Use conventional commits:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>feat(zoo): add TemperedStable — exact cumulants, rejection simulation
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>feat(ops): add exponential() — stochastic exponential of a semimartingale
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>fix(zoo/vg): eliminate singularity warning in triplet drift
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>test(exactness): VG — char_func vs time-additivity
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>docs(theory): add derivation of subordination triplet formula
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>chore: update PROCESS_REGISTRY with TemperedStable entry
+</code></pre></div>
+<p>Scope is the module: <code>core</code>, <code>zoo</code>, <code>zoo/levy</code>, <code>zoo/beyond</code>, <code>ops</code>,
+<code>analytics</code>, <code>sim</code>, <code>story</code>, <code>docs</code>, <code>test</code>, <code>chore</code>.</p>
+<p><strong>Commit granularity:</strong> commit after each logical unit of work. Do not
+batch unrelated changes. Do not commit broken states.</p>
+<p>After each commit that adds a feature or fix, push to the remote. The
+CI runs on every push and a failing CI is a blocking issue.</p>
+<hr />
+<h2 id="versioning-and-deprecation">Versioning and deprecation</h2>
+<p>spxa follows semantic versioning strictly.</p>
+<p><strong><code>core/</code> and <code>ops/</code> APIs are frozen after <code>1.0.0</code>.</strong> Adding parameters
+with defaults is allowed. Removing parameters, changing return types, or
+changing operator semantics requires a major version bump.</p>
+<p><strong>Deprecations</strong> must:
+1. Emit <code>DeprecationWarning</code> with a clear message stating what to use instead
+2. Remain in the codebase for at least two minor versions before removal
+3. Have an entry in <code>CHANGELOG.md</code> under <code>### Deprecated</code></p>
+<p><strong>Breaking changes</strong> require:
+1. A major version bump
+2. An entry in <code>CHANGELOG.md</code> under <code>### Removed</code>
+3. A migration note in the changelog explaining what to do</p>
+<p><strong>Every PR</strong> must add an entry to <code>CHANGELOG.md</code> under <code>## Unreleased</code>
+in the appropriate section (<code>Added</code>, <code>Changed</code>, <code>Fixed</code>, <code>Deprecated</code>,
+<code>Removed</code>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2074 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/changelog/">
+      
+      
+        <link rel="prev" href="../contributing/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Changelog - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../theory/levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [Unreleased]
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[Unreleased]">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#101-2026-10-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [1.0.1] — 2026-10-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[1.0.1] — 2026-10-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#100-2026-09-19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [1.0.0] — 2026-09-19
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[1.0.0] — 2026-09-19">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added-core-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Core engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-process-zoo-spxazoolevy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Process zoo (spxa.zoo.levy)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-beyond-levy-spxazoobeyond" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Beyond-Lévy (spxa.zoo.beyond)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-multivariate-spxazoomultivariate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Multivariate (spxa.zoo.multivariate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-operations-spxaops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Operations (spxa.ops)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-simulation-spxasim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Simulation (spxa.sim)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-analytics-spxaanalytics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Analytics (spxa.analytics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#added-documentation-and-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added — Documentation and tooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog</h1>
+<p>All notable changes to spxa are documented here. Follows <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a> and <a href="https://semver.org/">Semantic Versioning</a>.</p>
+<h2 id="unreleased">[Unreleased]</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><code>pde/</code> — finite-difference PDE and PIDE solvers (<code>spxa.pde</code>, <code>spxa.graph.pde</code>). Every scheme is
+  covered by a convergence test against a closed form or a published reference. Contents:</li>
+<li><strong>Infrastructure.</strong><ul>
+<li>Grids: uniform and sinh-stretched <code>Grid1D</code> with strikes, barriers and spots placed on nodes;
+  <code>TimeGrid</code> with calendar events.</li>
+<li>Boundary conditions: Dirichlet, Neumann, linear and natural.</li>
+<li>Operators and time stepping: second-order <code>DiscreteOperator1D</code> with automatic upwinding;
+  <code>ThetaSolver1D</code> (Crank–Nicolson with Rannacher start-up); payoff projection.</li>
+<li>Results: grid Greeks and <code>__story__()</code> summaries.</li>
+</ul>
+</li>
+<li><strong>Early exercise.</strong> <code>PenaltyLCP</code>, <code>PSORLCP</code>, <code>BrennanSchwartzLCP</code> and <code>IkonenToivanenLCP</code>, plus
+    <code>complementarity_residual</code> and recorded exercise boundaries.</li>
+<li><strong>One-factor pricers.</strong><ul>
+<li><code>BlackScholesPDE</code>: European, digital, American, Bermudan, single, double and discretely
+  monitored barriers, discrete dividends, local volatility, and bumped vega/rho.</li>
+<li><code>DupirePDE</code> and <code>local_vol_from_prices</code>.</li>
+<li><code>AsianPDE</code> (Večeř; continuous and discrete averages).</li>
+<li><code>ShortRatePDE</code> (Vasicek/CIR bonds and European/American bond options).</li>
+</ul>
+</li>
+<li><strong>Generators and densities.</strong><ul>
+<li><code>to_pde</code> and <code>Process.to_pde()</code>: diffusion generators and exponential-Lévy PIDEs.</li>
+<li><code>FokkerPlanck1D</code>: a discrete-adjoint density solver that conserves mass to machine precision.</li>
+</ul>
+</li>
+<li><strong>Lévy PIDEs.</strong> <code>LevyJumpOperator</code> (cell-integrated large jumps, moment-matched small jumps,
+    FFT convolution) and <code>LevyPIDE</code> for European and American options under Merton, Kou, VG, CGMY
+    and NIG.</li>
+<li><strong>Two-factor ADI.</strong><ul>
+<li>Building blocks: <code>Grid2D</code>, <code>Dirichlet2D</code>/<code>Neumann2D</code>/<code>Natural2D</code>/<code>Linear2D</code>, <code>LinearPDE2D</code>,
+  <code>DiscreteOperator2D</code>.</li>
+<li><code>ADISolver</code>: Douglas, Craig–Sneyd, modified Craig–Sneyd and Hundsdorfer–Verwer, with damping
+  steps and Ikonen–Toivanen early exercise.</li>
+<li><code>HestonPDE</code>: European and American, with Greeks and vega.</li>
+<li><code>TwoAssetBlackScholesPDE</code>: exchange, spread, best-of and worst-of options, European or American.</li>
+</ul>
+</li>
+<li><strong>Cross-checks and bridges.</strong><ul>
+<li><code>longstaff_schwartz</code> and <code>lsm_american</code>: two-pass least-squares Monte Carlo.</li>
+<li><code>pde_price</code> and <code>pde_pricing_fn</code>: price <code>spxa.risk</code> instruments and feed <code>StressTestingEngine</code>.</li>
+<li><code>spxa.graph.pde.bs_pde_price_node</code> and <code>heston_pde_price_node</code>: graph nodes whose
+  vector–Jacobian products use the grid Greeks.</li>
+</ul>
+</li>
+<li><strong>Verification.</strong><ul>
+<li>Convergence tools: <code>convergence_study</code>, <code>observed_order</code> and <code>richardson_extrapolate</code>.</li>
+<li>Closed-form references in <code>spxa.pde.reference</code>: Black–Scholes, Reiner–Rubinstein, binomial
+  trees, perpetual put, Lewis with Heston/Lévy characteristic functions, Merton series,
+  Vasicek/CIR bonds and options, Margrabe, spread options.</li>
+</ul>
+</li>
+<li><strong>Documentation.</strong> See <code>docs/theory/pde.md</code> and section 19 of the API reference.</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><code>zoo.levy.CGMY</code>: the Lévy density, total mass, tail and drift now temper upward jumps with <span class="arithmatex">\(M\)</span> and
+  downward jumps with <span class="arithmatex">\(G\)</span>, as the characteristic exponent does; previously they described the
+  mirror-image process. For <span class="arithmatex">\(1 \le Y &lt; 2\)</span> the drift now includes the <span class="arithmatex">\(-\int_{|x|&gt;1} x\,\nu(dx)\)</span>
+  correction. The first cumulant is no longer rejected as nonexistent when <span class="arithmatex">\(\Gamma(1-Y)\)</span> is finite.</li>
+<li><code>zoo.levy.NIG</code>: the triplet drift and tail integrated the NIG probability density instead of the
+  Lévy density. The drift now follows from <span class="arithmatex">\(\mathbb{E}[X_1] = \mu + \delta\beta/\gamma\)</span>, and the tail
+  integrates the Lévy density.</li>
+<li><code>zoo.levy.KouJumpDiffusion</code>: <code>char_func</code> now uses the closed-form exponent. The inherited numerical
+  Lévy–Khintchine integral returned <code>nan</code> at complex arguments such as <span class="arithmatex">\(u = -i\)</span>.</li>
+</ul>
+<h2 id="101-2026-10-30">[1.0.1] — 2026-10-30</h2>
+<h3 id="added_1">Added</h3>
+<ul>
+<li><code>morph/</code> — Model Morphing (<code>spxa.morph</code>, <code>spxa.graph.morph</code>): continuous interpolation between
+  processes. The triplet homotopy <span class="arithmatex">\(\psi_\alpha = (1-\alpha)\psi_0 + \alpha\psi_1\)</span> is <code>EXACT</code> for
+  Lévy processes. Also includes generator, Fisher–Rao geodesic, Wasserstein and convex-combination
+  morphs; time- and state-dependent schedules (<code>DynamicMorphedProcess</code>); <code>ModelBarycenter</code>,
+  <code>ModelEnsemble</code> and <code>SurfaceMorphEngine</code>; and the <code>Process.morph</code> / <code>spxa.morph</code> API.
+  See <code>docs/theory/model_morphing.md</code>.</li>
+<li><code>zoo/beyond/multivariate_hawkes.py</code> — Multivariate Hawkes mutually exciting point process (<code>MultivariateHawkesProcess</code>, <code>MultivariateHawkes</code>, <code>MHawkes</code>):
+  <span class="arithmatex">\(M\)</span>-dimensional Hawkes intensity <span class="arithmatex">\(\lambda_m(t)\)</span>, branching infectivity matrix <span class="arithmatex">\(\mathbf{\Gamma}\)</span>, spectral radius stationarity condition <span class="arithmatex">\(\rho(\mathbf{\Gamma}) &lt; 1\)</span>, exact expected arrival intensity <span class="arithmatex">\(\mathbf{\lambda}_\infty = (\mathbf{I} - \mathbf{\Gamma})^{-1} \mathbf{\mu}\)</span>, and Ogata thinning event simulation.</li>
+<li><code>zoo/levy/nts.py</code> — Normal Tempered Stable (NTS) Lévy process (<code>NormalTemperedStableProcess</code>, <code>NormalTemperedStable</code>, <code>NTSProcess</code>):
+  Subordinated Brownian motion <span class="arithmatex">\(X_t = \theta T_t + \sigma W(T_t)\)</span> with Tempered Stable subordinator, exact closed-form characteristic function, exact cumulant generating function, and subordination simulation.</li>
+<li><code>zoo/beyond/kou_sv.py</code> — Kou Stochastic Volatility Jump-Diffusion model (<code>KouSVProcess</code>, <code>KouSV</code>, <code>KouStochasticVolatility</code>):
+  Coupled Heston mean-reverting stochastic volatility with Kou asymmetric double-exponential jumps, affine characteristic function, Lewis Fourier inversion European call/put options, and full-truncation Euler simulation.</li>
+<li><code>zoo/beyond/diffusion_bridge.py</code> — General Diffusion Bridge via Doob's <span class="arithmatex">\(h\)</span>-transform (<code>GeneralDiffusionBridge</code>, <code>DiffusionBridge</code>, <code>DoobBridge</code>):
+  Drift correction <span class="arithmatex">\(\mu^*(x, t) = \mu(x) + \sigma^2(x) \partial_x \ln p(b, T \mid x, t)\)</span> for Brownian, Ornstein–Uhlenbeck, and Geometric Brownian Motion bridges, exact moments, and pinned path simulation.</li>
+<li><code>zoo/beyond/rough_heston.py</code> — Rough Heston stochastic volatility model (<code>RoughHestonProcess</code>, <code>RoughHeston</code>, <code>RoughVolatility</code>):
+  Fractional Volterra stochastic volatility of order <span class="arithmatex">\(\alpha = H + 1/2 \in (1/2, 1)\)</span>, singular kernel <span class="arithmatex">\(K(t) = t^{\alpha - 1} / \Gamma(\alpha)\)</span>, Mittag-Leffler expected variance, power-law implied volatility skew <span class="arithmatex">\(|\partial \sigma_{IV} / \partial k| \sim T^{H - 0.5}\)</span>, and fractional convolution simulation.</li>
+<li><code>zoo/beyond/g2pp.py</code> — Two-Factor Hull–White (G2++) short-rate diffusion model (<code>G2PlusPlusProcess</code>, <code>G2PlusPlus</code>, <code>TwoFactorHullWhite</code>):
+  Two coupled OU factors driving short rate <span class="arithmatex">\(r(t) = x(t) + y(t) + \phi(t)\)</span>, closed-form zero-coupon bond pricing <span class="arithmatex">\(P(t, T)\)</span>, Brigo–Mercurio European bond option formulas, and exact bivariate Gaussian factor simulation.</li>
+<li><code>zoo/beyond/three_halves.py</code> — 3/2 Stochastic Volatility diffusion model (<code>ThreeHalvesProcess</code>, <code>ThreeHalves</code>, <code>ThreeHalvesModel</code>):
+  Super-linear volatility-of-variance <span class="arithmatex">\(dv_t = \kappa v_t (\theta - v_t) dt + \epsilon v_t^{3/2} dW_t\)</span>, exact reciprocal CIR transformation <span class="arithmatex">\(y_t = 1/v_t\)</span> with automatic Feller satisfaction, Inverse-Gamma stationary law, and exact non-central chi-square path simulation.</li>
+<li><code>zoo/beyond/schwartz_one_factor.py</code> — Schwartz One-Factor (1997) commodity diffusion model (<code>SchwartzOneFactor</code>, <code>ExponentialOU</code>, <code>Schwartz1F</code>):
+  Mean-reverting log-spot Ornstein–Uhlenbeck dynamics, exact lognormal transition law and moments, closed-form commodity futures price term structure <span class="arithmatex">\(F(t, T)\)</span>, and Black-76 European options on futures.</li>
+<li><code>zoo/beyond/garch_diffusion.py</code> — Nelson (1990) continuous-time GARCH(1,1) diffusion limit (<code>GARCHDiffusion</code>, <code>ContinuousGARCH</code>, <code>GARCHDiffusionProcess</code>):
+  Linear diffusion coefficient <span class="arithmatex">\(g(v) = \sigma v\)</span>, exact Inverse-Gamma stationary distribution, conditional moments from linear moment ODE system, and guaranteed-positive log-Euler simulation.</li>
+<li><code>zoo/beyond/bilinear.py</code> — Bilinear Diffusion process (<code>BilinearDiffusion</code>, <code>BilinearDiffusionProcess</code>, <code>AffineDiffusion</code>):
+  Affine drift and affine volatility <span class="arithmatex">\(dX_t = (a + b X_t) dt + (c + d X_t) dW_t\)</span>, Pearson diffusion family moments, exact second-moment ODE solution, and high-order Milstein boundary simulation.</li>
+<li><code>vis/levy_inspector.py</code> — Lévy triplet diagnostic inspector and dual-panel density visualizer:
+  Decomposes <span class="arithmatex">\((b, \sigma^2, \nu)\)</span>, classifies finite activity (<span class="arithmatex">\(\int \nu(dx) &lt; \infty\)</span>) vs infinite activity (<span class="arithmatex">\(\nu(\mathbb{R}) = \infty\)</span>),
+  finite vs infinite path variation, estimates Blumenthal-Getoor index <span class="arithmatex">\(\beta \in [0, 2]\)</span> and singularity order <span class="arithmatex">\(s\)</span>,
+  and plots near-zero singularity zoom vs tail decay on semi-log scale.</li>
+<li><code>vis/surface.py</code> — 3D implied volatility surface and cross-model smile visualizer:
+  Computes and renders 3D <span class="arithmatex">\((K, T, \sigma_{\mathrm{IV}})\)</span> surfaces with isoline contours, cross-model smile comparison curves
+  across diffusions, jumps, and stochastic volatility models, and volatility term structure plots.</li>
+<li><code>vis/story_dag.py</code> — Process composition DAG visualizer and multi-format exporter:
+  Walks <code>CompositionNode</code> trees and exports to ASCII / Unicode tree structures, Mermaid flowcharts for Markdown previews,
+  Graphviz DOT files, and publication-quality hierarchical NetworkX + Matplotlib diagrams.</li>
+<li><code>vis/__init__.py</code> — Unified visualization namespace exposing all diagnostic, surface, and DAG tools.</li>
+<li><code>examples/visualization_example.py</code> — End-to-end demonstration script generating sample plots and diagrams.</li>
+<li><code>tests/unit/test_vis.py</code> — Comprehensive unit test suite for all visualization submodules.</li>
+<li><code>sim/milstein.py</code> — High-order 1D and multivariate commutative Milstein simulation schemes:
+  Order 1.0 strong convergence with analytical or automatic centered finite-difference diffusion derivatives.</li>
+<li><code>sim/runge_kutta.py</code> — Derivative-free Stochastic Runge-Kutta schemes:
+  Strong order 1.0 Kloeden-Platen scheme (matching Milstein accuracy without diffusion derivatives) and weak order 2.0 scheme for expectation evaluation.</li>
+<li><code>sim/qmc.py</code> — Quasi-Monte Carlo simulation engine:
+  Sobol and Halton low-discrepancy sequences, Owen scrambling, and hierarchical Brownian bridge path construction.</li>
+<li><code>sim/variance_reduction.py</code> — Comprehensive variance reduction toolkit:
+  Optimal single/multivariate control variate regression estimator, antithetic Gaussian and Brownian paths, Girsanov importance sampling with Radon-Nikodym likelihood weights, and 1D stratified uniform sampling.</li>
+<li><code>sim/predictor_corrector.py</code> — Drift-implicit predictor-corrector schemes for stiff SDEs:
+  Unconditionally stable trapezoidal integration for stiff mean-reverting processes.</li>
+<li><code>sim/mlmc.py</code> — Giles (2008) Multilevel Monte Carlo (MLMC) framework:
+  Optimal <span class="arithmatex">\(O(\epsilon^{-2})\)</span> estimation complexity, adaptive level selection, and optimal variance allocation.</li>
+<li><code>examples/simulation_backends_example.py</code> — Comprehensive demonstration of all advanced simulation backends.</li>
+<li><code>zoo/beyond/cbi.py</code> — <code>CBISubordinator</code> (<code>CBIProcess</code>, <code>DawsonWatanabeProcess</code>, <code>ContinuousStateBranching</code>):
+  Dawson-Watanabe continuous-state branching process with continuous and jump immigration (Kawazu &amp; Watanabe 1971; Dawson &amp; Li 2012):
+  <span class="arithmatex">\(dX_t = (a - b X_t) dt + \sqrt{c X_t} dW_t + dJ_t\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact closed-form Riccati solution <span class="arithmatex">\(v(t, \lambda)\)</span>, affine Laplace transform <span class="arithmatex">\(\mathbb{E}[e^{-\lambda X_t}]\)</span>,
+  exact conditional mean and variance with compound Poisson immigration, analytical extinction probability for pure CSBP,
+  and high-order Milstein simulation with non-negative reflection.
+  References: Kawazu &amp; Watanabe (1971); Dawson &amp; Li (2012); Li (2011); Grey (1974).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_cbi</code> Dawson-Watanabe Milstein sampler with jump immigration.</li>
+<li><code>zoo/beyond/chen.py</code> — <code>ChenModel</code> (<code>ChenThreeFactor</code>, <code>ChenShortRate</code>, <code>ChenProcess</code>):
+  Chen (1996) three-factor interest rate model with stochastic central tendency (mean) and stochastic variance:
+  <span class="arithmatex">\(dr_t = k (\theta_t - r_t) dt + \sqrt{\zeta_t r_t} dW_{1,t}\)</span>,
+  <span class="arithmatex">\(d\theta_t = \kappa (\bar{\theta} - \theta_t) dt + \alpha \sqrt{\theta_t} dW_{2,t}\)</span>,
+  <span class="arithmatex">\(d\zeta_t = \lambda (\bar{\zeta} - \zeta_t) dt + \beta \sqrt{\zeta_t} dW_{3,t}\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact closed-form expectations, Feller condition analytics, exact 10-dimensional matrix exponential moment system
+  for second moments and conditional variance, term structure zero-coupon bond pricing and yield curve, and coupled 3-factor simulation.
+  References: Chen (1996).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_chen</code> coupled 3-factor path sampler.</li>
+<li><code>zoo/beyond/regime_switching_gbm.py</code> — <code>RegimeSwitchingGBM</code> (<code>RSGBM</code>, <code>RegimeSwitchingBlackScholes</code>, <code>MarkovSwitchingGBM</code>):
+  Continuous-time Markov-modulated Black-Scholes diffusion of Hamilton (1989), Naik (1993), and Guo (2001):
+  <span class="arithmatex">\(dS_t = \mu(Y_t) S_t dt + \sigma(Y_t) S_t dW_t\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact CTMC transition probabilities <span class="arithmatex">\(P(t) = \exp(Q t)\)</span>, stationary probability distribution <span class="arithmatex">\(\boldsymbol{\pi}\)</span>,
+  arbitrary order exact matrix exponential moments <span class="arithmatex">\(\mathbb{E}[S_t^n \mid S_0, Y_0]\)</span>, continuous characteristic function via
+  matrix exponentials, closed-form Gil-Pelaez European call and put option pricing with machine-precision put-call parity,
+  and coupled Markov-jump and diffusion path simulation.
+  References: Hamilton (1989); Naik (1993); Guo (2001); Elliott, Aggoun, &amp; Moore (1994).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_regime_switching_gbm</code> coupled Markov chain and diffusion path sampler.</li>
+<li><code>zoo/beyond/jacobi.py</code> — <code>JacobiProcess</code> (<code>JacobiDiffusion</code>, <code>WrightFisherDiffusion</code>, <code>Jacobi</code>):
+  Jacobi bounded diffusion model on <span class="arithmatex">\([y_{\min}, y_{\max}]\)</span> (canonical <span class="arithmatex">\([0, 1]\)</span>) of Ackerer, Filipović, &amp; Turnes (2018):
+  <span class="arithmatex">\(dY_t = \kappa (\theta - Y_t) dt + \sigma \sqrt{\frac{(Y_t - y_{\min})(y_{\max} - Y_t)}{y_{\max} - y_{\min}}} dW_t\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact Beta stationary law <span class="arithmatex">\(\mathrm{Beta}(\alpha, \beta)\)</span>, exact polynomial moment propagation (mean, second moment,
+  and conditional variance), Feller boundary classifications at both lower and upper endpoints (entrance vs regular reflecting),
+  and high-order Milstein path simulation with strict boundary preservation.
+  References: Ackerer, Filipović, &amp; Turnes (2018); Karlin &amp; Taylor (1981); Filipović &amp; Larsson (2016).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_jacobi</code> Milstein path simulator for bounded intervals.</li>
+<li><code>zoo/beyond/bns.py</code> — <code>BNSModel</code> (<code>BNSProcess</code>, <code>BarndorffNielsenShephard</code>, <code>BNS</code>):
+  Non-Gaussian Ornstein-Uhlenbeck stochastic volatility model of Ole E. Barndorff-Nielsen &amp; Neil Shephard (2001):
+  <span class="arithmatex">\(dX_t = (\mu + \beta \sigma_t^2) dt + \sigma_t dW_t + \rho dZ_{\lambda t}, \quad d\sigma_t^2 = -\lambda \sigma_t^2 dt + dZ_{\lambda t}\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features Gamma-OU variance driven by a compound Poisson BDLP <span class="arithmatex">\(Z_t\)</span> with rate <span class="arithmatex">\(\alpha\)</span> and exponential jump size <span class="arithmatex">\(\beta_{bdlp}\)</span>,
+  exact stationary variance distribution <span class="arithmatex">\(\Gamma(\alpha, \beta_{bdlp})\)</span>, exact conditional and integrated variance moments,
+  continuous Fourier characteristic function <span class="arithmatex">\(\phi(u; t)\)</span>, European call/put option pricing via Gil-Pelaez inversion with exact
+  Put-Call parity, Black-Scholes implied volatility smile computation, and coupled vectorized simulation.
+  References: Barndorff-Nielsen &amp; Shephard (2001); Nicolato &amp; Venardos (2003); Schoutens (2003).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_bns</code> coupled asset price and stochastic variance simulator.</li>
+<li><code>zoo/beyond/schwartz_two_factor.py</code> — <code>SchwartzTwoFactor</code> (<code>Schwartz97</code>, <code>Schwartz2F</code>, <code>SchwartzTwoFactorModel</code>):
+  Canonical two-factor commodity pricing model of Eduardo Schwartz (1997) with mean-reverting convenience yield:
+  <span class="arithmatex">\(dS_t = (r - \delta_t) S_t dt + \sigma_1 S_t dW_1^Q(t), \quad d\delta_t = \kappa (\hat{\alpha} - \delta_t) dt + \sigma_2 dW_2^Q(t)\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact closed-form futures pricing <span class="arithmatex">\(F(S_t, \delta_t, \tau)\)</span> via Schwartz (1997) Proposition 1 eq. (12),
+  exact conditional Gaussian moments for convenience yield <span class="arithmatex">\(\delta_t\)</span> and log-spot <span class="arithmatex">\(X_t = \ln S_t\)</span>,
+  exact characteristic function <span class="arithmatex">\(\phi(u; t)\)</span>, analytical Black-76 European call and put options with exact
+  Put-Call parity, and joint vectorized path simulation of spot prices and convenience yields.
+  References: Schwartz (1997); Bjerksund (1991).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_schwartz_two_factor</code> joint spot and convenience yield simulator.</li>
+<li><code>zoo/beyond/jcir.py</code> — <code>JCIRProcess</code> (<code>JCIR</code>, <code>JumpCIRProcess</code>, <code>JCIRModel</code>):
+  Jump-Extended Cox-Ingersoll-Ross short-rate model of Duffie &amp; Garleanu (2001) and Maghsoodi (1996):
+  <span class="arithmatex">\(dr_t = \kappa (\theta - r_t) dt + \sigma \sqrt{r_t} dW_t + dJ_t, \quad r_0 \ge 0\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features non-negative interest rates with compound Poisson exponential jump shocks (<span class="arithmatex">\(Y_i \sim \mathrm{Exp}(\mu_J)\)</span>),
+  exact stationary mean <span class="arithmatex">\(\theta_\infty = \theta + (\lambda_J \mu_J)/\kappa\)</span> and stationary variance, exact conditional
+  moments at any horizon, closed-form exponential-affine zero-coupon bond pricing <span class="arithmatex">\(P(t, T) = \exp(A(\tau) - B(\tau) r_t)\)</span>
+  with exact analytical Riccati integration, term structure yields, analytical instantaneous forward rates, exact
+  conditional characteristic function, and exact simulation combining non-central <span class="arithmatex">\(\chi^2\)</span> CIR transitions with compound
+  Poisson jump increments.
+  References: Duffie &amp; Garleanu (2001); Maghsoodi (1996); Brigo &amp; Mercurio (2006).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_jcir</code> exact non-central chi-squared + compound Poisson jump simulator.</li>
+<li><code>zoo/beyond/bessel.py</code> — <code>SquaredBesselProcess</code> (<code>BESQ</code>, <code>SquaredBessel</code>) and <code>BesselProcess</code> (<code>BES</code>, <code>Bessel</code>):
+  Canonical squared Bessel and Bessel diffusion processes of Feller (1951), Pitman &amp; Yor (1982), and Revuz &amp; Yor (1999):
+  <span class="arithmatex">\(dX_t = \delta dt + 2\sqrt{X_t} dW_t, \quad R_t = \sqrt{X_t}, \quad dR_t = \frac{\delta - 1}{2 R_t} dt + dW_t\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact transition density and CDF via non-central <span class="arithmatex">\(\chi^2\)</span> distribution <span class="arithmatex">\(\frac{X_t}{t} \sim \chi^2(\delta, \frac{x_0}{t})\)</span>,
+  exact closed-form cumulants <span class="arithmatex">\(\kappa_1, \kappa_2, \kappa_3, \kappa_4\)</span> to arbitrary order, exact Laplace transform
+  <span class="arithmatex">\(\mathbb{E}[e^{-\lambda X_t}] = (1 + 2\lambda t)^{-\delta/2} \exp\left(-\frac{\lambda x_0}{1 + 2\lambda t}\right)\)</span>,
+  exact continuous characteristic function <span class="arithmatex">\(\phi(u; t)\)</span>, Feller boundary classification at 0 (entrance for <span class="arithmatex">\(\delta \ge 2\)</span>,
+  reflecting for <span class="arithmatex">\(0 &lt; \delta &lt; 2\)</span>, absorbing for <span class="arithmatex">\(\delta = 0\)</span>), exact Bessel process confluent hypergeometric moments
+  <span class="arithmatex">\(\mathbb{E}[R_t]\)</span>, and exact path simulation with zero time discretization error.
+  References: Feller (1951); Pitman &amp; Yor (1982); Revuz &amp; Yor (1999).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_besq</code> and <code>sample_bessel</code> exact path simulators using scaled non-central chi-squared increments.</li>
+<li><code>zoo/beyond/schobel_zhu.py</code> — <code>SchobelZhuProcess</code> (<code>SchobelZhu</code>, <code>SchobelZhuModel</code>, <code>SZModel</code>):
+  Schöbel-Zhu (1999) stochastic volatility model:
+  <span class="arithmatex">\(dS_t = (r - q) S_t dt + \sigma_t S_t dW_t^S, \quad d\sigma_t = \kappa (\theta - \sigma_t) dt + \tau dW_t^\sigma\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features Ornstein-Uhlenbeck Gaussian volatility dynamics with non-negative instantaneous variance
+  <span class="arithmatex">\(v_t = \sigma_t^2\)</span>, exact continuous characteristic function, Gil-Pelaez European Call and Put pricing
+  satisfying exact Put-Call parity, Black-Scholes implied volatility smile inversion, and coupled
+  vectorized path simulation.
+  References: Schöbel &amp; Zhu (1999); Lord &amp; Kahl (2007).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_schobel_zhu</code> simulator supporting coupled asset and volatility paths.</li>
+<li><code>zoo/beyond/black_karasinski.py</code> — <code>BlackKarasinskiProcess</code> (<code>BlackKarasinski</code>, <code>BKProcess</code>, <code>BKModel</code>):
+  Black-Karasinski (1991) lognormal short-rate model:
+  <span class="arithmatex">\(d(\ln r_t) = a(b - \ln r_t) dt + \sigma dW_t, \quad r_t = \exp(x_t) &gt; 0\)</span> under <code>MOMENT_PROPAGATION</code>
+  exactness level.
+  Guarantees strictly positive interest rates across all horizons. Features exact Ornstein-Uhlenbeck
+  Gaussian conditional moments for log-rate <span class="arithmatex">\(x_t = \ln(r_t)\)</span>, exact short-rate lognormal conditional
+  and stationary moments, Monte Carlo zero-coupon bond pricing <span class="arithmatex">\(P(0, T)\)</span> and yield curve <span class="arithmatex">\(y(0, T)\)</span>,
+  and exact path simulation without discretization error for <span class="arithmatex">\(x_t\)</span>.
+  References: Black &amp; Karasinski (1991); Brigo &amp; Mercurio (2006).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_black_karasinski</code> simulator supporting exact log-rate transitions.</li>
+<li><code>zoo/levy/gh.py</code> — <code>GeneralizedHyperbolicProcess</code> (<code>GH</code>, <code>GHProcess</code>, <code>GeneralizedHyperbolic</code>):
+  Generalized Hyperbolic (GH) Lévy process of Barndorff-Nielsen (1977) and Eberlein &amp; Prause (2002):
+  infinite-activity pure-jump Lévy process generated by the 5-parameter Generalized Hyperbolic
+  distribution <span class="arithmatex">\(GH(\lambda, \alpha, \beta, \delta, \mu)\)</span> under <code>EXACT</code> exactness level.
+  Features exact characteristic exponent <span class="arithmatex">\(\psi(u)\)</span> with modified Bessel <span class="arithmatex">\(K_\lambda\)</span> functions,
+  exact cumulants <span class="arithmatex">\(\kappa_1, \dots, \kappa_4\)</span> derived from underlying GIG subordinator moments,
+  Lévy triplet <span class="arithmatex">\((b, 0, \nu)\)</span>, Gil-Pelaez European Call and Put pricing with exact Put-Call parity,
+  implied volatility smile inversion, subfamily classification (NIG, Hyperbolic, Hyperbolic Cosine),
+  and vectorized simulation via exact Inverse Gaussian subordination and Gil-Pelaez CDF inversion.
+  References: Barndorff-Nielsen (1977); Barndorff-Nielsen &amp; Halgreen (1977); Eberlein &amp; Prause (2002).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_gh</code> simulator supporting exact NIG subordination and Gil-Pelaez inversion.</li>
+<li><code>zoo/beyond/sabr.py</code> — <code>SABRProcess</code> (<code>SABRModel</code>, <code>SABR</code>):
+  SABR (Stochastic Alpha, Beta, Rho) stochastic volatility model of Hagan et al. (2002):
+  <span class="arithmatex">\(dF_t = \alpha_t F_t^\beta dW_t^F, \quad d\alpha_t = \nu \alpha_t dW_t^\alpha\)</span> with
+  <span class="arithmatex">\(\mathbb{E}[dW_t^F dW_t^\alpha] = \rho dt\)</span> under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features Hagan et al. (2002) asymptotic Black-76 implied volatility closed form with Obłój (2008)
+  corrections, at-the-money (ATM) volatility formula, Black-76 European Call and Put pricing
+  satisfying Put-Call parity, exact forward and log-normal volatility moments, smile backbone
+  classification, and coupled vectorized simulation via log-Euler and Euler schemes.
+  References: Hagan, Kumar, Lesniewski, &amp; Woodward (2002); Obłój (2008).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_sabr</code> simulator supporting coupled forward price and stochastic volatility paths.</li>
+<li><code>zoo/beyond/hull_white.py</code> — <code>HullWhiteProcess</code> (<code>HullWhite</code>, <code>HW1F</code>, <code>ExtendedVasicek</code>):
+  Hull-White (1990) one-factor Gaussian short-rate model (extended Vasicek):
+  <span class="arithmatex">\(dr_t = a(b - r_t) dt + \sigma dW_t\)</span> with mean-reversion speed <span class="arithmatex">\(a &gt; 0\)</span>, volatility <span class="arithmatex">\(\sigma &gt; 0\)</span>,
+  and long-term target rate <span class="arithmatex">\(b \in \mathbb{R}\)</span> under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features exact zero-coupon bond pricing <span class="arithmatex">\(P(t, T) = A(t, T) \exp(-B(t, T) r_t)\)</span>, spot yield curve,
+  instantaneous forward rates, conditional short rate and integrated rate moments, autocovariance,
+  Jamshidian (1989) closed-form European bond Call and Put options with exact Put-Call parity,
+  caplets and floorlets, and exact path simulation without time discretization error.
+  References: Hull &amp; White (1990, 1993); Jamshidian (1989); Vasicek (1977).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_hull_white</code> simulator with exact Gaussian transitions and Euler fallback.</li>
+<li><code>zoo/beyond/bates.py</code> — <code>BatesProcess</code> (<code>BatesModel</code>, <code>Bates96</code>, <code>SVJ</code>):
+  Bates (1996) stochastic volatility with jumps model coupling the Heston (1993) CIR variance diffusion
+  with Merton (1976) log-normal price jumps:
+  <span class="arithmatex">\(dS_t = (\mu - q - \lambda \bar{k}) S_t dt + \sqrt{V_t} S_t dW_t^S + S_{t-} (e^Y - 1) dN_t\)</span>,
+  <span class="arithmatex">\(dV_t = \kappa (\theta - V_t) dt + \sigma_v \sqrt{V_t} dW_t^V\)</span> with <span class="arithmatex">\(\mathbb{E}[dW^S dW^V] = \rho dt\)</span>
+  under <code>MOMENT_PROPAGATION</code> exactness level.
+  Features continuous Albrecher et al. (2007) characteristic function factored with compound Poisson jumps,
+  drift compensator <span class="arithmatex">\(-\lambda \bar{k}\)</span>, high-precision cumulants <span class="arithmatex">\(\kappa_1, \dots, \kappa_4\)</span>,
+  European Call and Put pricing via Gil–Pelaez Fourier inversion, exact Put-Call parity,
+  Black–Scholes implied volatility smile inversion, and vectorized path simulation via Lord et al. (2010)
+  full-truncation CIR scheme and Poisson jump shocks.
+  References: Bates (1996); Heston (1993); Albrecher et al. (2007); Lord et al. (2010).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_bates</code> path simulator supporting both log-return <span class="arithmatex">\(X_t\)</span> and instantaneous variance <span class="arithmatex">\(V_t\)</span>.</li>
+<li><code>zoo/levy/kou.py</code> — <code>KouJumpDiffusion</code> (<code>KouProcess</code>, <code>Kou72</code>, <code>Kou02</code>):
+  Kou (2002) double exponential jump-diffusion process combining continuous Brownian motion with
+  asymmetric double exponential jump shocks: <span class="arithmatex">\(X_t = \mu t + \sigma W_t + \sum_{i=1}^{N_t} Y_i\)</span>,
+  <span class="arithmatex">\(f_Y(y) = p \eta_1 e^{-\eta_1 y}\mathbb{I}_{y \ge 0} + (1-p) \eta_2 e^{\eta_2 y}\mathbb{I}_{y &lt; 0}\)</span>
+  under <code>EXACT</code> exactness level.
+  Features exact closed-form Lévy triplet <span class="arithmatex">\((b, \sigma^2, \nu)\)</span> with analytical truncated drift integral,
+  characteristic exponent <span class="arithmatex">\(\psi(u)\)</span>, analytical cumulants of all orders <span class="arithmatex">\(n\)</span>,
+  European Call and Put option pricing via Gil–Pelaez / Carr–Madan Fourier inversion,
+  Put-Call parity, Black–Scholes implied volatility smile/skew inversion, and exact
+  simulation with zero time discretization error.
+  References: Kou (2002); Cont &amp; Tankov (2004).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_kou</code> exact path simulator with zero discretization error.</li>
+<li><code>zoo/beyond/cev.py</code> — <code>CEVProcess</code> (<code>CEV</code>, <code>ConstantElasticityOfVariance</code>):
+  Constant Elasticity of Variance (CEV) local volatility diffusion process
+  <span class="arithmatex">\(dS_t = \mu S_t dt + \sigma S_t^\gamma dW_t, S_0 = s_0 &gt; 0\)</span> under <code>MOMENT_PROPAGATION</code> exactness.
+  Features state-dependent local return volatility <span class="arithmatex">\(\sigma_{\text{loc}}(S) = \sigma S^{\gamma - 1}\)</span>,
+  constant return variance elasticity <span class="arithmatex">\(2(\gamma - 1)\)</span>, boundary classification with absorbing zero
+  (default / bankruptcy risk) for <span class="arithmatex">\(\gamma &lt; 1\)</span>, exact European option pricing via Schroder's (1989)
+  non-central chi-squared representation across equity leverage (<span class="arithmatex">\(\gamma &lt; 1\)</span>), geometric Brownian motion
+  (<span class="arithmatex">\(\gamma = 1\)</span>), and commodity inverse leverage (<span class="arithmatex">\(\gamma &gt; 1\)</span>) regimes, exact Put-Call parity,
+  analytical absorption probability <span class="arithmatex">\(P(S_T = 0) = 1 - F_{\chi^2}(x; 1/(1-\gamma))\)</span>, transition CDF,
+  analytical Greeks (Delta, Gamma, Vega), conditional moments (closed-form for <span class="arithmatex">\(\gamma \in \{0.5, 1.0\}\)</span> and
+  quadrature propagation for general <span class="arithmatex">\(\gamma\)</span>), and vectorized path simulation.
+  References: Cox (1975); Schroder (1989); Emanuel &amp; MacBeth (1982); Choi &amp; Wu (2021).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_cev</code> simulation routine supporting second-order Milstein
+  and Euler–Maruyama schemes with absorbing boundary conditions at zero and exact geometric Brownian motion
+  for <span class="arithmatex">\(\gamma = 1\)</span>.</li>
+<li><code>zoo/levy/merton.py</code> — <code>MertonJumpDiffusion</code> (<code>MertonProcess</code>, <code>Merton76</code>):
+  Merton (1976) jump-diffusion process combining continuous Brownian motion with
+  normally distributed compound Poisson jump shocks: <span class="arithmatex">\(X_t = \mu t + \sigma W_t + \sum_{i=1}^{N_t} Y_i\)</span>,
+  <span class="arithmatex">\(Y_i \sim \mathcal{N}(\mu_J, \sigma_J^2)\)</span> under <code>EXACT</code> exactness level.
+  Features exact Lévy triplet <span class="arithmatex">\((b, \sigma^2, \nu)\)</span> with analytical truncated Gaussian drift integral,
+  closed-form characteristic exponent, analytical cumulants of all orders <span class="arithmatex">\(n\)</span>,
+  Merton (1976) analytical option pricing formula via Poisson mixture of Black–Scholes values,
+  Put-Call parity, Black-Scholes implied volatility smile/skew inversion, and exact
+  vectorized simulation with zero time discretization error.
+  References: Merton (1976); Cont &amp; Tankov (2004).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_merton</code> exact path simulator with zero discretization error.</li>
+<li><code>zoo/beyond/heston.py</code> — <code>HestonProcess</code> (<code>Heston</code>):
+  Continuous-time affine stochastic volatility diffusion model
+  <span class="arithmatex">\(dX_t = (\mu - \frac{1}{2}V_t)dt + \sqrt{V_t} dW_t^S\)</span>,
+  <span class="arithmatex">\(dV_t = \kappa(\theta - V_t)dt + \sigma_v \sqrt{V_t} dW_t^V\)</span> with
+  <span class="arithmatex">\(d\langle W^S, W^V \rangle_t = \rho dt\)</span> under <code>MOMENT_PROPAGATION</code> exactness.
+  Features exact characteristic functions via Albrecher et al. (2007) continuous formulation,
+  CIR instantaneous and integrated variance moments, Feller condition verification,
+  analytical cumulants, European Call and Put option pricing via Gil-Pelaez Fourier inversion,
+  Black-Scholes implied volatility smile/skew inversion via root-finding, and Full Truncation
+  simulation (Lord et al. 2010).
+  References: Heston (1993); Albrecher et al. (2007); Lord et al. (2010).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_heston</code> simulation routine supporting
+  Lord et al. (2010) Full Truncation scheme and truncated Euler scheme.</li>
+<li><code>zoo/beyond/ornstein_uhlenbeck.py</code> — <code>OrnsteinUhlenbeckProcess</code> (<code>OrnsteinUhlenbeck</code>, <code>Vasicek</code>):
+  Continuous-time Gaussian mean-reverting diffusion <span class="arithmatex">\(dX_t = \theta(\mu - X_t)dt + \sigma dW_t\)</span>
+  with <code>MOMENT_PROPAGATION</code> exactness level. Features exact Gaussian transition density, exact
+  conditional moments and cumulants, stationary distribution <span class="arithmatex">\(N(\mu, \sigma^2/(2\theta))\)</span>,
+  relaxation time <span class="arithmatex">\(\tau = 1/\theta\)</span>, half-life <span class="arithmatex">\(t_{1/2} = \ln(2)/\theta\)</span>, exponential autocovariance
+  and autocorrelation, two-time covariance, Lorentzian power spectral density <span class="arithmatex">\(S(\omega) = \sigma^2/(\pi(\theta^2+\omega^2))\)</span>,
+  exact Laplace transform and characteristic function, Vasicek zero-coupon bond pricing <span class="arithmatex">\(P(\tau) = A(\tau)e^{-B(\tau)r_0}\)</span>,
+  yield curves, and asymptotic long-term yield.
+  References: Uhlenbeck &amp; Ornstein (1930); Vasicek (1977).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_ou</code> supporting exact Gaussian increments without
+  discretization bias (<code>method="exact"</code>) and Euler–Maruyama discretisation (<code>method="euler"</code>).</li>
+<li><code>zoo/beyond/cir.py</code> — <code>CIRProcess</code> (<code>CoxIngersollRoss</code>): Cox–Ingersoll–Ross square-root
+  diffusion process <span class="arithmatex">\(dr_t = \kappa(\theta - r_t)dt + \sigma\sqrt{r_t}dW_t\)</span> with <code>MOMENT_PROPAGATION</code>
+  exactness level. Features Feller condition evaluation (<span class="arithmatex">\(2\kappa\theta \ge \sigma^2\)</span>), exact non-central
+  chi-squared transition density and exact simulation via <code>sample_cir</code>, exact conditional moments and
+  cumulants of all orders, stationary Gamma distribution properties, exponential autocovariance,
+  exact Laplace transform and characteristic function, zero-coupon bond pricing <span class="arithmatex">\(P(\tau) = A(\tau)e^{-B(\tau)r_0}\)</span>
+  via the Riccati system, yield curves, and asymptotic long-term yield.
+  References: Cox, Ingersoll &amp; Ross (1985); Feller (1951).</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_cir</code> supporting exact non-central chi-squared transition
+  sampling (<code>method="exact"</code>), full-truncation Euler–Maruyama (<code>method="truncated_euler"</code>), and
+  reflected Euler–Maruyama (<code>method="reflected_euler"</code>).</li>
+<li><code>zoo/levy/compound_poisson.py</code> — <code>CompoundPoisson</code>: general compound Poisson process
+  with homogeneous Poisson arrival counter and parameterised jump distributions
+  (<code>NormalJump</code>, <code>ExponentialJump</code>, <code>DoubleExponentialJump</code>, <code>UniformJump</code>, <code>DiscreteJump</code>).
+  <code>EXACT</code> exactness level with closed-form Lévy triplet <code>(b=λ·E[Y·𝟙_{|Y|≤1}], σ²=0, ν=λ·F_Y)</code>,
+  exact characteristic function <code>φ(u;t) = exp(λt(φ_Y(u)-1))</code>, exact cumulants of all orders
+  <code>κ_n = λ·t·E[Yⁿ]</code>, and vectorized exact Poisson thinning simulation.
+  References: Kingman (1993); Cont &amp; Tankov (2004) Sec. 3.4; Sato (1999) Ex. 8.4.</li>
+<li><code>sim/exact.py</code> — Vectorized <code>sample_compound_poisson</code> using <code>np.repeat</code> and <code>np.bincount</code>
+  with fallback for non-vectorized custom samplers.</li>
+<li><code>zoo/beyond/mmpp.py</code> — <code>MarkovModulatedPoissonProcess</code>: N-state MMPP (CTMC-modulated Poisson
+  counts). <code>MOMENT_PROPAGATION</code>; no Levy triplet (dependent increments). Exact event-driven
+  simulation, finite-horizon mean/variance and cumulants of any order via block matrix
+  exponentials (with a conditioning guard), stationary distribution and mean intensity.
+  Reference: Fischer &amp; Meier-Hellstern (1993), Performance Evaluation 18, 149-171.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li>Minimum NumPy raised to <code>numpy&gt;=2.0</code>. The library uses <code>np.trapezoid</code>, which does not exist in
+  NumPy 1.x, so the old <code>numpy&gt;=1.24</code> lower bound allowed broken installs.</li>
+</ul>
+<h3 id="fixed_1">Fixed</h3>
+<ul>
+<li><code>rough/riccati.py</code> — <code>FractionalRiccatiSolver</code>: corrected the sign of the linear Riccati
+  coefficient to <span class="arithmatex">\((i\rho\nu u - \lambda)\)</span>, and the characteristic function now uses
+  <span class="arithmatex">\(V_0 I^{1-\alpha}h(T) = V_0\int_0^T F(u, h(s))\,ds\)</span> (El Euch &amp; Rosenbaum 2019). It reduces to
+  the classical Heston closed form at <span class="arithmatex">\(H = 1/2\)</span>.</li>
+<li><code>rough/rbergomi.py</code> — <code>RoughBergomi</code> simulates the Riemann–Liouville driver and its Brownian
+  motion jointly and exactly (Cholesky), so <span class="arithmatex">\(\rho\)</span> now correlates returns with variance and
+  <span class="arithmatex">\(\mathbb E[v_t] = \xi_0\)</span>. <code>theoretical_short_time_skew</code> gains the missing <span class="arithmatex">\(1/(H + 3/2)\)</span> factor
+  (Fukasawa). Added <code>FractionalKernel.volterra_joint_covariance</code> and <code>sample_volterra_cholesky</code>.</li>
+<li><code>signature/kernel.py</code> — the Goursat solver weighted the increment term by 5/4. It is now
+  the second-order trapezoidal scheme, converging to <span class="arithmatex">\(I_0(2)\)</span> for <span class="arithmatex">\(X = Y = t\)</span>.</li>
+<li><code>signature/algebra.py</code> — level-3 log-signature Hall coordinates were twice their true value.
+  <code>log_signature_dimension</code> computes the Möbius function exactly; the old lookup table stopped
+  at <span class="arithmatex">\(n = 6\)</span>, which gave wrong Witt dimensions from depth 10.</li>
+<li><code>calibration/surface/{heston,bates,double_heston}.py</code> — the share-measure probability <span class="arithmatex">\(P_1\)</span>
+  normalised <span class="arithmatex">\(\varphi(u - i)\)</span> by <span class="arithmatex">\(S_0\)</span> instead of <span class="arithmatex">\(\varphi(-i) = S_0e^{rT}\)</span>, so every call price
+  was wrong when <span class="arithmatex">\(r \ne 0\)</span>. Regression tests now check against the Black–Scholes and Merton limits.</li>
+<li><code>calibration/filter/particle_filter.py</code> — <code>BootstrapParticleFilter</code> discarded the previous
+  weights on steps without resampling. Weights are now carried forward, and the incremental
+  likelihood is <span class="arithmatex">\(\log\sum_i w_{k-1}^i p(y_k \mid x_k^i)\)</span>. Checked against the exact Kalman
+  log-likelihood.</li>
+<li><code>calibration/mle/hac.py</code> — <code>newey_west_hac(kernel="quadratic_spectral")</code> silently used
+  Bartlett weights. It now implements the Andrews (1991) kernel and rejects unknown kernels.</li>
+<li><code>scripts/extract_changelog.py</code> — the release workflow's note extractor did not match
+  bracketed Keep a Changelog headings (<code>## [X.Y.Z] — date</code>), so GitHub releases got the
+  placeholder body <code>Release X.Y.Z</code>.</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><code>LICENSE</code> (MIT), <code>CITATION.cff</code>, <code>CODE_OF_CONDUCT.md</code> (Contributor Covenant 2.1) and
+  <code>SECURITY.md</code>.</li>
+<li>New theory pages: information geometry, rough paths &amp; signatures, rough volatility,
+  copulas, stochastic control, and estimation &amp; calibration.</li>
+<li>README: Model Morphing quickstart and corrected examples and API names.</li>
+<li>Added the missing <code>docs/javascripts/mathjax.js</code> (math now renders on the docs site) and
+  removed the <code>polyfill.io</code> script.</li>
+</ul>
+<h2 id="100-2026-09-19">[1.0.0] — 2026-09-19</h2>
+<p>Initial public release. Establishes the algebraic core, the 13-process Lévy zoo, the beyond-Lévy
+category, the ops/sim/analytics layers, multivariate support, and the story renderer.</p>
+<h3 id="added-core-engine">Added — Core engine</h3>
+<ul>
+<li><code>core/exactness.py</code> — <code>ExactnessLevel</code> enum (<code>EXACT</code> / <code>MOMENT_PROPAGATION</code> / <code>SIMULATION_ONLY</code>)
+  with total ordering and <code>combine()</code> rule: operations degrade to the minimum level of their operands</li>
+<li><code>core/exceptions.py</code> — <code>SpxaError</code>, <code>ExactnessError</code>, <code>SpxaDegradationWarning</code></li>
+<li><code>core/levy_measure.py</code> — <code>LevyMeasure</code> hierarchy: <code>CompoundLevyMeasure</code>, <code>DensityLevyMeasure</code>,
+  <code>ScaledLevyMeasure</code></li>
+<li><code>core/triplet.py</code> — immutable <code>LevyTriplet(b, σ², ν)</code> with arithmetic (<code>__add__</code>, <code>.scale()</code>),
+  numerical <code>char_exp()</code> via the Lévy–Khintchine formula, and <code>cumulant(n)</code> (Sato 1999, Thm 25.3)</li>
+<li><code>core/properties.py</code> — <code>ProcessProperties</code> lattice tracking stationarity, independence,
+  martingale, finite mean/variance, tail index, self-similarity, subordinator flag, Hurst index;
+  propagation rules for <code>+</code>, scaling, and <code>@</code> derived from Sato (1999) Ch. 11 &amp; 30</li>
+<li><code>core/process.py</code> — abstract <code>Process</code> base class; operator overloads <code>+</code>, <code>*</code>, <code>@</code>, <code>-</code>,
+  unary <code>-</code>; each returns a new immutable <code>_ComposedProcess</code> or <code>_ScaledProcess</code> instance;
+  <code>.triplet</code>, <code>.cumulants()</code>, <code>.char_func()</code>, <code>.__story__()</code>, <code>.__story_latex__()</code></li>
+<li><code>story/narrator.py</code> — <code>CompositionNode</code> tree, <code>narrate()</code> plain-text derivation engine,
+  <code>narrate_latex()</code> / <code>story_latex()</code> MathJax-ready LaTeX renderer</li>
+</ul>
+<h3 id="added-process-zoo-spxazoolevy">Added — Process zoo (<code>spxa.zoo.levy</code>)</h3>
+<ul>
+<li><code>BrownianMotion</code> — triplet <code>(μ, σ², 0)</code>, exact Gaussian simulation, closed-form <code>char_func_exact()</code></li>
+<li><code>PoissonProcess</code> — discrete Lévy measure, exact inter-arrival simulation, <code>char_func_exact()</code></li>
+<li><code>GammaProcess</code> — subordinator, exact <code>bernstein_function()</code> <code>a·log(1+u/b)</code> (Schilling et al.
+  2012, Ex. 3.9), exact cumulants, Gamma simulation</li>
+<li><code>VarianceGamma</code> — Lévy density <code>C/|x|·exp(Ax−B|x|)</code>, closed-form cumulants to order 4 and
+  series above, exact <code>char_func_exact()</code> (Madan, Carr &amp; Chang 1998, eq. 4), exact simulation
+  via Gamma subordination</li>
+<li><code>NIG</code> — Bessel Lévy density, exact <code>char_func_exact()</code>, closed-form cumulants,
+  simulation via InvGaussian subordination (Barndorff-Nielsen 1997)</li>
+<li><code>AlphaStable</code> — exact char_func, self-similarity index <code>1/α</code>, Chambers–Mallows–Stuck simulation
+  (Samorodnitsky &amp; Taqqu 1994)</li>
+<li><code>CGMY</code> — exact char_func, closed-form cumulants finite for <code>α &lt; 2</code>, series-representation
+  simulation (Carr, Geman, Madan, Yor 2002; Rosiński 2001)</li>
+<li><code>InverseGaussianProcess</code> — exact Bernstein function, cumulants <code>(2n−1)!!·μ^{2n-1}/λ^{n-1}</code>,
+  exact <code>char_func</code>, Wald simulation (Tweedie 1957)</li>
+<li><code>MeixnerProcess</code> — stable log-cosh characteristic function, exact cumulants to order 4,
+  Gil-Pelaez CDF-inversion simulation (Schoutens &amp; Teugels 1998)</li>
+<li><code>TemperedStable</code> — Lévy density <code>C·x^{-1−α}·exp(−λx)</code>, exact Bernstein function, cumulants
+  <code>C·Γ(n−α)/λ^{n−α}</code>, CDF-inversion simulation (Rosiński 2007)</li>
+<li><code>NegativeBinomialProcess</code> — finite-activity discrete subordinator, exact characteristic
+  function, closed-form cumulants to order 4, exact NegBin sampler (Quenouille 1949)</li>
+</ul>
+<h3 id="added-beyond-levy-spxazoobeyond">Added — Beyond-Lévy (<code>spxa.zoo.beyond</code>)</h3>
+<ul>
+<li><code>FractionalBrownianMotion</code> — <code>MOMENT_PROPAGATION</code>; Hurst index algebra, Davies–Harte
+  simulation; raises <code>ExactnessError</code> on <code>.triplet</code> (not a semimartingale)</li>
+<li><code>HawkesProcess</code> — <code>MOMENT_PROPAGATION</code>; mean intensity, Fano factor, Ogata thinning
+  simulation (Hawkes 1971)</li>
+<li><code>OULevy</code> — <code>MOMENT_PROPAGATION</code>; stationary mean/variance, autocovariance, exact
+  discretisation simulation (Barndorff-Nielsen &amp; Shephard 2001)</li>
+</ul>
+<h3 id="added-multivariate-spxazoomultivariate">Added — Multivariate (<code>spxa.zoo.multivariate</code>)</h3>
+<ul>
+<li><code>MultivariateBrownianMotion</code>, <code>MultivariateLevyTriplet</code>, <code>CorrelatedLevy</code>,
+  <code>correlated_brownian_motion()</code>, <code>independent_levy_vector()</code></li>
+</ul>
+<h3 id="added-operations-spxaops">Added — Operations (<code>spxa.ops</code>)</h3>
+<ul>
+<li><code>addition.py</code> — <code>add()</code>, <code>sum_processes()</code>, <code>triplet_add()</code>, <code>exactness_for_addition()</code></li>
+<li><code>scaling.py</code> — <code>scale()</code>, <code>negate()</code>, <code>subtract()</code>, <code>triplet_scale()</code>, <code>linear_transform_triplet()</code></li>
+<li><code>subordination.py</code> — <code>subordinate()</code>, <code>char_exp_subordinated()</code>, <code>bernstein_function()</code>,
+  subordinator validity check</li>
+<li><code>product.py</code> — <code>ProductProcess</code>, cumulant/moment conversion, moment-product formula</li>
+<li><code>integral.py</code> — Itô isometry, stochastic convolution char_func, <code>StochasticIntegral</code> with
+  Euler–Maruyama simulation</li>
+</ul>
+<h3 id="added-simulation-spxasim">Added — Simulation (<code>spxa.sim</code>)</h3>
+<ul>
+<li><code>euler.py</code> — Euler–Maruyama scheme, autonomous SDE solver, geometric Lévy, convergence-order
+  estimator</li>
+<li><code>exact.py</code> — exact samplers for BM, Gamma, InvGaussian, VG, NIG, stable (CMS),
+  compound Poisson, tempered stable</li>
+<li><code>bridge.py</code> — Brownian bridge, Gamma bridge, bridge interpolation, first-passage time
+  (simulated and exact)</li>
+</ul>
+<h3 id="added-analytics-spxaanalytics">Added — Analytics (<code>spxa.analytics</code>)</h3>
+<ul>
+<li><code>divergence.py</code> — L2, Hellinger, Wasserstein-2, Monte Carlo KL divergence between process
+  marginals</li>
+<li><code>fourier.py</code> — Carr–Madan FFT option pricer, put-call parity, implied-vol via bisection;
+  routes through <code>char_func_exact</code> when available (~1000× speedup for VG/NIG/BM)</li>
+<li><code>cumulants.py</code> — <code>cumulant_table()</code>, <code>skewness()</code>, <code>excess_kurtosis()</code></li>
+</ul>
+<h3 id="added-tests">Added — Tests</h3>
+<ul>
+<li><code>tests/exactness/</code> — per-process suites verifying closed-form results against published
+  formulas: BrownianMotion, GammaProcess, VarianceGamma, NIG, AlphaStable, CGMY,
+  InverseGaussianProcess, MeixnerProcess, TemperedStable, NegativeBinomialProcess,
+  fBM/Hawkes/OULevy (268 tests total, marked <code>exactness</code> — never skippable)</li>
+<li><code>tests/unit/</code> — core engine, ops, sim, multivariate (covering ExactnessLevel, triplet
+  arithmetic, composition, properties, story output, all sim algorithms)</li>
+<li><code>tests/integration/</code> — 17 end-to-end composition and analytics tests</li>
+</ul>
+<h3 id="added-documentation-and-tooling">Added — Documentation and tooling</h3>
+<ul>
+<li>Three executable Jupyter tutorials: first composition, finance models, physics applications</li>
+<li><code>PROCESS_REGISTRY.md</code> — full table of implemented processes with exactness levels, cumulant
+  availability, simulation algorithms, and primary references</li>
+<li><code>CONTRIBUTING.md</code> — contribution guide covering all nine contribution types with exact
+  per-type file checklists, commit conventions, versioning policy, and RFC process for
+  core changes</li>
+<li><code>examples/demo.py</code>, <code>examples/full_showcase.py</code> (100+ checks across all 12 capability areas)</li>
+<li>GitHub Actions workflows: <code>ci.yml</code>, <code>docs.yml</code>, <code>benchmarks.yml</code>, <code>release.yml</code></li>
+<li><code>.pre-commit-config.yaml</code>, <code>.gitignore</code></li>
+<li><code>pyproject.toml</code>: ruff (linting), mypy strict, pytest with <code>exactness</code> and <code>slow</code> markers,
+  coverage config</li>
+</ul>
+<h3 id="fixed_2">Fixed</h3>
+<ul>
+<li><code>core/triplet.char_exp</code>: split-integral SciPy compatibility (no <code>points</code> kwarg with infinite
+  limits)</li>
+<li><code>zoo/vg</code>: triplet drift singularity — switched to tail integrals on <code>[1, ∞)</code> anchored to the
+  exact mean; <code>cumulants()</code> and <code>char_func()</code> overridden with exact closed-form formulas</li>
+<li><code>zoo/gamma</code>: triplet drift replaced from quadrature to exact exponential integral <code>E₁(b)</code></li>
+<li><code>zoo/nig</code>: <code>char_func()</code> overridden to route through <code>char_func_exact</code>, eliminating
+  Lévy–Khintchine numerical overflow at large <code>|u|</code></li>
+<li><code>zoo/beyond/fbm</code>: Davies–Harte circulant embedding off-by-one and broadcast error</li>
+<li><code>sim/euler.geometric_levy</code>: switched to MGF-based drift correction for non-Gaussian drivers</li>
+<li><code>ops/bernstein_function</code>: stabilised elementwise computation, avoiding <code>log(0)</code></li>
+<li><code>core/_ComposedProcess.simulate</code>: subordination (<code>@</code>) implemented via path interpolation</li>
+<li><code>analytics/fourier</code>: replaced deprecated <code>np.trapz</code> with <code>np.trapezoid</code> (NumPy 2.x)</li>
+<li><code>pyproject.toml</code>: corrected build backend to <code>setuptools.build_meta</code></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

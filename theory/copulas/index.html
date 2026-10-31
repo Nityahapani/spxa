@@ -1,0 +1,1685 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/copulas/">
+      
+      
+        <link rel="prev" href="../rough_volatility/">
+      
+      
+        <link rel="next" href="../stochastic_control/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Copulas & dependence - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#copulas-and-multivariate-dependence" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Copulas & dependence
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-sklars-theorem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Sklar's theorem
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-dependence-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Dependence measures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-families" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Families
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Families">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-elliptical-copulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Elliptical copulas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-archimedean-copulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Archimedean copulas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-extreme-value-copulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 Extreme-value copulas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-rosenblatt-transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Rosenblatt transform
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Estimation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-coupled-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Coupled processes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="copulas-and-multivariate-dependence">Copulas and Multivariate Dependence</h1>
+<p>A copula separates a joint distribution into its marginals and a dependence structure. This lets each asset keep its own process from the zoo while the coupling is modelled separately. <code>spxa.copula</code> provides elliptical, Archimedean and extreme-value families, exact concordance and tail-dependence measures, conditional sampling, rank-based estimation, and multi-asset simulation.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Object</th>
+<th style="text-align: left;">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Abstract copula, Rosenblatt transforms, Fréchet–Hoeffding bounds</td>
+<td style="text-align: left;"><code>spxa.copula.Copula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Independence / comonotonic / countermonotonic</td>
+<td style="text-align: left;"><code>IndependenceCopula</code>, <code>ComonotonicityCopula</code>, <code>CountermonotonicityCopula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Elliptical</td>
+<td style="text-align: left;"><code>GaussianCopula</code>, <code>StudentTCopula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Archimedean</td>
+<td style="text-align: left;"><code>ClaytonCopula</code>, <code>GumbelCopula</code>, <code>FrankCopula</code>, <code>JoeCopula</code>, <code>AliMikhailHaqCopula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Extreme value</td>
+<td style="text-align: left;"><code>GalambosCopula</code>, <code>HuslerReissCopula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Estimation and selection</td>
+<td style="text-align: left;"><code>pseudo_observations</code>, <code>fit_copula</code>, <code>select_best_copula</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Coupled multi-asset simulation and pricing</td>
+<td style="text-align: left;"><code>CoupledProcess</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-sklars-theorem">1. Sklar's theorem</h2>
+<p>A <span class="arithmatex">\(d\)</span>-dimensional <strong>copula</strong> is a distribution function on <span class="arithmatex">\([0,1]^d\)</span> with uniform marginals. By <strong>Sklar's theorem</strong> (1959), every joint distribution <span class="arithmatex">\(H\)</span> with marginals <span class="arithmatex">\(F_1,\dots,F_d\)</span> can be written as</p>
+<div class="arithmatex">\[
+H(x_1,\dots,x_d) = C\big(F_1(x_1),\dots,F_d(x_d)\big),
+\]</div>
+<p>and <span class="arithmatex">\(C\)</span> is unique on <span class="arithmatex">\(\operatorname{Ran}F_1\times\cdots\times\operatorname{Ran}F_d\)</span>. In particular <span class="arithmatex">\(C\)</span> is unique when the marginals are continuous. Conversely, any copula combined with any marginals gives a valid joint law. With densities,</p>
+<div class="arithmatex">\[
+h(x) = c\big(F_1(x_1),\dots,F_d(x_d)\big)\prod_{j=1}^d f_j(x_j),
+\qquad c = \frac{\partial^d C}{\partial u_1\cdots\partial u_d}.
+\]</div>
+<p>Copulas are invariant under strictly increasing transformations of the coordinates. Rank statistics, such as Kendall's <span class="arithmatex">\(\tau\)</span> and Spearman's <span class="arithmatex">\(\rho_S\)</span>, are functions of <span class="arithmatex">\(C\)</span> alone. Every copula lies between the <strong>Fréchet–Hoeffding bounds</strong> (<code>Copula.frechet_hoeffding_bounds</code>):</p>
+<div class="arithmatex">\[
+W(u) = \max\Big(\textstyle\sum_j u_j - d + 1,\ 0\Big) \;\le\; C(u) \;\le\; M(u) = \min_j u_j .
+\]</div>
+<p><span class="arithmatex">\(M\)</span> is the comonotonic copula. <span class="arithmatex">\(W\)</span> is a copula only for <span class="arithmatex">\(d=2\)</span>, where it is the countermonotonic copula.</p>
+<hr />
+<h2 id="2-dependence-measures">2. Dependence measures</h2>
+<p><strong>Concordance.</strong></p>
+<div class="arithmatex">\[
+\tau = 4\int_{[0,1]^2} C\,dC - 1,
+\qquad
+\rho_S = 12\int_{[0,1]^2} C(u,v)\,du\,dv - 3 .
+\]</div>
+<p><strong>Tail dependence</strong> is the probability of joint extremes:</p>
+<div class="arithmatex">\[
+\lambda_L = \lim_{q\downarrow0}\frac{C(q,q)}{q},
+\qquad
+\lambda_U = \lim_{q\uparrow1}\frac{1 - 2q + C(q,q)}{1-q}.
+\]</div>
+<p>Tail dependence is what separates the families in risk applications. The Gaussian copula is <strong>asymptotically independent</strong> in both tails whenever <span class="arithmatex">\(|\rho| &lt; 1\)</span>: joint crashes become rare in the limit, however high the correlation. This is a well-known limitation in credit and stress testing.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Copula</th>
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Kendall's <span class="arithmatex">\(\tau\)</span></th>
+<th style="text-align: left;"><span class="arithmatex">\(\lambda_L\)</span></th>
+<th style="text-align: left;"><span class="arithmatex">\(\lambda_U\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Gaussian</td>
+<td style="text-align: left;"><span class="arithmatex">\(\rho\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\frac{2}{\pi}\arcsin\rho\)</span></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Student-<span class="arithmatex">\(t\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\rho,\ \nu\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\frac{2}{\pi}\arcsin\rho\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(2\,t_{\nu+1}\!\left(-\sqrt{\frac{(\nu+1)(1-\rho)}{1+\rho}}\right)\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(=\lambda_L\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Clayton</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta&gt;0\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(\frac{\theta}{\theta+2}\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(2^{-1/\theta}\)</span></td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Gumbel</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta\ge1\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(1-\frac1\theta\)</span></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;"><span class="arithmatex">\(2-2^{1/\theta}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Frank</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta\ne0\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(1 - \frac4\theta\big(1 - D_1(\theta)\big)\)</span></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Joe</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta\ge1\)</span></td>
+<td style="text-align: left;"><span class="arithmatex">\(1 + 4\int_0^1 \frac{\varphi(t)}{\varphi'(t)}dt\)</span></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;"><span class="arithmatex">\(2-2^{1/\theta}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">AMH</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta\in[-1,1)\)</span></td>
+<td style="text-align: left;">closed form via <span class="arithmatex">\(\log(1-\theta)\)</span> and <span class="arithmatex">\(\operatorname{Li}_2\)</span></td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Galambos</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta&gt;0\)</span></td>
+<td style="text-align: left;">numerical</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;"><span class="arithmatex">\(2^{-1/\theta}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Hüsler–Reiss</td>
+<td style="text-align: left;"><span class="arithmatex">\(\theta&gt;0\)</span></td>
+<td style="text-align: left;">numerical</td>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;"><span class="arithmatex">\(2\,\Phi(-1/\theta)\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Here <span class="arithmatex">\(D_1(\theta) = \frac1\theta\int_0^\theta \frac{t}{e^t-1}dt\)</span> is the Debye function. The <code>kendall_tau()</code>, <code>spearman_rho()</code> and <code>tail_dependence()</code> methods return these quantities. Where the right-hand column has a closed form, it is the one used.</p>
+<hr />
+<h2 id="3-families">3. Families</h2>
+<h3 id="31-elliptical-copulas">3.1 Elliptical copulas</h3>
+<p>Elliptical copulas are extracted from elliptical distributions with correlation matrix <span class="arithmatex">\(R\)</span>:</p>
+<div class="arithmatex">\[
+C^{\text{Ga}}_R(u) = \Phi_R\big(\Phi^{-1}(u_1),\dots,\Phi^{-1}(u_d)\big),
+\qquad
+C^{t}_{R,\nu}(u) = t_{R,\nu}\big(t_\nu^{-1}(u_1),\dots,t_\nu^{-1}(u_d)\big).
+\]</div>
+<p>They support any dimension and any valid correlation matrix. A supplied matrix is checked for symmetry, unit diagonal and positive definiteness. The relation <span class="arithmatex">\(\tau = \frac2\pi\arcsin\rho\)</span> holds for every elliptical copula, so <span class="arithmatex">\(\rho\)</span> can be estimated robustly from Kendall's <span class="arithmatex">\(\tau\)</span>. The Student-<span class="arithmatex">\(t\)</span> copula adds symmetric tail dependence, controlled by <span class="arithmatex">\(\nu\)</span>. As <span class="arithmatex">\(\nu\to\infty\)</span> it reduces to the Gaussian copula.</p>
+<h3 id="32-archimedean-copulas">3.2 Archimedean copulas</h3>
+<p>An Archimedean copula is generated by a completely monotone generator <span class="arithmatex">\(\psi:[0,\infty)\to[0,1]\)</span> (the inverse of <span class="arithmatex">\(\varphi = \psi^{-1}\)</span>):</p>
+<div class="arithmatex">\[
+C(u) = \psi\big(\varphi(u_1) + \cdots + \varphi(u_d)\big).
+\]</div>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Family</th>
+<th style="text-align: left;">Generator <span class="arithmatex">\(\varphi(t)\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Clayton</td>
+<td style="text-align: left;"><span class="arithmatex">\(\frac1\theta(t^{-\theta}-1)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Gumbel</td>
+<td style="text-align: left;"><span class="arithmatex">\((-\log t)^\theta\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Frank</td>
+<td style="text-align: left;"><span class="arithmatex">\(-\log\frac{e^{-\theta t}-1}{e^{-\theta}-1}\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Joe</td>
+<td style="text-align: left;"><span class="arithmatex">\(-\log\big(1-(1-t)^\theta\big)\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">AMH</td>
+<td style="text-align: left;"><span class="arithmatex">\(\log\frac{1-\theta(1-t)}{t}\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>For Archimedean copulas, Kendall's <span class="arithmatex">\(\tau\)</span> reduces to a one-dimensional integral (Genest &amp; MacKay 1986):</p>
+<div class="arithmatex">\[
+\tau = 1 + 4\int_0^1 \frac{\varphi(t)}{\varphi'(t)}\,dt .
+\]</div>
+<p>Sampling is done by conditional inversion: draw <span class="arithmatex">\(u_1, w \sim U(0,1)\)</span> and set <span class="arithmatex">\(u_2 = C_{2|1}^{-1}(w\mid u_1)\)</span>. The inverse is closed-form for Clayton and Frank and numerical otherwise. Gumbel uses the stable-mixture (Marshall–Olkin) representation.</p>
+<h3 id="33-extreme-value-copulas">3.3 Extreme-value copulas</h3>
+<p>Extreme-value copulas are the possible limits of copulas of componentwise maxima. In two dimensions they are characterised by a convex <strong>Pickands dependence function</strong> <span class="arithmatex">\(A:[0,1]\to[\tfrac12,1]\)</span> with <span class="arithmatex">\(\max(t,1-t)\le A(t)\le 1\)</span>:</p>
+<div class="arithmatex">\[
+C(u,v) = \exp\!\Big(\log(uv)\,A\Big(\frac{\log v}{\log(uv)}\Big)\Big),
+\qquad \lambda_U = 2\big(1 - A(\tfrac12)\big).
+\]</div>
+<p><code>ExtremeValueCopula.pickands_a</code> evaluates <span class="arithmatex">\(A\)</span> for Galambos, <span class="arithmatex">\(A(t) = 1 - (t^{-\theta} + (1-t)^{-\theta})^{-1/\theta}\)</span>, and for Hüsler–Reiss, <span class="arithmatex">\(A(t) = (1-t)\,\Phi\big(\frac1\theta + \frac\theta2\log\frac{1-t}{t}\big) + t\,\Phi\big(\frac1\theta + \frac\theta2\log\frac{t}{1-t}\big)\)</span>.</p>
+<h3 id="34-rosenblatt-transform">3.4 Rosenblatt transform</h3>
+<p>The Rosenblatt transform maps <span class="arithmatex">\(U\sim C\)</span> to independent uniforms:</p>
+<div class="arithmatex">\[
+W_1 = U_1,\quad W_2 = C_{2|1}(U_2\mid U_1),\quad\dots
+\]</div>
+<p>Here <span class="arithmatex">\(C_{2|1}(v\mid u) = \partial_u C(u,v)\)</span> (<code>conditional_cdf</code>). The inverse transform (<code>inverse_rosenblatt_transform</code>) is the generic sampler. The forward transform is the basis of goodness-of-fit tests: transformed data should be i.i.d. uniform.</p>
+<hr />
+<h2 id="4-estimation">4. Estimation</h2>
+<p>The marginals are usually unknown or misspecified, so dependence is estimated from <strong>pseudo-observations</strong> (ranks):</p>
+<div class="arithmatex">\[
+\hat U_{ij} = \frac{\operatorname{rank}(X_{ij})}{n+1}
+\]</div>
+<p>(<code>pseudo_observations</code>). This makes estimation of <span class="arithmatex">\(C\)</span> independent of any marginal model. <code>fit_copula(u, family, method)</code> supports two methods.</p>
+<ul>
+<li><strong>Canonical maximum likelihood</strong> (<code>method="cml"</code>, Genest, Ghoudi &amp; Rivest 1995). This maximises <span class="arithmatex">\(\sum_i \log c(\hat U_i;\theta)\)</span>. The estimator is consistent and asymptotically normal, but not fully efficient, because the marginals are estimated nonparametrically.</li>
+<li><strong>Inversion of Kendall's <span class="arithmatex">\(\tau\)</span></strong> (<code>method="itau"</code>, bivariate only). This solves <span class="arithmatex">\(\tau(\theta) = \hat\tau_n\)</span>, in closed form where possible (Clayton, Gumbel, elliptical) and by root-finding otherwise (Frank). For the Student-<span class="arithmatex">\(t\)</span> copula only <span class="arithmatex">\(\rho\)</span> is identified by <span class="arithmatex">\(\tau\)</span>, so <span class="arithmatex">\(\nu\)</span> is fixed at 4. Fit <span class="arithmatex">\(\nu\)</span> by CML instead. The method is robust and cheap, and makes a good starting value for maximum likelihood.</li>
+</ul>
+<p><code>select_best_copula</code> fits a list of candidate families by CML and ranks them by <span class="arithmatex">\(\text{AIC} = 2k - 2\log\hat L\)</span>. The candidates should include at least one family with lower and one with upper tail dependence, so that the choice is driven by the data and not by the candidate set.</p>
+<hr />
+<h2 id="5-coupled-processes">5. Coupled processes</h2>
+<p><code>CoupledProcess(processes, copula)</code> simulates <span class="arithmatex">\(d\)</span> univariate zoo processes jointly. At every time step it draws <span class="arithmatex">\(U\sim C\)</span>, maps it to Gaussian drivers <span class="arithmatex">\(Z_j = \Phi^{-1}(U_j)\)</span>, and uses <span class="arithmatex">\(Z_j\)</span> as the diffusive innovation of marginal <span class="arithmatex">\(j\)</span>. This leaves each marginal's one-step diffusive law unchanged while imposing the copula on the innovations. The class also provides Monte Carlo prices for multi-asset payoffs: <code>basket_call_price</code>, <code>worst_of_call_price</code>, <code>best_of_call_price</code> and <code>spread_option_price</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Which object carries the copula</p>
+<p>The copula is imposed on <strong>one-step innovations</strong>, not on the joint law of the terminal values. Aggregating many increments changes the dependence structure. By the multivariate central limit theorem, the copula of <span class="arithmatex">\((X^1_T, X^2_T)\)</span> for diffusive marginals tends towards a Gaussian copula with correlation equal to the innovation correlation <span class="arithmatex">\(\operatorname{Corr}(Z_1,Z_2)\)</span>. Most of the tail dependence of a Clayton or Gumbel innovation copula therefore disappears over long horizons. To control the dependence of terminal values directly, sample <span class="arithmatex">\(U\sim C\)</span> once and apply the marginal quantile functions of <span class="arithmatex">\(X^j_T\)</span>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Scope of the marginal dynamics</p>
+<p><code>CoupledProcess.simulate</code> currently has explicit dynamics for Brownian, CIR (full-truncation Euler), Merton and Kou jump-diffusion marginals. Jump arrivals are independent across assets. Heston and Bates marginals are stepped with their variance frozen at <span class="arithmatex">\(\sqrt{v_0}\)</span>. Any other process type silently falls back to a geometric Euler step with a <strong>hard-coded</strong> 5% drift and 20% volatility that ignore the process's own parameters. Results for such marginals are wrong. Simulate them individually and couple their innovations explicitly.</p>
+</div>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>Embrechts, P., McNeil, A. &amp; Straumann, D. (2002). Correlation and dependence in risk management: properties and pitfalls. In <em>Risk Management: Value at Risk and Beyond</em>, Cambridge University Press.</li>
+<li>Genest, C., Ghoudi, K. &amp; Rivest, L.-P. (1995). A semiparametric estimation procedure of dependence parameters in multivariate families of distributions. <em>Biometrika</em>, 82(3), 543–552.</li>
+<li>Genest, C. &amp; MacKay, J. (1986). The joy of copulas: bivariate distributions with uniform marginals. <em>The American Statistician</em>, 40(4), 280–283.</li>
+<li>Gudendorf, G. &amp; Segers, J. (2010). Extreme-value copulas. In <em>Copula Theory and Its Applications</em>, Springer.</li>
+<li>Joe, H. (2014). <em>Dependence Modeling with Copulas</em>. CRC Press.</li>
+<li>Nelsen, R. B. (2006). <em>An Introduction to Copulas</em> (2nd ed.). Springer.</li>
+<li>Rosenblatt, M. (1952). Remarks on a multivariate transformation. <em>Annals of Mathematical Statistics</em>, 23(3), 470–472.</li>
+<li>Sklar, A. (1959). Fonctions de répartition à n dimensions et leurs marges. <em>Publ. Inst. Statist. Univ. Paris</em>, 8, 229–231.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

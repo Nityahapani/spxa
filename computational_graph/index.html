@@ -1,0 +1,1523 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/computational_graph/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Stochastic Computational Graph Engine (spxa.graph) - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stochastic-computational-graph-engine-spxagraph" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Stochastic Computational Graph Engine (spxa.graph)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../theory/levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="stochastic-computational-graph-engine-spxagraph">Stochastic Computational Graph Engine (<code>spxa.graph</code>)</h1>
+<h2 id="1-overview-and-core-philosophy">1. Overview and Core Philosophy</h2>
+<p>In quantitative finance, models have historically been siloed across distinct libraries:
+- One implementation for closed-form analytics (e.g. characteristic function quadrature).
+- Another implementation for Monte Carlo simulation paths.
+- Finite difference routines for Greek sensitivities.
+- Specialized optimization loops for model calibration.</p>
+<p><code>spxa.graph</code> solves this fragmentation by treating stochastic processes, analytical transforms, payoff functions, and risk metrics as nodes in a shared <strong>Directed Acyclic Graph (DAG)</strong>. A stochastic model is defined <strong>once</strong>; the execution engine then dynamically routes evaluation across:
+1. <strong>Analytical Backend</strong>: Closed-form solutions and exact moments.
+2. <strong>Numerical Backend</strong>: Fourier transforms (Carr-Madan, Lewis, Cosine methods).
+3. <strong>Simulation Backend</strong>: Pathwise Monte Carlo sampling.
+4. <strong>Accelerated Backend</strong>: Vectorized batch evaluation across thousands of strikes and maturities.
+5. <strong>Autodiff Tape</strong>: Exact, zero-truncation sensitivities (Delta, Gamma, Vega, Rho, Theta) via reverse-mode vector-Jacobian products (VJPs) and forward-mode dual numbers.</p>
+<hr />
+<h2 id="2-architecture">2. Architecture</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                    ┌───────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                    │  StochasticProcessNode    │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>                    │  (GBM, Heston, SABR, ...) │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                    └─────────────┬─────────────┘
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                                  │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>          ┌───────────────────────┼────────────────────────┐
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>          │                       │                        │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>          ▼                       ▼                        ▼
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>┌──────────────────┐   ┌──────────────────────┐   ┌─────────────────┐
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│ CharacteristicFn │   │ Monte Carlo Paths    │   │  ProcessMoment  │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│      Node        │   │        Node          │   │      Node       │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└─────────┬────────┘   └──────────┬───────────┘   └────────┬────────┘
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>          │                       │                        │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>          ▼                       ▼                        ▼
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>┌──────────────────┐   ┌──────────────────────┐            │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│ Numerical Fourier│   │ Payoff Evaluation    │            │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│   (Carr-Madan)   │   │  (Call / Put / Asian)│            │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>└─────────┬────────┘   └──────────┬───────────┘            │
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>          │                       │                        │
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>          └───────────────────────┼────────────────────────┘
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>                                  ▼
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                      ┌───────────────────────┐
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>                      │    Pricing Result     │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>                      └───────────┬───────────┘
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>                                  │
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>                      ┌───────────▼───────────┐
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                      │  GradientTape Autodiff│
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                      │ (Delta, Gamma, Vega)  │
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>                      └───────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="3-quickstart-examples">3. Quickstart Examples</h2>
+<h3 id="a-european-option-pricing-and-automated-greeks">A. European Option Pricing and Automated Greeks</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.graph</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">build_black_scholes_pricing_graph</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">compute_graph_greeks</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Build a Black-Scholes pricing DAG</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">graph</span> <span class="o">=</span> <span class="n">build_black_scholes_pricing_graph</span><span class="p">(</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">s0</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">k</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">r</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">sigma</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">is_call</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">)</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="c1"># Evaluate closed-form analytical price</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="n">results</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Call Price:"</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">"price"</span><span class="p">])</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="c1"># Compute exact Greeks via reverse-mode autodiff tape</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="n">greeks</span> <span class="o">=</span> <span class="n">compute_graph_greeks</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Delta:"</span><span class="p">,</span> <span class="n">greeks</span><span class="p">[</span><span class="s2">"delta"</span><span class="p">])</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Gamma:"</span><span class="p">,</span> <span class="n">greeks</span><span class="p">[</span><span class="s2">"gamma"</span><span class="p">])</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Vega :"</span><span class="p">,</span> <span class="n">greeks</span><span class="p">[</span><span class="s2">"vega"</span><span class="p">])</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Theta:"</span><span class="p">,</span> <span class="n">greeks</span><span class="p">[</span><span class="s2">"theta"</span><span class="p">])</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nb">print</span><span class="p">(</span><span class="s2">"Rho  :"</span><span class="p">,</span> <span class="n">greeks</span><span class="p">[</span><span class="s2">"rho"</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="b-graph-based-model-calibration">B. Graph-Based Model Calibration</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.graph</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">ComputationalGraph</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">GraphCalibrator</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">MSELossNode</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">ParameterNode</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Build parameter recovery problem</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">param_a</span> <span class="o">=</span> <span class="n">ParameterNode</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"slope"</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">param_b</span> <span class="o">=</span> <span class="n">ParameterNode</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"intercept"</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Setup synthetic targets</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">y_target</span> <span class="o">=</span> <span class="mf">3.5</span> <span class="o">*</span> <span class="n">x_data</span> <span class="o">+</span> <span class="mf">1.2</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">calibrator</span> <span class="o">=</span> <span class="n">GraphCalibrator</span><span class="p">()</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">loss_node</span> <span class="o">=</span> <span class="n">MSELossNode</span><span class="p">(</span><span class="n">prediction_node</span><span class="o">=...</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">y_target</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="4-graph-optimization-passes">4. Graph Optimization Passes</h2>
+<p>The <code>GraphCompiler</code> optimizes the DAG before execution:
+- <strong>Constant Folding</strong>: Subgraphs depending purely on <code>ConstantNode</code> are pre-evaluated at compile time.
+- <strong>Common Subexpression Elimination (CSE)</strong>: Identical mathematical operations with identical inputs are merged into single nodes.
+- <strong>Dead Code Elimination</strong>: Pruning of nodes unreferenced by any downstream target.
+- <strong>Execution Caching</strong>: Thread-safe evaluation cache for instant reuse of stationary nodes.</p>
+<hr />
+<h2 id="5-universal-implementation-layer-spxagraphadapters">5. Universal Implementation Layer (<code>spxa.graph.adapters</code>)</h2>
+<p>Rather than requiring manually handwritten graph nodes for every one of the ~200 processes in <code>spxa.zoo</code> or objects in other submodules, <code>spxa.graph</code> provides an automatic <strong>reflection and adaptation layer</strong>:</p>
+<h3 id="a-zero-boilerplate-zoo-process-adaptation">A. Zero-Boilerplate Zoo Process Adaptation</h3>
+<p>Any process from <code>spxa.zoo</code> (e.g. <code>BatesModel</code>, <code>VarianceGamma</code>, <code>NIG</code>, <code>CIRProcess</code>, <code>BNSModel</code>, etc.), as well as any composed process (<span class="arithmatex">\(X + Y\)</span>, <span class="arithmatex">\(c \cdot X\)</span>, <span class="arithmatex">\(X @ T\)</span>), can be directly used in computational graphs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatesModel</span><span class="p">,</span> <span class="n">VarianceGamma</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># 1. Any zoo process immediately has .to_graph()</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">bates</span> <span class="o">=</span> <span class="n">BatesModel</span><span class="p">(</span><span class="n">v0</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">kappa</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">sigma_v</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">rho</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">bates_node</span> <span class="o">=</span> <span class="n">bates</span><span class="o">.</span><span class="n">to_graph</span><span class="p">()</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># 2. Parameters are automatically discovered and mutable</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">bates_node</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">"v0"</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">0.05</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">bates_node</span><span class="o">.</span><span class="n">sync_parameters_to_process</span><span class="p">()</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># 3. Graph nodes for simulation and characteristic function are auto-generated</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="n">cf_node</span> <span class="o">=</span> <span class="n">bates_node</span><span class="o">.</span><span class="n">char_func_node</span><span class="p">(</span><span class="n">u</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">sim_node</span> <span class="o">=</span> <span class="n">bates_node</span><span class="o">.</span><span class="n">simulate_node</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">n_paths</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">n_steps</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="b-submodule-integration-risk-diff-calculus-copula">B. Submodule Integration (<code>risk</code>, <code>diff</code>, <code>calculus</code>, <code>copula</code>)</h3>
+<ul>
+<li><strong>Risk Instruments (<code>spxa.risk</code>)</strong>: Instruments (<code>EuropeanOption</code>, <code>BarrierOption</code>, <code>AsianOption</code>) and <code>Portfolio</code> have <code>.to_graph()</code> returning automated payoff and sensitivity aggregation graphs.</li>
+<li><strong>Differentiable SDEs (<code>spxa.diff</code>)</strong>: <code>DifferentiableSDE</code> models have <code>.to_graph()</code> providing drift, diffusion, and Euler step graph nodes.</li>
+<li><strong>Copulas (<code>spxa.copula</code>)</strong>: Copulas have <code>.to_graph()</code> providing coupled uniform sampling nodes.</li>
+<li><strong>Generators (<code>spxa.calculus</code>)</strong>: <code>InfinitesimalGenerator</code> adapts into graph operator nodes evaluating <span class="arithmatex">\(\mathcal{A} f(x)\)</span>.</li>
+</ul>
+<hr />
+<h2 id="6-deep-mathematical-calculus-on-stochastic-processes">6. Deep Mathematical Calculus on Stochastic Processes</h2>
+<p>The computational graph serves as a first-class algebraic engine for advanced stochastic calculus:</p>
+<h3 id="a-automated-ito-lemma-itotransformnode">A. Automated Itô Lemma (<code>ItoTransformNode</code>)</h3>
+<p>Applies Itô's Lemma to derive the exact SDE of <span class="arithmatex">\(Y_t = f(X_t, t)\)</span> automatically using graph derivatives:
+$<span class="arithmatex">\(dY_t = \left(\frac{\partial f}{\partial t} + \mu \frac{\partial f}{\partial x} + \frac{1}{2} \sigma^2 \frac{\partial^2 f}{\partial x^2}\right) dt + \sigma \frac{\partial f}{\partial x} dW_t\)</span>$</p>
+<h3 id="b-measure-changes-girsanovtransformnode-esschertransformnode">B. Measure Changes (<code>GirsanovTransformNode</code>, <code>EsscherTransformNode</code>)</h3>
+<ul>
+<li><strong>Girsanov Drift Shifts</strong>: Shifts diffusion drift under market price of risk <span class="arithmatex">\(\lambda(x, t)\)</span>: <span class="arithmatex">\(\mu^\mathbb{Q} = \mu^\mathbb{P} - \sigma \lambda\)</span>.</li>
+<li><strong>Esscher Transforms</strong>: Shifts characteristic exponents for jump processes: <span class="arithmatex">\(\Psi_\theta(u) = \Psi(u - i\theta) - \Psi(-i\theta)\)</span>.</li>
+</ul>
+<h3 id="c-bochner-subordination-cumulant-generation-bochnersubordinationnode-automatedcumulantnode">C. Bochner Subordination &amp; Cumulant Generation (<code>BochnerSubordinationNode</code>, <code>AutomatedCumulantNode</code>)</h3>
+<ul>
+<li>Composes parent Lévy exponent with subordinator Laplace exponent: <span class="arithmatex">\(\Psi_Z(u) = -\Phi_T(-\Psi_X(u))\)</span>.</li>
+<li>Automatically extracts cumulants <span class="arithmatex">\(\kappa_1, \kappa_2, \kappa_3, \kappa_4\)</span> to arbitrary order by real central differentiation of the CGF <span class="arithmatex">\(K(s) = \Psi(-is)\)</span>.</li>
+</ul>
+<h3 id="d-infinitesimal-generators-martingale-verification-infinitesimalgeneratornode-martingaleverificationnode">D. Infinitesimal Generators &amp; Martingale Verification (<code>InfinitesimalGeneratorNode</code>, <code>MartingaleVerificationNode</code>)</h3>
+<ul>
+<li>Evaluates Dynkin's formula <span class="arithmatex">\(\mathcal{A} f(x) = \mu(x) f'(x) + \frac{1}{2}\sigma^2(x) f''(x)\)</span>.</li>
+<li>Algebraically checks whether <span class="arithmatex">\(f(X_t)\)</span> is a true martingale by proving <span class="arithmatex">\(\mathcal{A} f(x) \equiv 0\)</span> across the state space.</li>
+</ul>
+<h3 id="e-speed-scale-density-feller-boundary-classification-scaledensitynode-speeddensitynode-fellerboundaryclassifiernode">E. Speed / Scale Density &amp; Feller Boundary Classification (<code>ScaleDensityNode</code>, <code>SpeedDensityNode</code>, <code>FellerBoundaryClassifierNode</code>)</h3>
+<ul>
+<li>Computes scale density <span class="arithmatex">\(s(x) = \exp\left(-\int \frac{2\mu}{\sigma^2}\right)\)</span> and speed density <span class="arithmatex">\(m(x) = \frac{1}{\sigma^2 s}\)</span>.</li>
+<li>Classifies 1D diffusion boundaries into Feller types: <strong>Regular, Exit, Entrance, or Natural</strong>.</li>
+</ul>
+<h3 id="f-malliavin-calculus-bismut-integration-by-parts-malliavinbismutdeltanode">F. Malliavin Calculus &amp; Bismut Integration by Parts (<code>MalliavinBismutDeltaNode</code>)</h3>
+<ul>
+<li>Simulates the first variation process <span class="arithmatex">\(Y_t = \partial X_t / \partial x_0\)</span> alongside <span class="arithmatex">\(X_t\)</span>.</li>
+<li>Evaluates pathwise Bismut weights <span class="arithmatex">\(\pi_T = \frac{1}{T} \int_0^T \frac{Y_t}{\sigma(X_t)} dW_t\)</span>, computing exact Greek sensitivities of discontinuous payoffs without payoff mollification.</li>
+</ul>
+<hr />
+<h2 id="7-advanced-stochastic-foundations">7. Advanced Stochastic Foundations</h2>
+<p>The engine includes three theoretical pillars bridging stochastic analysis and computational graphs:</p>
+<h3 id="a-semimartingale-decomposition-wires-algebra-spxagraphsemimartingale">A. Semimartingale Decomposition Wires &amp; Algebra (<code>spxa.graph.semimartingale</code>)</h3>
+<p>In continuous-time stochastic calculus, semimartingales form the largest class of processes with respect to which stochastic integrals can be defined.
+- <strong>Typed Semimartingale Wires (<code>SemimartingaleWire</code>)</strong>: Graph edges carry continuous-time processes decomposed into their canonical components:
+  $<span class="arithmatex">\(X_t = X_0 + A_t + M_t^c + J_t\)</span>$
+  where <span class="arithmatex">\(A_t\)</span> is continuous of finite variation, <span class="arithmatex">\(M_t^c\)</span> is a continuous local martingale, and <span class="arithmatex">\(J_t\)</span> is a pure jump process.
+- <strong>Quadratic Covariation Operator (<code>QuadraticCovariationNode</code>)</strong>: Computes the pathwise and predictable bracket <span class="arithmatex">\([X, Y]_t\)</span> and <span class="arithmatex">\(\langle X^c, Y^c \rangle_t\)</span>:
+  $<span class="arithmatex">\([X, Y]_t = \lim_{|\Pi| \to 0} \sum_{i} (X_{t_{i+1}} - X_{t_i})(Y_{t_{i+1}} - Y_{t_i})\)</span>$
+- <strong>Stochastic Product &amp; Integration by Parts (<code>StochasticProductNode</code>)</strong>: Evaluates the product <span class="arithmatex">\(Z_t = X_t Y_t\)</span> verifying the stochastic integration by parts formula:
+  $<span class="arithmatex">\(d(X_t Y_t) = X_{t-} dY_t + Y_{t-} dX_t + d[X, Y]_t\)</span>$
+  achieving machine-precision bracket balance (<span class="arithmatex">\(\epsilon \sim 10^{-15}\)</span>).
+- <strong>Predictable Itô Integrals (<code>StochasticIntegralNode</code>)</strong>: Computes <span class="arithmatex">\((H \cdot X)_t = \int_0^t H_s dX_s\)</span> with exact Itô isometry <span class="arithmatex">\(\mathbb{E}[(H \cdot M)_t^2] = \mathbb{E}\left[\int_0^t H_s^2 d\langle M \rangle_s\right]\)</span>.</p>
+<h3 id="b-four-facet-representation-duality-engine-spxagraphduality">B. Four-Facet Representation Duality Engine (<code>spxa.graph.duality</code>)</h3>
+<p>Processes are mathematically dual across four equivalent representations:
+1. <strong>SDE Facet (<code>SDEFacet</code>)</strong>: <span class="arithmatex">\(dX_t = \mu(X_t) dt + \sigma(X_t) dW_t + J_t\)</span>.
+2. <strong>Infinitesimal Generator Facet (<code>GeneratorFacet</code>)</strong>: <span class="arithmatex">\(\mathcal{A} f(x) = \mu(x) f'(x) + \frac{1}{2}\sigma^2(x) f''(x)\)</span>.
+3. <strong>Fourier Characteristic Exponent Facet (<code>FourierFacet</code>)</strong>: <span class="arithmatex">\(\mathbb{E}[e^{i u X_t}] = \exp(t \Psi(u))\)</span>.
+4. <strong>Speed / Scale Density Facet (<code>DensityFacet</code>)</strong>: Invariant measure <span class="arithmatex">\(\pi(x) \propto m(x)\)</span>.</p>
+<p>The <code>ProcessDualityCore</code> automatically synthesizes missing representations:
+- Given an SDE, derives the infinitesimal generator and speed/scale density.
+- Given an infinitesimal generator, inverts for the drift <span class="arithmatex">\(\mu(x) = \mathcal{A}(\text{id})(x)\)</span> and diffusion <span class="arithmatex">\(\sigma^2(x) = \mathcal{A}(x^2) - 2x\mathcal{A}(x)\)</span>.
+- <strong>Lévy-Khintchine Triplet Compiler (<code>compile_levy_khintchine</code>, <code>triplet_to_fourier_facet</code>)</strong>: Directly compiles arbitrary triplets <span class="arithmatex">\((b, \sigma^2, \nu)\)</span> into executable characteristic exponents:
+  $<span class="arithmatex">\(\Psi(u) = i b u - \frac{1}{2} \sigma^2 u^2 + \int_{\mathbb{R}} \left( e^{i u y} - 1 - i u y \mathbf{1}_{|y|\le 1} \right) \nu(dy)\)</span>$</p>
+<h3 id="c-algebraic-process-surgery-operators-spxagraphsurgery">C. Algebraic Process Surgery Operators (<code>spxa.graph.surgery</code>)</h3>
+<p>Advanced operators that transform stochastic paths and boundary conditions algebraically:
+- <strong>Doléans Exponential &amp; Stochastic Logarithm (<code>DoleansExponentialNode</code>, <code>StochasticLogarithmNode</code>)</strong>:
+  Computes the stochastic exponential martingale:
+  $<span class="arithmatex">\(\mathcal{E}(X)_t = \exp\left(X_t - X_0 - \frac{1}{2}\langle X^c \rangle_t\right) \prod_{s \le t} (1 + \Delta X_s) e^{-\Delta X_s}\)</span>$
+  and its inverse, the stochastic logarithm <span class="arithmatex">\(\mathcal{L}(Z)_t = \int \frac{dZ_s}{Z_{s-}}\)</span>.
+- <strong>Tanaka Decomposition &amp; Local Time Extraction (<code>TanakaDecompositionNode</code>)</strong>:
+  Decomposes positive convex envelopes and isolates local time <span class="arithmatex">\(L_t^a(X)\)</span> at strike <span class="arithmatex">\(a\)</span>:
+  $<span class="arithmatex">\((X_t - a)^+ = (X_0 - a)^+ + \int_0^t \mathbf{1}_{\{X_s &gt; a\}} dX_s + \frac{1}{2} L_t^a(X)\)</span>$
+- <strong>Doob <span class="arithmatex">\(h\)</span>-Transform (<code>DoobHTransformNode</code>)</strong>:
+  Conditions diffusion paths on staying in a sub-domain or reaching a target via excessive harmonic functions <span class="arithmatex">\(h\)</span>:
+  $<span class="arithmatex">\(\mu^h(t, x) = \mu(t, x) + \sigma^2(t, x) \frac{h'(x)}{h(x)}\)</span>$
+  (e.g., standard Brownian motion conditioned to stay positive produces the 3D Bessel process drift <span class="arithmatex">\(1/x\)</span>).
+- <strong>Stratonovich <span class="arithmatex">\(\leftrightarrow\)</span> Itô Conversion (<code>StratonovichToItoNode</code>, <code>ItoToStratonovichNode</code>)</strong>:
+  Transitions between Itô and Stratonovich calculus by adding or subtracting the midpoint drift correction <span class="arithmatex">\(\frac{1}{2}\sigma(x)\sigma'(x)\)</span>.</p>
+<hr />
+<h2 id="8-statistical-information-geometry-manifold-calibration-spxageom-spxagraphgeom">8. Statistical Information Geometry &amp; Manifold Calibration (<code>spxa.geom</code>, <code>spxa.graph.geom</code>)</h2>
+<p>Information geometry equips stochastic process parameter spaces <span class="arithmatex">\(\mathcal{M} = \{\theta \in \Theta\}\)</span> with intrinsic Riemannian manifolds rather than flat Euclidean spaces:</p>
+<h3 id="a-fisher-information-metric-fim">A. Fisher Information Metric (FIM)</h3>
+<p>The Fisher metric tensor measures informational distance between stochastic transition densities:
+$<span class="arithmatex">\(g_{ij}(\theta) = \mathbb{E}_\theta \left[ \frac{\partial \log p}{\partial \theta_i} \frac{\partial \log p}{\partial \theta_j} \right] = - \mathbb{E}_\theta \left[ \frac{\partial^2 \log p}{\partial \theta_i \partial \theta_j} \right]\)</span>$
+- <strong>Exact Closed Forms</strong>: Computed analytically for Gaussians <span class="arithmatex">\(g = \text{diag}(1/\sigma^2, 2/\sigma^2)\)</span> and Ornstein-Uhlenbeck transition densities.
+- <strong>Numerical &amp; Empirical Score Covariance</strong>: Automatically evaluated via finite-difference Hessians and pathwise score vectors.</p>
+<h3 id="b-connections-geodesic-flow">B. Connections &amp; Geodesic Flow</h3>
+<ul>
+<li><strong>Levi-Civita Connection &amp; Christoffel Symbols</strong>: <span class="arithmatex">\(\Gamma^k_{ij}(\theta) = \frac{1}{2} g^{kl} (\partial_i g_{jl} + \partial_j g_{il} - \partial_l g_{ij})\)</span>.</li>
+<li><strong>Amari <span class="arithmatex">\(\alpha\)</span>-Connections</strong>: <span class="arithmatex">\(\Gamma^{(\alpha), k}_{ij} = \Gamma^k_{ij} - \frac{\alpha}{2} g^{kl} T_{ijl}\)</span> where <span class="arithmatex">\(T_{ijl}\)</span> is the skewness tensor (<span class="arithmatex">\(\alpha = 0\)</span> Riemannian, <span class="arithmatex">\(\alpha = 1\)</span> exponential, <span class="arithmatex">\(\alpha = -1\)</span> mixture).</li>
+<li><strong>Rao Hyperbolic Distance (<code>GeodesicFlow</code>)</strong>: Integrates geodesic paths <span class="arithmatex">\(\ddot{\theta}^k + \Gamma^k_{ij} \dot{\theta}^i \dot{\theta}^j = 0\)</span> via shooting solvers to measure true model distance <span class="arithmatex">\(d_R(\theta_1, \theta_2) = \int \sqrt{g_{ij} \dot{\theta}^i \dot{\theta}^j} dt\)</span>.</li>
+</ul>
+<h3 id="c-natural-gradient-optimization-naturalgradientcalibratornode">C. Natural Gradient Optimization (<code>NaturalGradientCalibratorNode</code>)</h3>
+<p>Replaces naive Euclidean gradient descent with Riemannian manifold updates:
+$<span class="arithmatex">\(\tilde{\nabla}_\theta \mathcal{L} = g^{-1}(\theta) \nabla_\theta \mathcal{L}, \quad \theta_{t+1} = \theta_t - \eta \tilde{\nabla}_\theta \mathcal{L}\)</span>$
+eliminating ill-conditioned ravines, Feller boundary sticking, and parameterization distortions.</p>
+<hr />
+<h2 id="9-rough-paths-tensor-signature-calculus-spxasignature-spxagraphsignature">9. Rough Paths &amp; Tensor Signature Calculus (<code>spxa.signature</code>, <code>spxa.graph.signature</code>)</h2>
+<p>Path signatures provide a non-parametric, coordinate-free encoding of continuous and jump paths:</p>
+<h3 id="a-truncated-tensor-signature-chens-identity-pathsignature">A. Truncated Tensor Signature &amp; Chen's Identity (<code>PathSignature</code>)</h3>
+<p>For a multidimensional path <span class="arithmatex">\(X: [0, T] \to \mathbb{R}^d\)</span>, the truncated signature of order <span class="arithmatex">\(M\)</span> is:
+$<span class="arithmatex">\(S(X)_{s,t}^{(M)} = \bigoplus_{k=0}^M \int_{s &lt; u_1 &lt; \dots &lt; u_k &lt; t} dX_{u_1} \otimes \dots \otimes dX_{u_k} \in T^{(M)}(\mathbb{R}^d)\)</span>$
+Satisfies Chen's multiplicative identity:
+$<span class="arithmatex">\(S(X)_{0,T} = S(X)_{0,t} \otimes S(X)_{t,T}\)</span>$</p>
+<h3 id="b-shuffle-algebra-free-lie-log-signature-signaturealgebra">B. Shuffle Algebra &amp; Free Lie Log-Signature (<code>SignatureAlgebra</code>)</h3>
+<ul>
+<li><strong>Shuffle Product</strong>: Iterated integrals multiply via shuffles: <span class="arithmatex">\(S^u \cdot S^v = \sum_{w \in u \sqcup v} S^w\)</span>.</li>
+<li><strong>Log-Signature Projection</strong>: Projects signatures onto the free Lie algebra <span class="arithmatex">\(\mathfrak{g}^{(M)}(\mathbb{R}^d)\)</span> via Campbell-Baker-Hausdorff / Dynkin operators, reducing dimensionality according to Witt's formula (e.g. <span class="arithmatex">\(15 \to 5\)</span> at depth 3 for 2D paths, a 66.7% compression without information loss).</li>
+</ul>
+<h3 id="c-signature-kernels-via-2d-hyperbolic-goursat-pde-signaturekernel">C. Signature Kernels via 2D Hyperbolic Goursat PDE (<code>SignatureKernel</code>)</h3>
+<p>Computes the infinite-dimensional inner product <span class="arithmatex">\(K(X, Y) = \langle S(X), S(Y) \rangle\)</span> without tensor truncation by solving the hyperbolic PDE:
+$<span class="arithmatex">\(\frac{\partial^2 K}{\partial s \partial t}(s, t) = K(s, t) \langle \dot{X}_s, \dot{Y}_t \rangle, \quad K(s, 0) = 1, \quad K(0, t) = 1\)</span>$
+Runs in polynomial <span class="arithmatex">\(O(N_X \cdot N_Y)\)</span> time.</p>
+<h3 id="d-universal-linear-pricing-signaturelinearpricernode">D. Universal Linear Pricing (<code>SignatureLinearPricerNode</code>)</h3>
+<p>Represents arbitrary path-dependent payoffs (Asian, lookbacks, barriers) as linear functionals on the expected signature:
+$<span class="arithmatex">\(\text{Price} \approx \langle \mathbf{w}, \mathbb{E}[S(X)_{0,T}] \rangle\)</span>$</p>
+<hr />
+<h2 id="10-rough-volatility-volterra-stochastic-calculus-spxarough-spxagraphrough">10. Rough Volatility &amp; Volterra Stochastic Calculus (<code>spxa.rough</code>, <code>spxa.graph.rough</code>)</h2>
+<p>Extends stochastic modeling to sub-diffusive, non-Markovian volatility surfaces:</p>
+<h3 id="a-fractional-singular-kernels-hybrid-convolution-fractionalkernel">A. Fractional Singular Kernels &amp; Hybrid Convolution (<code>FractionalKernel</code>)</h3>
+<ul>
+<li>Riemann-Liouville fractional power kernel with Hurst exponent <span class="arithmatex">\(H \in (0, 1/2)\)</span>:
+  $<span class="arithmatex">\(K_H(t) = \frac{\sqrt{2H}}{\Gamma(H + 1/2)} t^{H - 1/2}\)</span>$</li>
+<li><strong>Bennedsen-Lunde-Pakkanen Hybrid Scheme</strong>: Decomposes <span class="arithmatex">\(\int_0^t (t-s)^{H-1/2} dW_s\)</span> into exact analytic integration for the singular neighborhood <span class="arithmatex">\(s \approx t\)</span> and FFT-accelerated convolution for the regular tail.</li>
+<li><strong>Exact Fractional Brownian Motion</strong>: Cholesky covariance sampling of <span class="arithmatex">\(R_H(t, s) = \frac{1}{2}(t^{2H} + s^{2H} - |t - s|^{2H})\)</span>.</li>
+</ul>
+<h3 id="b-rough-bergomi-model-roughbergomi">B. Rough Bergomi Model (<code>RoughBergomi</code>)</h3>
+<p>Asset and variance dynamics:
+$<span class="arithmatex">\(S_t = S_0 \mathcal{E}\left( \int_0^t \sqrt{v_s} dW_s \right), \quad v_t = \xi_0 \exp\left( \eta \sqrt{2H} \tilde{W}_t^H - \frac{1}{2} \eta^2 t^{2H} \right)\)</span>$
+Reproduces the empirical power-law blow-up of short-time at-the-money implied volatility skews:
+$<span class="arithmatex">\(\psi(\tau) = \left|\frac{\partial \sigma_{BS}}{\partial k}\right|_{k=0} \approx \frac{|\rho| \eta}{2} \frac{\sqrt{2H}}{H + 1/2} \tau^{H - 1/2}\)</span>$</p>
+<h3 id="c-fractional-adams-bashforth-moulton-riccati-solver-fractionalriccatisolver">C. Fractional Adams-Bashforth-Moulton Riccati Solver (<code>FractionalRiccatiSolver</code>)</h3>
+<p>Solves the non-local fractional Riccati Volterra integral equation:
+$<span class="arithmatex">\(h(t) = \int_0^t \frac{(t-s)^{H-1/2}}{\Gamma(H + 1/2)} F(u, h(s)) ds\)</span>$
+providing exact, highly stable characteristic functions <span class="arithmatex">\(\mathbb{E}[e^{i u X_T}]\)</span> for the Rough Heston model.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
