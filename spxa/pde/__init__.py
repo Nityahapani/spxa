@@ -25,6 +25,10 @@ from spxa.pde.adi import (
     ADIResult,
     PDESolution2D,
 )
+from spxa.pde.heston import (
+    HestonPDE,
+    HestonPDEResult,
+)
 from spxa.pde.american import (
     BrennanSchwartzLCP,
     IkonenToivanenLCP,
@@ -60,6 +64,8 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "HestonPDE",
+    "HestonPDEResult",
     "ADISolver",
     "ADIResult",
     "PDESolution2D",
