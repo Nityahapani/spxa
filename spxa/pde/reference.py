@@ -643,3 +643,64 @@ def cir_bond_option(
     if opt == "call":
         return float(c)
     return float(c - pS + K * pT)
+
+
+def margrabe_price(
+    S1: float,
+    S2: float,
+    T: float,
+    sigma1: float,
+    sigma2: float,
+    rho: float,
+    q1: float = 0.0,
+    q2: float = 0.0,
+) -> float:
+    r"""Option to exchange asset 2 for asset 1, :math:`(S_1 - S_2)^+` (Margrabe, 1978).
+
+    .. math::
+        V = S_1 e^{-q_1 T} N(d_1) - S_2 e^{-q_2 T} N(d_2), \qquad
+        d_{1,2} = \frac{\log(S_1/S_2) + (q_2 - q_1 \pm \tfrac12\hat\sigma^2)T}{\hat\sigma\sqrt T},
+
+    with :math:`\hat\sigma^2 = \sigma_1^2 + \sigma_2^2 - 2\rho\sigma_1\sigma_2`.
+    The interest rate cancels.
+    """
+    s = math.sqrt(sigma1**2 + sigma2**2 - 2.0 * rho * sigma1 * sigma2)
+    d1 = (math.log(S1 / S2) + (q2 - q1 + 0.5 * s * s) * T) / (s * math.sqrt(T))
+    d2 = d1 - s * math.sqrt(T)
+    return float(S1 * math.exp(-q1 * T) * norm.cdf(d1) - S2 * math.exp(-q2 * T) * norm.cdf(d2))
+
+
+def spread_option_price(
+    S1: float,
+    S2: float,
+    K: float,
+    T: float,
+    r: float,
+    sigma1: float,
+    sigma2: float,
+    rho: float,
+    q1: float = 0.0,
+    q2: float = 0.0,
+    n_nodes: int = 200,
+) -> float:
+    r"""Spread call :math:`(S_1 - S_2 - K)^+` by conditioning on :math:`S_2`.
+
+    Given :math:`Z` driving asset 2, :math:`S_1(T)` is lognormal with forward
+    :math:`S_1 e^{(r - q_1)T - \rho^2\sigma_1^2 T/2 + \rho\sigma_1\sqrt T Z}`
+    and volatility :math:`\sigma_1\sqrt{1-\rho^2}`, so the price is the
+    Gauss–Hermite average of Black prices with strike :math:`K + S_2(T)`.
+    Converges spectrally; ``n_nodes = 200`` gives ~1e-12 for ordinary inputs.
+    """
+    z, w = np.polynomial.hermite_e.hermegauss(n_nodes)
+    w = w / math.sqrt(2.0 * math.pi)
+    sT = math.sqrt(T)
+    s2T = S2 * np.exp((r - q2 - 0.5 * sigma2**2) * T + sigma2 * sT * z)
+    F1 = S1 * np.exp((r - q1) * T - 0.5 * rho**2 * sigma1**2 * T + rho * sigma1 * sT * z)
+    vol = sigma1 * math.sqrt(1.0 - rho**2) * sT
+    strike = K + s2T
+    out = np.empty_like(z)
+    pos = strike > 0.0
+    d1 = (np.log(F1[pos] / strike[pos]) + 0.5 * vol**2) / vol
+    out[pos] = F1[pos] * norm.cdf(d1) - strike[pos] * norm.cdf(d1 - vol)
+    out[~pos] = F1[~pos] - strike[~pos]
+    return float(math.exp(-r * T) * np.dot(w, out))
