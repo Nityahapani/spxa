@@ -65,3 +65,40 @@ def test_greeks():
     ht = 1e-3
     theta = -(lewis(100.0, T=T + ht) - lewis(100.0, T=T - ht)) / (2 * ht)
     assert res.theta == pytest.approx(theta, rel=3e-3)  # first order in dt
+
+
+# Ikonen & Toivanen (2009): K=10, T=0.25, r=0.1, kappa=5, theta=0.16, sigma=0.9, rho=0.1
+AMERICAN = HestonPDE(0.1, 5.0, 0.16, 0.9, 0.1)
+IT_REFS = {
+    0.0625: (2.0000, 1.10763, 0.52004, 0.21368, 0.08205),
+    0.25: (2.0784, 1.3336, 0.7960, 0.4483, 0.2428),
+}
+
+
+@pytest.mark.parametrize("v0", sorted(IT_REFS))
+def test_american_put_ikonen_toivanen(v0):
+    for S, ref in zip((8.0, 9.0, 10.0, 11.0, 12.0), IT_REFS[v0]):
+        res = AMERICAN.american(10.0, 0.25, S, v0, n_s=201, n_v=101, n_time=100)
+        assert res.price == pytest.approx(ref, abs=2e-4)
+
+
+def test_american_put_properties():
+    res = AMERICAN.american(10.0, 0.25, 10.0, 0.0625, n_s=101, n_v=51, n_time=50)
+    eu = AMERICAN.european(10.0, 0.25, 10.0, 0.0625, "put", n_s=101, n_v=51, n_time=50)
+    assert res.price > eu.price
+    u = res.solution.values
+    S = res.solution.grid.x.nodes
+    assert np.all(u >= np.maximum(10.0 - S, 0.0)[:, None] - 1e-12)
+    eb = res.exercise_boundary
+    assert eb is not None and eb.side == "left"
+    loc = eb.locations[np.isfinite(eb.locations)]
+    assert loc.size > 0 and np.all(loc < 10.0)
+    assert np.all(np.diff(loc) <= 1e-12)  # the put boundary falls with time to maturity
+    assert np.all(res.solution.info["multiplier"] >= 0.0)
+
+
+def test_american_call_without_dividends_is_european():
+    model = HestonPDE(0.05, 2.0, 0.04, 0.3, -0.5)
+    am = model.american(K, 0.5, 100.0, 0.04, "call", n_s=101, n_v=51, n_time=50).price
+    eu = model.european(K, 0.5, 100.0, 0.04, "call", n_s=101, n_v=51, n_time=50).price
+    assert am == pytest.approx(eu, abs=2e-3)

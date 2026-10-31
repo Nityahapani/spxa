@@ -279,3 +279,23 @@ class HestonPDE:
         return self._price(
             K, T, spot, v0, option, False, n_s, n_v, n_time, scheme, s_max, v_max, damping_steps
         )
+
+    def american(
+        self,
+        K: float,
+        T: float,
+        spot: float,
+        v0: float,
+        option: str = "put",
+        n_s: int = 101,
+        n_v: int = 51,
+        n_time: int = 100,
+        scheme: str = "hundsdorfer_verwer",
+        s_max: Optional[float] = None,
+        v_max: Optional[float] = None,
+        damping_steps: int = 1,
+    ) -> HestonPDEResult:
+        """American call or put: ADI with the Ikonen–Toivanen splitting."""
+        return self._price(
+            K, T, spot, v0, option, True, n_s, n_v, n_time, scheme, s_max, v_max, damping_steps
+        )
