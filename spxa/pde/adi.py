@@ -39,11 +39,14 @@ in 't Hout, 2015).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.interpolate import RectBivariateSpline
+from scipy.sparse.linalg import splu
 
 from spxa.pde.grid import Grid1D
 from spxa.pde.operators import (
@@ -60,6 +63,9 @@ __all__ = [
     "Linear2D",
     "LinearPDE2D",
     "DiscreteOperator2D",
+    "ADISolver",
+    "ADIResult",
+    "PDESolution2D",
 ]
 
 Coefficient2D = Union[float, np.ndarray, Callable[[np.ndarray, np.ndarray, float], Any]]
@@ -448,3 +454,302 @@ class DiscreteOperator2D:
     def __repr__(self) -> str:
         kinds = {k: type(v).__name__ for k, v in self.edges.items()}
         return f"DiscreteOperator2D({self.grid!r}, edges={kinds}, upwind={self.upwind!r})"
+
+
+# ---------------------------------------------------------------------- solution
+@dataclass
+class PDESolution2D:
+    """Solution of a two-dimensional pricing PDE at ``tau = T``.
+
+    Values are interpolated with a bicubic spline through the nodal values.
+    """
+
+    grid: Grid2D
+    values: np.ndarray
+    previous_values: Optional[np.ndarray] = None
+    dt_last: Optional[float] = None
+    info: dict[str, Any] = field(default_factory=dict)
+    label: str = "2D PDE solution"
+    variables: tuple[str, str] = ("x", "y")
+
+    def __post_init__(self) -> None:
+        self.values = np.asarray(self.values, dtype=float).reshape(self.grid.shape)
+        self._spline: Optional[RectBivariateSpline] = None
+
+    def _spl(self) -> RectBivariateSpline:
+        if self._spline is None:
+            self._spline = RectBivariateSpline(
+                self.grid.x.nodes, self.grid.y.nodes, self.values, kx=3, ky=3, s=0
+            )
+        return self._spline
+
+    def _check(self, x: np.ndarray, y: np.ndarray) -> None:
+        gx, gy = self.grid.x.nodes, self.grid.y.nodes
+        if np.any((x < gx[0]) | (x > gx[-1]) | (y < gy[0]) | (y > gy[-1])):
+            raise ValueError("point outside the grid")
+
+    def derivative(self, x: Any, y: Any, dx: int = 0, dy: int = 0) -> Any:
+        """Spline derivative ``d^{dx+dy} u / dx^{dx} dy^{dy}`` at ``(x, y)``."""
+        xa, ya = np.broadcast_arrays(np.asarray(x, dtype=float), np.asarray(y, dtype=float))
+        self._check(xa, ya)
+        out = self._spl().ev(xa.ravel(), ya.ravel(), dx=dx, dy=dy).reshape(xa.shape)
+        return float(out) if out.ndim == 0 else out
+
+    def value(self, x: Any, y: Any) -> Any:
+        return self.derivative(x, y)
+
+    def theta(self, x: Any, y: Any) -> Any:
+        """Calendar-time theta ``-du/dtau`` from the last time step."""
+        if self.previous_values is None or not self.dt_last:
+            raise ValueError("theta needs the previous time level")
+        prev = RectBivariateSpline(
+            self.grid.x.nodes, self.grid.y.nodes, self.previous_values, kx=3, ky=3, s=0
+        )
+        xa, ya = np.broadcast_arrays(np.asarray(x, dtype=float), np.asarray(y, dtype=float))
+        du = self._spl().ev(xa.ravel(), ya.ravel()) - prev.ev(xa.ravel(), ya.ravel())
+        out = (-du / self.dt_last).reshape(xa.shape)
+        return float(out) if out.ndim == 0 else out
+
+    def __repr__(self) -> str:
+        return f"PDESolution2D({self.label}, grid={self.grid!r})"
+
+
+@dataclass
+class ADIResult:
+    """Raw output of :meth:`ADISolver.solve`."""
+
+    values: np.ndarray
+    previous_values: np.ndarray
+    times: np.ndarray
+    info: dict[str, Any]
+    multiplier: Optional[np.ndarray] = None
+    history: Optional[list[np.ndarray]] = None
+
+
+# ---------------------------------------------------------------------- ADI
+_SCHEMES = {
+    "douglas": 0.5,
+    "craig_sneyd": 0.5,
+    "modified_craig_sneyd": 1.0 / 3.0,
+    "hundsdorfer_verwer": 0.5 + math.sqrt(3.0) / 6.0,
+}
+_ALIASES = {
+    "do": "douglas",
+    "cs": "craig_sneyd",
+    "mcs": "modified_craig_sneyd",
+    "hv": "hundsdorfer_verwer",
+}
+
+
+class ADISolver:
+    r"""Alternating-direction implicit time stepping for :class:`DiscreteOperator2D`.
+
+    With :math:`F_j(t, u) = A_j u + b_j(t)` and :math:`F = F_0 + F_1 + F_2`,
+    every scheme starts with the Douglas stages
+
+    .. math::
+        Y_0 = U + \Delta\tau F(t_n, U), \qquad
+        Y_j = Y_{j-1} + \theta\Delta\tau\,(F_j(t_{n+1}, Y_j) - F_j(t_n, U)),
+
+    followed by a correction (Craig–Sneyd, modified Craig–Sneyd,
+    Hundsdorfer–Verwer). All four are unconditionally stable for the
+    convection–diffusion equations with mixed derivatives considered here
+    for the default :math:`\theta`, and second order except Douglas with a
+    mixed term.
+
+    Parameters
+    ----------
+    operator : DiscreteOperator2D
+    scheme : {'douglas', 'craig_sneyd', 'modified_craig_sneyd', 'hundsdorfer_verwer'}
+        Short names ``'do'``, ``'cs'``, ``'mcs'``, ``'hv'`` are accepted.
+    theta : float, optional
+        Defaults: 1/2 (Do, CS), 1/3 (MCS), 1/2 + sqrt(3)/6 (HV).
+    damping_steps : int
+        Number of initial steps replaced by two implicit (Douglas,
+        ``theta = 1``) half-steps, to damp the non-smooth payoff.
+    """
+
+    def __init__(
+        self,
+        operator: DiscreteOperator2D,
+        scheme: str = "hundsdorfer_verwer",
+        theta: Optional[float] = None,
+        damping_steps: int = 1,
+    ) -> None:
+        name = _ALIASES.get(scheme.lower(), scheme.lower())
+        if name not in _SCHEMES:
+            raise ValueError(f"unknown ADI scheme {scheme!r}; choose from {sorted(_SCHEMES)}")
+        if damping_steps < 0:
+            raise ValueError("damping_steps must be non-negative")
+        self.operator = operator
+        self.scheme = name
+        self.theta = float(_SCHEMES[name] if theta is None else theta)
+        self.damping_steps = int(damping_steps)
+        self._lu: dict[tuple[int, float, float], Any] = {}
+        self._n_factorisations = 0
+
+    # ------------------------------------------------------------ helpers
+    def _solver(self, j: int, M: sp.csr_matrix, coeff: float, tau: float) -> Any:
+        op = self.operator
+        key = (j, round(coeff, 15), tau if not op.time_homogeneous else 0.0)
+        lu = self._lu.get(key)
+        if lu is None:
+            n = op.grid.n
+            S = (sp.identity(n, format="csr") - coeff * M).tolil()
+            d = op.dirichlet_nodes
+            if d.size:
+                S[d, :] = 0.0
+                S[d, d] = 1.0
+            lu = splu(S.tocsc())
+            self._n_factorisations += 1
+            if op.time_homogeneous:
+                self._lu[key] = lu
+        return lu
+
+    def _implicit(
+        self, j: int, M: sp.csr_matrix, coeff: float, rhs: np.ndarray, g_new: np.ndarray, t1: float
+    ) -> np.ndarray:
+        d = self.operator.dirichlet_nodes
+        r = rhs.copy()
+        r[d] = g_new[d]
+        return np.asarray(self._solver(j, M, coeff, t1).solve(r))
+
+    def _step(
+        self,
+        U: np.ndarray,
+        t0: float,
+        t1: float,
+        scheme: str,
+        theta: float,
+        lam: Optional[np.ndarray],
+    ) -> np.ndarray:
+        op = self.operator
+        dt = t1 - t0
+        A0, A1, A2 = op.matrices(t1)
+        mats = (A0, A1, A2)
+        if not op.time_homogeneous:
+            mats_old = tuple(op.matrices(t0))
+        else:
+            mats_old = mats
+        b_old = op.sources(t0)
+        b_new = op.sources(t1)
+        g_new = op.dirichlet_values(t1)
+        F_old = [mats_old[j] @ U + b_old[j] for j in range(3)]
+
+        def F_new(j: int, v: np.ndarray) -> np.ndarray:
+            return mats[j] @ v + b_new[j]
+
+        def stages(Y0: np.ndarray, ref: list[np.ndarray]) -> np.ndarray:
+            # (I - theta dt A_j) Y_j = Y_{j-1} + theta dt (b_j(t_{n+1}) - ref_j)
+            Y = Y0
+            for j in (1, 2):
+                rhs = Y + theta * dt * (b_new[j] - ref[j])
+                Y = self._implicit(j, mats[j], theta * dt, rhs, g_new, t1)
+            return Y
+
+        Y0 = U + dt * sum(F_old)
+        if lam is not None:
+            Y0 = Y0 + dt * lam
+        Y2 = stages(Y0, F_old)
+        if scheme == "douglas":
+            return Y2
+        Fo = sum(F_old)
+        Fn = [F_new(j, Y2) for j in range(3)]
+        if scheme == "craig_sneyd":
+            Yt0 = Y0 + 0.5 * dt * (Fn[0] - F_old[0])
+            return stages(Yt0, F_old)
+        if scheme == "modified_craig_sneyd":
+            Yh0 = Y0 + theta * dt * (Fn[0] - F_old[0])
+            Yt0 = Yh0 + (0.5 - theta) * dt * (sum(Fn) - Fo)
+            return stages(Yt0, F_old)
+        # Hundsdorfer-Verwer: the second sweep is relative to Y2 at t_{n+1}
+        Yt0 = Y0 + 0.5 * dt * (sum(Fn) - Fo)
+        return stages(Yt0, Fn)
+
+    # ------------------------------------------------------------ public
+    def solve(
+        self,
+        initial: np.ndarray,
+        T: float,
+        n_time: int = 100,
+        obstacle: Optional[
+            Union[np.ndarray, Callable[[np.ndarray, np.ndarray, float], Any]]
+        ] = None,
+        store_history: bool = False,
+        callback: Optional[Callable[[int, float, np.ndarray], None]] = None,
+    ) -> ADIResult:
+        """March from ``tau = 0`` to ``T`` in ``n_time`` uniform steps.
+
+        With an ``obstacle`` the Ikonen–Toivanen splitting enforces
+        ``u >= obstacle``: each step solves with the multiplier added
+        explicitly, then ``u = max(u~ - dt*lam, g)`` and
+        ``lam = max(0, lam + (g - u~)/dt)``.
+        """
+        if T <= 0.0 or n_time < 1:
+            raise ValueError("need T > 0 and n_time >= 1")
+        op = self.operator
+        g = op.grid
+        U = np.asarray(initial, dtype=float).reshape(g.n).copy()
+        d = op.dirichlet_nodes
+        U[d] = op.dirichlet_values(0.0)[d]
+        X, Y = g.mesh()
+        free = np.ones(g.n, dtype=bool)
+        free[d] = False
+
+        def obst(tau: float) -> Optional[np.ndarray]:
+            if obstacle is None:
+                return None
+            v = obstacle(X, Y, tau) if callable(obstacle) else obstacle
+            return np.broadcast_to(np.asarray(v, dtype=float), g.shape).ravel()
+
+        lam = np.zeros(g.n) if obstacle is not None else None
+        times = np.linspace(0.0, T, n_time + 1)
+        prev = U.copy()
+        history = [U.reshape(g.shape).copy()] if store_history else None
+        if callback is not None:
+            callback(0, 0.0, U.reshape(g.shape))
+
+        def advance(U: np.ndarray, t0: float, t1: float, scheme: str, theta: float) -> np.ndarray:
+            nonlocal lam
+            Ut = self._step(U, t0, t1, scheme, theta, lam)
+            if lam is None:
+                return Ut
+            gv = obst(t1)
+            assert gv is not None
+            dt = t1 - t0
+            out = Ut.copy()
+            out[free] = np.maximum(Ut[free] - dt * lam[free], gv[free])
+            new = np.zeros_like(lam)
+            new[free] = np.maximum(0.0, lam[free] + (gv[free] - Ut[free]) / dt)
+            lam = new
+            return out
+
+        for k in range(1, times.size):
+            t0, t1 = float(times[k - 1]), float(times[k])
+            prev = U
+            if k <= self.damping_steps:
+                mid = 0.5 * (t0 + t1)
+                U = advance(U, t0, mid, "douglas", 1.0)
+                U = advance(U, mid, t1, "douglas", 1.0)
+            else:
+                U = advance(U, t0, t1, self.scheme, self.theta)
+            if history is not None:
+                history.append(U.reshape(g.shape).copy())
+            if callback is not None:
+                callback(k, t1, U.reshape(g.shape))
+        info = {
+            "scheme": self.scheme,
+            "theta": self.theta,
+            "n_steps": n_time,
+            "damping_steps": self.damping_steps,
+            "n_factorisations": self._n_factorisations,
+            "american": obstacle is not None,
+        }
+        return ADIResult(
+            values=U.reshape(g.shape),
+            previous_values=prev.reshape(g.shape),
+            times=times,
+            info=info,
+            multiplier=None if lam is None else lam.reshape(g.shape),
+            history=history,
+        )

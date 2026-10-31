@@ -21,6 +21,9 @@ from spxa.pde.adi import (
     Linear2D,
     LinearPDE2D,
     DiscreteOperator2D,
+    ADISolver,
+    ADIResult,
+    PDESolution2D,
 )
 from spxa.pde.american import (
     BrennanSchwartzLCP,
@@ -57,6 +60,9 @@ from spxa.pde.solution import ExerciseBoundary, PDEPricingResult, PDESolution1D
 from spxa.pde.theta import LCPStepper, ThetaResult, ThetaSolver1D
 
 __all__ = [
+    "ADISolver",
+    "ADIResult",
+    "PDESolution2D",
     "Grid2D",
     "Dirichlet2D",
     "Neumann2D",
