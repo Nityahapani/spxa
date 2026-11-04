@@ -1,0 +1,2649 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/rates/">
+      
+      
+        <link rel="prev" href="../market/">
+      
+      
+        <link rel="next" href="../vol/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Interest rates - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#interest-rates" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Interest rates
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-indices-and-overnight-compounding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Indices and overnight compounding
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Indices and overnight compounding">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-term-and-overnight-indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Term and overnight indices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-compounding-in-arrears" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Compounding in arrears
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-projection-from-a-curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Projection from a curve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-cashflows-legs-and-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Cashflows, legs and pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-deposits-fras-and-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Deposits, FRAs and futures
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Deposits, FRAs and futures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-deposits-and-fras" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Deposits and FRAs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-term-rate-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Term-rate futures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-sofr-futures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 SOFR futures
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-swaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Swaps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Swaps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-par-rates-and-identities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Par rates and identities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-risk-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Risk measures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-amortising-and-accreting-swaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Amortising and accreting swaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-fixed-rate-bonds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Fixed-rate bonds
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-curve-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Curve construction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Curve construction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-piecewise-curves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Piecewise curves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-helpers-and-the-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Helpers and the bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-front-end-futures-and-turns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Front end, futures and turns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-policy-meeting-curves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Policy-meeting curves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#65-parametric-curves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.5 Parametric curves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#66-curve-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.6 Curve sets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-curve-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Curve risk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Curve risk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-node-and-quote-deltas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Node and quote deltas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-key-rate-deltas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Key-rate deltas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-hedging-and-pl-explain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Hedging and P&amp;L explain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-principal-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Principal components
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-volatility-products" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Volatility products
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Volatility products">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-caps-floors-and-swaptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Caps, floors and swaptions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-sabr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 SABR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-arbitrage-free-sabr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Arbitrage-free SABR
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-caplet-stripping-and-the-swaption-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Caplet stripping and the swaption cube
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-cms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 CMS
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-short-rate-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Short-rate models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Short-rate models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-hullwhite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 Hull–White
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-trees-pde-and-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 Trees, PDE and simulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-g2-and-the-two-factor-hullwhite-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 G2++ and the two-factor Hull–White model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#95-positive-rates-blackkarasinski-and-cir" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.5 Positive rates: Black–Karasinski and CIR++
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-hjm-and-cheyette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. HJM and Cheyette
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. HJM and Cheyette">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-gaussian-hjm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Gaussian HJM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-simulating-the-curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Simulating the curve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-cheyette" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Cheyette
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-engines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Engines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-swaptions-and-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 Swaptions and calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-libor-and-forward-market-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. LIBOR and forward market models
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. LIBOR and forward market models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-parametrisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Parametrisation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Simulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-swaptions-and-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Swaptions and calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-backward-looking-rates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Backward-looking rates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#115-sabr-lmm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.5 SABR-LMM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-bermudan-swaptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Bermudan swaptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Bermudan swaptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-the-contract-and-lattice-engines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 The contract and lattice engines
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-monte-carlo-bounds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Monte Carlo bounds
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-inflation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Inflation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Inflation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-indices-and-reference-cpi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Indices and reference CPI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-the-inflation-curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 The inflation curve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#133-jarrowyildirim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.3 Jarrow–Yildirim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#134-linked-bonds-and-swaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.4 Linked bonds and swaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Connections
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Connections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#141-stress-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14.1 Stress testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#142-key-rates-from-a-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14.2 Key rates from a graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="interest-rates">Interest Rates</h1>
+<p><code>spxa.rates</code> prices interest-rate instruments on real calendar dates. It is built on the dates, day counts, calendars, schedules and curves of <a href="../market/">Market conventions</a>. Every curve in this chapter is a <code>YieldCurve</code> returning discount factors <span class="arithmatex">\(P(0, t)\)</span>. The discount curve and the projection (forwarding) curve are passed separately, so single-curve and multi-curve pricing use the same code.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Object</th>
+<th style="text-align: left;">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Indices and fixings</td>
+<td style="text-align: left;"><code>OvernightIndex</code>, <code>IborIndex</code>, <code>SOFR</code>, <code>ESTR</code>, <code>SONIA</code>, <code>EURIBOR3M</code>, <code>EURIBOR6M</code>, <code>FixingHistory</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Overnight compounding</td>
+<td style="text-align: left;"><code>compounded_overnight_rate</code>, <code>observation_schedule</code>, <code>projected_overnight_rate</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Cashflows and legs</td>
+<td style="text-align: left;"><code>FixedCoupon</code>, <code>IborCoupon</code>, <code>OvernightCoupon</code>, <code>fixed_leg</code>, <code>ibor_leg</code>, <code>overnight_leg</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Pricing</td>
+<td style="text-align: left;"><code>leg_pv</code>, <code>leg_annuity</code>, <code>cashflow_table</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Money market</td>
+<td style="text-align: left;"><code>Deposit</code>, <code>FRA</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Futures</td>
+<td style="text-align: left;"><code>RateFuture</code>, <code>OvernightFuture</code>, <code>hull_white_futures_convexity</code>, <code>hull_white_compounded_convexity</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Swaps</td>
+<td style="text-align: left;"><code>Swap</code>, <code>ois_swap</code>, <code>vanilla_swap</code>, <code>BasisSwap</code>, <code>basis_swap</code>, <code>step_notional</code>, <code>linear_notional</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Bonds</td>
+<td style="text-align: left;"><code>FixedRateBond</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Piecewise curves</td>
+<td style="text-align: left;"><code>PiecewiseCurve</code>, <code>LogLinearDiscount</code>, <code>LinearZero</code>, <code>CubicZero</code>, <code>CubicSplineRT</code>, <code>MonotoneCubicRT</code>, <code>MonotoneConvex</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Helpers</td>
+<td style="text-align: left;"><code>DepositHelper</code>, <code>FRAHelper</code>, <code>FutureHelper</code>, <code>SwapHelper</code>, <code>BasisSwapHelper</code>, <code>BondHelper</code>, <code>quarterly_futures</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Bootstrapping</td>
+<td style="text-align: left;"><code>bootstrap_curve</code>, <code>BootstrapResult</code>, <code>fit_curves</code>, <code>CurveSpec</code>, <code>GlobalFitResult</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Turns and policy steps</td>
+<td style="text-align: left;"><code>ForwardSpread</code>, <code>turn_of_year</code>, <code>SpreadAdjustedCurve</code>, <code>flat_forward_curve</code>, <code>meeting_date_curve</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Parametric curves</td>
+<td style="text-align: left;"><code>NelsonSiegelSvensson</code>, <code>nelson_siegel</code>, <code>fit_nss</code>, <code>fit_nss_zero_rates</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Curve sets and diagnostics</td>
+<td style="text-align: left;"><code>CurveSet</code>, <code>compare_schemes</code>, <code>bump_locality</code>, <code>forward_roughness</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Curve risk</td>
+<td style="text-align: left;"><code>node_deltas</code>, <code>quote_deltas</code>, <code>quote_jacobian</code>, <code>key_rate_deltas</code>, <code>KeyRateShiftedCurve</code>, <code>node_gamma</code>, <code>pnl_explain</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Hedging and factors</td>
+<td style="text-align: left;"><code>hedge_notionals</code>, <code>par_hedge</code>, <code>curve_pca</code>, <code>CurvePCA</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Caps, floors and swaptions</td>
+<td style="text-align: left;"><code>CapFloor</code>, <code>Caplet</code>, <code>cap_floor</code>, <code>Swaption</code>, <code>swaption</code>, <code>cash_annuity</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">SABR</td>
+<td style="text-align: left;"><code>SABR</code>, <code>sabr_lognormal_vol</code>, <code>sabr_normal_vol</code>, <code>alpha_from_atm</code>, <code>calibrate_sabr</code>, <code>SABRFit</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Arbitrage-free SABR</td>
+<td style="text-align: left;"><code>ArbitrageFreeSABR</code>, <code>SABRDensity</code>, <code>sabr_paths</code>, <code>SABRPaths</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Stripping, cube and CMS</td>
+<td style="text-align: left;"><code>strip_caplet_vols</code>, <code>CapletVolCurve</code>, <code>SwaptionCube</code>, <code>CMSReplication</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Hull–White</td>
+<td style="text-align: left;"><code>HullWhite</code>, <code>ModelCashflows</code>, <code>swap_cashflows</code>, <code>hull_white_paths</code>, <code>HullWhiteTree</code>, <code>HullWhitePDE</code>, <code>calibrate_hull_white</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Two-factor Gaussian</td>
+<td style="text-align: left;"><code>G2PP</code>, <code>g2pp_paths</code>, <code>calibrate_g2pp</code>, <code>HullWhite2F</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Positive short rates</td>
+<td style="text-align: left;"><code>BlackKarasinski</code>, <code>BlackKarasinskiTree</code>, <code>black_karasinski_paths</code>, <code>CIRPlusPlus</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Model interface</td>
+<td style="text-align: left;"><code>ShortRateModel</code>, <code>model_price</code>, <code>model_implied_vols</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Gaussian HJM</td>
+<td style="text-align: left;"><code>GaussianHJM</code>, <code>exponential_vol</code>, <code>hump_vol</code>, <code>hjm_paths</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Cheyette</td>
+<td style="text-align: left;"><code>Cheyette</code>, <code>cheyette_paths</code>, <code>CheyettePDE</code>, <code>cheyette_swaption</code>, <code>swap_rate_dynamics</code>, <code>calibrate_cheyette</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">LIBOR market model</td>
+<td style="text-align: left;"><code>LiborMarketModel</code>, <code>AbcdVol</code>, <code>exponential_correlation</code>, <code>rebonato_correlation</code>, <code>reduce_rank</code>, <code>lmm_paths</code>, <code>LMMPaths</code>, <code>calibrate_lmm</code>, <code>fit_abcd</code>, <code>LMMCalibration</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Forward market model and SABR-LMM</td>
+<td style="text-align: left;"><code>ForwardMarketModel</code>, <code>fmm_paths</code>, <code>FMMPaths</code>, <code>SABRLMM</code>, <code>sabr_lmm_paths</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Bermudan swaptions</td>
+<td style="text-align: left;"><code>BermudanSwaption</code>, <code>bermudan_swaption</code>, <code>bermudan_from_times</code>, <code>coterminal_swaptions</code>, <code>bermudan_pde</code>, <code>bermudan_tree</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Exercise by simulation</td>
+<td style="text-align: left;"><code>lsm</code>, <code>ExerciseProblem</code>, <code>LSMPolicy</code>, <code>LSMResult</code>, <code>andersen_broadie</code>, <code>DualBound</code>, <code>hull_white_exercise_problem</code>, <code>cheyette_exercise_problem</code>, <code>hull_white_transition</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Inflation indices and curves</td>
+<td style="text-align: left;"><code>CPIFixings</code>, <code>InflationIndex</code>, <code>InflationCurve</code>, <code>Seasonality</code>, <code>bootstrap_inflation_curve</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Inflation products</td>
+<td style="text-align: left;"><code>ZeroCouponInflationSwap</code>, <code>YearOnYearInflationSwap</code>, <code>InflationLinkedBond</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Jarrow–Yildirim</td>
+<td style="text-align: left;"><code>JarrowYildirim</code>, <code>jy_paths</code>, <code>JYPaths</code>, <code>calibrate_jarrow_yildirim</code>, <code>InflationOptionQuote</code>, <code>JYFit</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Connections</td>
+<td style="text-align: left;"><code>curve_price</code>, <code>curve_pricing_fn</code>, <code>CurveQuote</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-indices-and-overnight-compounding">1. Indices and overnight compounding</h2>
+<h3 id="11-term-and-overnight-indices">1.1 Term and overnight indices</h3>
+<p>An <code>IborIndex</code> (EURIBOR 1M–12M) fixes <code>fixing_days</code> business days before its value date and accrues to a maturity found by adding its tenor with modified following and the end-of-month rule. EURIBOR 3M fixed on Monday 15 January 2024 has value date 17 January and maturity 17 April 2024. An <code>OvernightIndex</code> (SOFR on the US-SIFMA calendar, €STR on TARGET, SONIA on the UK calendar) fixes every business day for the period up to the next business day. Published rates are stored by fixing date in a <code>FixingHistory</code>.</p>
+<h3 id="12-compounding-in-arrears">1.2 Compounding in arrears</h3>
+<p>For a period <span class="arithmatex">\([t_s, t_e)\)</span> whose index business days are <span class="arithmatex">\(d_0 &lt; \dots &lt; d_{N-1}\)</span>, the compounded rate is</p>
+<div class="arithmatex">\[
+R = \frac{1}{\tau}\Bigl[\prod_{i=0}^{N-1}\bigl(1 + r_i\,\tau_i\bigr) - 1\Bigr],
+\qquad \tau = \sum_i \tau_i,
+\]</div>
+<p>where <span class="arithmatex">\(\tau_i\)</span> is the index day-count fraction of the days on which <span class="arithmatex">\(r_i\)</span> applies; the averaged rate is <span class="arithmatex">\(\sum_i r_i\tau_i/\tau\)</span>. A rate set on a Friday or before a holiday applies over the following non-business days. Over the SOFR week from 1 to 8 July 2024 (4 July is a US holiday) the fixings of 1, 2, 3 and 5 July carry weights <span class="arithmatex">\(1, 1, 2, 3\)</span> over 360.</p>
+<p>ISDA (2021) defines three ways of knowing the rate before payment. With a <strong>lookback</strong> of <span class="arithmatex">\(p\)</span> days, each rate is the fixing <span class="arithmatex">\(p\)</span> business days earlier while the weights stay those of the calculation period. With an <strong>observation shift</strong>, the whole observation period moves back <span class="arithmatex">\(p\)</span> days and both rates and weights come from it. With a <strong>lockout</strong> of <span class="arithmatex">\(s\)</span> days, the fixing of the lockout date, <span class="arithmatex">\(s\)</span> business days before the period end, applies to the rest of the period. For the ISDA example period from 22 September to 22 December 2020 with <span class="arithmatex">\(s = 5\)</span>, the lockout date is 15 December and its rate applies from 15 to 21 December. A <strong>payment delay</strong> only moves the payment date.</p>
+<h3 id="13-projection-from-a-curve">1.3 Projection from a curve</h3>
+<p>The forward rate for the fixing on <span class="arithmatex">\(d_i\)</span> is <span class="arithmatex">\(F_i = \bigl(P(d_i)/P(d_{i+1}) - 1\bigr)/\tau_i\)</span>. Without lookback, shift or lockout, the projected daily factors telescope:</p>
+<div class="arithmatex">\[
+\prod_{i \ge j}(1 + F_i\tau_i) = \frac{P(d_j)}{P(t_e)},
+\]</div>
+<p>so <code>projected_overnight_rate</code> needs two discount factors beyond the last published fixing. The tests check that the shortcut equals the daily product to rounding.</p>
+<hr />
+<h2 id="2-cashflows-legs-and-pricing">2. Cashflows, legs and pricing</h2>
+<p>A leg is a list of coupons, each with a payment date and an <code>amount(projection, fixings)</code>. A <code>FixedCoupon</code> pays <span class="arithmatex">\(N K \tau\)</span>, an <code>IborCoupon</code> pays <span class="arithmatex">\(N(\text{gearing}\cdot L + s)\tau\)</span> with the term rate <span class="arithmatex">\(L\)</span> fixed in advance, and an <code>OvernightCoupon</code> pays <span class="arithmatex">\(N R\tau\)</span> with <span class="arithmatex">\(R\)</span> compounded or averaged in arrears. <code>fixed_leg</code>, <code>ibor_leg</code> and <code>overnight_leg</code> build legs from a <code>Schedule</code>, with payment lags and notionals that may change period by period. The present value and the annuity are</p>
+<div class="arithmatex">\[
+\mathrm{PV} = \sum_i \text{amount}_i\,P_d(t^{\text{pay}}_i), \qquad A = \sum_i N_i\tau_i\,P_d(t^{\text{pay}}_i),
+\]</div>
+<p>summed over the coupons paid after the valuation date, with <span class="arithmatex">\(P_d\)</span> the discount curve. Projected IBOR coupons use the index's own value and maturity dates. These can differ from the coupon dates when a start date has been rolled. With <code>use_index_dates=False</code> they use the coupon dates instead, and on a single curve a floating leg then telescopes exactly to <span class="arithmatex">\(N\bigl(P(t_0) - P(t_n)\bigr)\)</span> when there is no payment lag.</p>
+<hr />
+<h2 id="3-deposits-fras-and-futures">3. Deposits, FRAs and futures</h2>
+<h3 id="31-deposits-and-fras">3.1 Deposits and FRAs</h3>
+<p>A deposit starting at spot pays <span class="arithmatex">\(N(1 + R\tau)\)</span> at maturity. A forward rate agreement on <span class="arithmatex">\([t_s, t_e]\)</span> settles at <span class="arithmatex">\(t_s\)</span> the discounted difference between the fixing and the contract rate, so its value is</p>
+<div class="arithmatex">\[
+\mathrm{PV}_{\text{FRA}} = N\,\frac{\tau(F - K)}{1 + \tau F}\,P_d(t_s),
+\qquad F = \frac{1}{\tau}\Bigl(\frac{P_p(t_s)}{P_p(t_e)} - 1\Bigr).
+\]</div>
+<p>A 3×6 EURIBOR FRA traded on 15 January 2024 accrues from 17 April to 17 July 2024.</p>
+<h3 id="32-term-rate-futures">3.2 Term-rate futures</h3>
+<p>Daily margining makes the futures rate the risk-neutral expectation of the fixing, which exceeds the forward. In the Hull–White model <span class="arithmatex">\(dr = (\vartheta(t) - ar)\,dt + \sigma\,dW\)</span>, with <span class="arithmatex">\(B(t) = (1 - e^{-at})/a\)</span> and <span class="arithmatex">\(B_{ij} = B(t_j - t_i)\)</span>,</p>
+<div class="arithmatex">\[
+1 + \tau R^{\text{fut}} = (1 + \tau F)\,e^{\Gamma}, \qquad
+\Gamma = \sigma^2 B_{12}\Bigl[B_{12}\,\frac{1 - e^{-2at_1}}{2a} + \tfrac12 B_{01}^2\Bigr].
+\]</div>
+<p>As <span class="arithmatex">\(a \to 0\)</span> (Ho–Lee), <span class="arithmatex">\(\Gamma \to \sigma^2\tau t_1(t_1 + 2\tau)/2\)</span>. For <span class="arithmatex">\(\sigma = 1\%\)</span>, <span class="arithmatex">\(t_1 = 1\)</span> and <span class="arithmatex">\(\tau = 0.25\)</span>, this gives <span class="arithmatex">\(\Gamma = 1.875 \times 10^{-5}\)</span>. IMM dates are the third Wednesdays of March, June, September and December; <code>imm_code</code> and <code>imm_from_code</code> translate them to contract codes such as <code>H24</code>.</p>
+<h3 id="33-sofr-futures">3.3 SOFR futures</h3>
+<p>A three-month SOFR future settles on the rate compounded over its IMM quarter. The March 2024 contract runs from 20 March to 19 June 2024, an accrual of <span class="arithmatex">\(91/360\)</span>. The one-month contract settles on the arithmetic average over a calendar month. Write each daily factor as <span class="arithmatex">\(1 + r_i\tau_i = 1/P(t_i, t_{i+1})\)</span>. Under the <span class="arithmatex">\(t_N\)</span>-forward measure the product telescopes, so its expectation is <span class="arithmatex">\(1 + \tau F = P(0, t_0)/P(0, t_N)\)</span>. In a Gaussian model <span class="arithmatex">\(Y = \log\prod_i 1/P(t_i, t_{i+1})\)</span> is Gaussian, and changing to the risk-neutral measure multiplies the expectation by <span class="arithmatex">\(e^{\mathrm{Cov}(Y, \int_0^{t_N} r)}\)</span>. In Hull–White this gives, exactly for the daily product,</p>
+<div class="arithmatex">\[
+1 + \tau R^{\text{fut}} = (1 + \tau F)\,e^{\Gamma_c}, \qquad
+\Gamma_c = \sum_{t_i &gt; 0} B(t_{i+1} - t_i)\,c(t_i; t_N), \qquad
+c(t; T) = \sigma^2\Bigl[\tfrac12 B(t)^2 + B(T - t)\,\frac{1 - e^{-2at}}{2a}\Bigr],
+\]</div>
+<p>where <span class="arithmatex">\(c(t; T) = \mathrm{Cov}\bigl(x(t), \int_0^T x\bigr)\)</span> for the Gaussian factor <span class="arithmatex">\(x\)</span>. Fixings already published do not contribute. The continuous limit is <span class="arithmatex">\(\Gamma_c = \mathrm{Var}(I) + \mathrm{Cov}\bigl(\int_0^{T_s} r, I\bigr)\)</span> with <span class="arithmatex">\(I = \int_{T_s}^{T_e} r\)</span>, which for Ho–Lee is</p>
+<div class="arithmatex">\[
+\Gamma_c = \sigma^2\bigl(\tau^2 T_s + \tau^3/3 + \tau T_s^2/2\bigr).
+\]</div>
+<p>For <span class="arithmatex">\(\sigma = 1\%\)</span>, <span class="arithmatex">\(T_s = 1\)</span> and <span class="arithmatex">\(\tau = 0.25\)</span>, this gives <span class="arithmatex">\(\Gamma_c = 1.927083 \times 10^{-5}\)</span>, more than the term-rate <span class="arithmatex">\(\Gamma\)</span> because the rate is still being fixed during the quarter. For the same reason a spot-starting quarter keeps <span class="arithmatex">\(\sigma^2\tau^3/3 = 5.208 \times 10^{-7}\)</span>. The tests check <span class="arithmatex">\(c\)</span> against the Itô-isometry integral, the Ho–Lee formula, and an exact G1++ Monte Carlo of both contract types.</p>
+<hr />
+<h2 id="4-swaps">4. Swaps</h2>
+<h3 id="41-par-rates-and-identities">4.1 Par rates and identities</h3>
+<p>A <code>Swap</code> exchanges a fixed leg for a floating leg. For the payer of fixed,</p>
+<div class="arithmatex">\[
+\mathrm{PV} = \mathrm{PV}_{\text{float}} - \mathrm{PV}_{\text{fixed}} = (S - K)\,A, \qquad S = \frac{\mathrm{PV}_{\text{float}}}{A},
+\]</div>
+<p>and on a single curve without payment lags <span class="arithmatex">\(S = N\bigl(P(t_s) - P(t_e)\bigr)/A\)</span>. The par spread is the margin over the floating index that makes the swap worth zero.</p>
+<p><code>ois_swap</code> builds overnight-indexed swaps: both legs follow one annual schedule on the index calendar, the floating leg compounds in arrears, and payments lag by two business days. A 5-year SOFR OIS traded on Monday 15 January 2024 (Martin Luther King Day) starts on 18 January 2024. Its first payment is on 23 January 2025 and its last on 22 January 2029. <code>vanilla_swap</code> builds fixed-versus-IBOR swaps with the EUR conventions (annual 30/360 against the index tenor). A 10-year swap against EURIBOR 6M traded on 15 January 2024 starts on 17 January and has 10 fixed and 20 floating periods. Its second fixed period ends on the rolled date 19 January 2026, so it accrues <span class="arithmatex">\(362/360\)</span>. <code>basis_swap</code> exchanges two floating legs, for example EURIBOR 3M plus a spread against EURIBOR 6M. On a single curve, with coupon-date projection, its par spread is zero to <span class="arithmatex">\(10^{-14}\)</span>.</p>
+<h3 id="42-risk-measures">4.2 Risk measures</h3>
+<p><code>pv01</code> is the change in value for a one basis point rise in the fixed rate, <span class="arithmatex">\(10^{-4}A\)</span>. <code>dv01</code> is the central difference of the value when both curves are shifted by one basis point in continuously compounded zero rate. For an OIS on a flat curve the tests compare it with the analytic derivative</p>
+<div class="arithmatex">\[
+\mathrm{DV01} = 10^{-4}\Bigl[N\bigl(-t_s P(t_s) + t_e P(t_e)\bigr) + K\sum_i N\tau_i\,t_i\,P(t_i)\Bigr]
+\]</div>
+<p>to <span class="arithmatex">\(10^{-6}\)</span>. For an at-the-money swap, DV01 and PV01 agree within a few percent.</p>
+<h3 id="43-amortising-and-accreting-swaps">4.3 Amortising and accreting swaps</h3>
+<p>The notional may be a sequence (one entry per period) or a function of the accrual start date, such as <code>step_notional</code> or <code>linear_notional</code>. Each coupon is linear in its notional. A swap whose notional steps down by <span class="arithmatex">\(\Delta N_j\)</span> at <span class="arithmatex">\(T_j\)</span> is therefore exactly the sum of bullet swaps of notional <span class="arithmatex">\(\Delta N_j\)</span> maturing at <span class="arithmatex">\(T_j\)</span>, and its par rate is the annuity-weighted average of their par rates. The tests verify this for OIS and vanilla swaps, including their DV01.</p>
+<hr />
+<h2 id="5-fixed-rate-bonds">5. Fixed-rate bonds</h2>
+<p><code>FixedRateBond</code> generates an unadjusted coupon schedule with payments rolled to the following business day. Accrued interest uses the reference periods that ACT/ACT ICMA requires. With <span class="arithmatex">\(n\)</span> coupons a year, settlement <span class="arithmatex">\(t_s\)</span>, next coupon <span class="arithmatex">\(t_1\)</span> and <span class="arithmatex">\(w = n\,\tau_{\text{ICMA}}(t_s, t_1)\)</span>, the street-convention dirty price at yield <span class="arithmatex">\(y\)</span> is</p>
+<div class="arithmatex">\[
+P_{\text{dirty}} = \sum_{j \ge 1} \frac{c_j}{(1 + y/n)^{w + j - 1}},
+\]</div>
+<p>and the clean price is the dirty price minus accrued interest. Macaulay duration is the time-weighted average of the discounted cash flows. Modified duration divides it by <span class="arithmatex">\(1 + y/n\)</span>, and convexity is the second derivative of the price divided by the price. <code>dirty_price_from_curve</code> discounts on a curve with an optional z-spread added to continuously compounded zero rates, and <code>z_spread</code> inverts it.</p>
+<p>For a 10-year 5% semi-annual bond issued on 15 January 2024 and valued on that date:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Quantity</th>
+<th style="text-align: left;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Dirty price at a 6% yield</td>
+<td style="text-align: left;">92.56126256977227</td>
+</tr>
+<tr>
+<td style="text-align: left;">Clean price at a 5% yield</td>
+<td style="text-align: left;">100</td>
+</tr>
+<tr>
+<td style="text-align: left;">Macaulay duration at 5%</td>
+<td style="text-align: left;">7.98945 years</td>
+</tr>
+<tr>
+<td style="text-align: left;">Accrued interest on 15 March 2024</td>
+<td style="text-align: left;"><span class="arithmatex">\(2.5 \times 60/182 = 0.824176\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Clean price at 5% on 15 March 2024</td>
+<td style="text-align: left;">99.99319</td>
+</tr>
+</tbody>
+</table>
+<p>The 2034 final coupon falls on Sunday 15 January and Monday 16 January is Martin Luther King Day, so it is paid on 17 January 2034. The accrual still ends on the unadjusted date.</p>
+<hr />
+<h2 id="6-curve-construction">6. Curve construction</h2>
+<h3 id="61-piecewise-curves">6.1 Piecewise curves</h3>
+<p>A <code>PiecewiseCurve</code> stores discount factors <span class="arithmatex">\(P_i\)</span> at node times <span class="arithmatex">\(t_i\)</span>, with the node <span class="arithmatex">\((0, 1)\)</span> prepended. An interpolation scheme turns them into a smooth <span class="arithmatex">\(x(t) = -\log P(t)\)</span>, and the instantaneous forward <span class="arithmatex">\(f = x'\)</span> is the scheme's analytic derivative. Following Hagan &amp; West (<em>Interpolation methods for curve construction</em>, 2006), the schemes are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Scheme</th>
+<th style="text-align: left;">Interpolates</th>
+<th style="text-align: left;">Forward</th>
+<th style="text-align: left;">Local</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>LogLinearDiscount</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(\log P\)</span> linearly</td>
+<td style="text-align: left;">piecewise flat</td>
+<td style="text-align: left;">yes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>LinearZero</code></td>
+<td style="text-align: left;">zero rate <span class="arithmatex">\(r\)</span> linearly</td>
+<td style="text-align: left;">piecewise linear in <span class="arithmatex">\(t\)</span>, jumps at nodes</td>
+<td style="text-align: left;">yes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CubicZero</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(r\)</span> by a cubic spline</td>
+<td style="text-align: left;"><span class="arithmatex">\(C^1\)</span></td>
+<td style="text-align: left;">no</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CubicSplineRT</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(rt\)</span> by a cubic spline</td>
+<td style="text-align: left;"><span class="arithmatex">\(C^1\)</span></td>
+<td style="text-align: left;">no</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MonotoneCubicRT</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(rt\)</span> by Hyman-filtered Hermite cubics</td>
+<td style="text-align: left;"><span class="arithmatex">\(C^0\)</span></td>
+<td style="text-align: left;">nearly</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MonotoneConvex</code></td>
+<td style="text-align: left;">discrete forwards, Hagan–West monotone convex</td>
+<td style="text-align: left;"><span class="arithmatex">\(C^0\)</span>; positive with <code>positivity=True</code> when the discrete forwards are</td>
+<td style="text-align: left;">nearly</td>
+</tr>
+</tbody>
+</table>
+<p>Monotone convex reproduces each discrete forward <span class="arithmatex">\(f^d_i = (x_i - x_{i-1})/(t_i - t_{i-1})\)</span> as the average of <span class="arithmatex">\(f\)</span> over its interval. With zero rates 2.75%, 4%, 4.75%, 5%, 4.75% at 1–5 years, it gives forwards 0.0229375, 0.05010625, 0.0609 and 0.03625 at 0.3, 1.3, 2.1 and 4.5 years.</p>
+<p><code>compare_schemes</code> scores schemes on Hagan and West's criteria: minimum forward, roughness <span class="arithmatex">\(\int f'^2\)</span>, locality, and the largest forward move per unit zero-rate bump. On the hump-and-dip curve with zero rates 8.1%, 7%, 4.4%, 7%, 4%, 3% at 0.1, 1, 4, 9, 20 and 30 years:</p>
+<ul>
+<li><code>LinearZero</code> and <code>CubicZero</code> produce negative forwards, while <code>MonotoneConvex</code> stays positive.</li>
+<li><code>LogLinearDiscount</code> has minimum forward <span class="arithmatex">\((0.03 \cdot 30 - 0.04 \cdot 20)/10 = 0.01\)</span>.</li>
+<li>A bump to <span class="arithmatex">\(r_j\)</span> moves the log-linear flat forward on <span class="arithmatex">\((t_{j-1}, t_j)\)</span> by <span class="arithmatex">\(t_j/(t_j - t_{j-1})\)</span> per unit, and on <span class="arithmatex">\((t_j, t_{j+1})\)</span> by <span class="arithmatex">\(-t_j/(t_{j+1} - t_j)\)</span>. Its largest sensitivity is therefore <span class="arithmatex">\(30/10 = 3\)</span>, reached at the last node.</li>
+<li>The natural splines spread a single bump across the curve. One bump can move the <code>CubicSplineRT</code> forward on all six intervals and the <code>CubicZero</code> forward on five, against at most two for the monotone schemes.</li>
+</ul>
+<h3 id="62-helpers-and-the-bootstrap">6.2 Helpers and the bootstrap</h3>
+<p>A helper is a quoted instrument that can compute its model quote on a mapping of named curves. Its <em>pillar</em> is the last date the quote depends on. <code>bootstrap_curve</code> sorts the helpers by pillar and puts a node at each pillar. It then solves node <span class="arithmatex">\(i\)</span>, in <span class="arithmatex">\(x_i = -\log P(t_i)\)</span> with Brent's method, so that helper <span class="arithmatex">\(i\)</span> reprices. Projection curves are built on a known discount curve (dual-curve bootstrapping) by passing <code>known={"discount": ois}</code>.</p>
+<p>The two kinds of scheme behave differently:</p>
+<ul>
+<li><strong>Local schemes.</strong> Later nodes do not move the curve before <span class="arithmatex">\(t_i\)</span>, so one pass reprices every helper to rounding.</li>
+<li><strong>Non-local schemes.</strong> The passes repeat until the nodes stop moving.</li>
+</ul>
+<p><code>fit_curves</code> instead solves every node of several curves at once by Newton's method, with a finite-difference Jacobian. This handles cases a sequential bootstrap cannot: for example, long ESTR points that exist only through ESTR/EURIBOR basis swaps, which need both curves at once. For a single curve it converges to the same nodes.</p>
+<p><code>BootstrapResult.jacobian</code> returns <span class="arithmatex">\(J_{ij} = \partial q_i/\partial x_j\)</span> at the solution. It is lower triangular for a local scheme. By the implicit function theorem, <code>node_sensitivities</code> returns <span class="arithmatex">\(\partial x/\partial q = J^{-1}\)</span>: the move of each node per unit move of one quote with the others fixed, which is exactly the re-bootstrapped curve.</p>
+<h3 id="63-front-end-futures-and-turns">6.3 Front end, futures and turns</h3>
+<p><code>Deposit.overnight</code>, <code>Deposit.tom_next</code> and <code>Deposit.spot_next</code> pin the curve between the trade date and spot. Traded on Friday 8 March 2024, the O/N deposit runs over the weekend to Monday, an accrual of <span class="arithmatex">\(3/360\)</span>. With O/N and T/N helpers, <span class="arithmatex">\(P(t_{\text{spot}}) = 1/\bigl((1 + \tau_{ON} r_{ON})(1 + \tau_{TN} r_{TN})\bigr)\)</span>.</p>
+<p><code>quarterly_futures</code> builds a strip of consecutive 3M overnight futures from the next IMM date. Each <code>FutureHelper</code> carries Hull–White parameters <span class="arithmatex">\((a, \sigma)\)</span> for the convexity adjustment of §3.3. With the right parameters, the strip recovers the forwards of the curve that produced the prices. With zero convexity the curve forward <span class="arithmatex">\(F'\)</span> equals the futures rate. It therefore overstates the true forward <span class="arithmatex">\(F\)</span> by exactly <span class="arithmatex">\(1 + \tau F' = (1 + \tau F)e^{\Gamma_c}\)</span>.</p>
+<p>Year-end funding pressure lifts the overnight forward over the turn. <code>turn_of_year(year, s)</code> returns a <code>ForwardSpread</code> adding <span class="arithmatex">\(s\)</span> to the instantaneous forward from the last business day of the year to the first of the next: from 31 December 2024 to 2 January 2025, or, with the 2022 year end on a Saturday, from 30 December 2022 to 2 January 2023. A <code>SpreadAdjustedCurve</code> multiplies the base discount factor by <span class="arithmatex">\(e^{-s\,|[t_a, t_b) \cap [0, t)|}\)</span>. With <code>spreads=</code> passed to <code>bootstrap_curve</code>, the smooth base curve is fitted under the known turn.</p>
+<h3 id="64-policy-meeting-curves">6.4 Policy-meeting curves</h3>
+<p>Overnight rates step on central-bank meeting dates. <code>flat_forward_curve</code> holds the forward at <span class="arithmatex">\(r_j\)</span> on <span class="arithmatex">\([s_{j-1}, s_j)\)</span>, which is <code>LogLinearDiscount</code> with nodes at the step dates. <code>meeting_date_curve</code> fits one rate per inter-meeting period to any helpers. The fit is exact with one helper per period, and Gauss–Newton least squares when there are more, for example monthly SOFR futures, several of which can fall between two FOMC meetings. A period that no helper depends on makes the Jacobian rank-deficient, and the fit raises <code>ValueError</code> rather than invent a rate.</p>
+<h3 id="65-parametric-curves">6.5 Parametric curves</h3>
+<p>Svensson's curve, with <span class="arithmatex">\(x_k = t/\tau_k\)</span> and <span class="arithmatex">\(L(x) = (1 - e^{-x})/x\)</span>, has</p>
+<div class="arithmatex">\[
+z(t) = \beta_0 + \beta_1 L(x_1) + \beta_2\bigl(L(x_1) - e^{-x_1}\bigr) + \beta_3\bigl(L(x_2) - e^{-x_2}\bigr),
+\qquad
+f(t) = \beta_0 + \beta_1 e^{-x_1} + \beta_2 x_1 e^{-x_1} + \beta_3 x_2 e^{-x_2},
+\]</div>
+<p>so <span class="arithmatex">\(f(0) = z(0^+) = \beta_0 + \beta_1\)</span> and <span class="arithmatex">\(z(\infty) = \beta_0\)</span>. Nelson–Siegel is <span class="arithmatex">\(\beta_3 = 0\)</span>. The model is linear in the betas for fixed decay times, so <code>fit_nss_zero_rates</code> uses variable projection: a search over <span class="arithmatex">\(\log\tau\)</span> with a linear least-squares solve inside. <code>fit_nss</code> fits helper quotes, bonds included, by Levenberg–Marquardt.</p>
+<h3 id="66-curve-sets">6.6 Curve sets</h3>
+<p>A <code>CurveSet</code> is a mapping of named curves with a discount role and an index-to-curve projection map. Helpers read it directly, and <code>pv</code> prices swaps and basis swaps by the index on each floating leg.</p>
+<hr />
+<h2 id="7-curve-risk">7. Curve risk</h2>
+<h3 id="71-node-and-quote-deltas">7.1 Node and quote deltas</h3>
+<p>A fitted curve is a function of its node values <span class="arithmatex">\(x_j = -\log P(t_j)\)</span>, and a price <span class="arithmatex">\(V\)</span> is a function of the curves. <code>node_deltas</code> returns <span class="arithmatex">\(\partial V/\partial x_j\)</span> by central differences, leaving the interpolation scheme and any turn spreads in place. The fit makes the helper model quotes <span class="arithmatex">\(m(x)\)</span> equal to the market quotes <span class="arithmatex">\(q\)</span>. By the implicit function theorem <span class="arithmatex">\(\partial x/\partial q = J^{-1}\)</span> with <span class="arithmatex">\(J = \partial m/\partial x\)</span>, so</p>
+<div class="arithmatex">\[
+\frac{\partial V}{\partial q} = J^{-\top}\,\frac{\partial V}{\partial x}.
+\]</div>
+<p><code>quote_deltas</code> evaluates this from one Jacobian instead of one re-bootstrap per quote. The result is the sensitivity to each quote with the others held fixed, exactly what bumping a quote and refitting gives. It takes a single-curve <code>BootstrapResult</code> or a multi-curve <code>GlobalFitResult</code>. For the latter, nodes and helpers are stacked across curves, so cross effects are included.</p>
+<p>A par swap identical to helper <span class="arithmatex">\(i\)</span> is a useful check. Its value is <span class="arithmatex">\((S - K)A\)</span>, and with the other quotes fixed only its own par rate <span class="arithmatex">\(S = q_i\)</span> can move. Its quote deltas are therefore exactly <span class="arithmatex">\(A\,e_i\)</span>: the annuity on its own quote and zero elsewhere, OIS quotes included in a dual-curve fit.</p>
+<h3 id="72-key-rate-deltas">7.2 Key-rate deltas</h3>
+<p>Key-rate deltas (Ho, 1992) need no fit. The zero curve of any <code>YieldCurve</code> is moved by triangular hats <span class="arithmatex">\(h_k(t)\)</span> centred on key tenors and flat beyond the first and last keys:</p>
+<div class="arithmatex">\[
+P'(t) = P(t)\exp\Bigl(-t\sum_k b_k\,h_k(t)\Bigr).
+\]</div>
+<p>The hats sum to one, so key-rate deltas add up to the parallel delta to first order. A zero-coupon bond maturing on a key has delta <span class="arithmatex">\(-T\,P(T)\)</span> on that key and none elsewhere. At a flat 3% continuously compounded rate, this is <span class="arithmatex">\(-5e^{-0.15} = -4.30354\)</span> for <span class="arithmatex">\(T = 5\)</span>.</p>
+<h3 id="73-hedging-and-pl-explain">7.3 Hedging and P&amp;L explain</h3>
+<p><code>hedge_notionals</code> minimises <span class="arithmatex">\(\lVert W^{1/2}(d + Hn)\rVert_2\)</span> over hedge notionals <span class="arithmatex">\(n\)</span>, where <span class="arithmatex">\(d\)</span> is the book's risk and column <span class="arithmatex">\(j\)</span> of <span class="arithmatex">\(H\)</span> is the risk of one unit of hedge <span class="arithmatex">\(j\)</span>. With par swaps on every pillar, <span class="arithmatex">\(H\)</span> is diagonal with the annuities, so <span class="arithmatex">\(n_i = -d_i/A_i\)</span>. With fewer hedges than buckets, the residual is <span class="arithmatex">\(W\)</span>-orthogonal to every hedge.</p>
+<p>Between two fits on the same nodes, <code>pnl_explain</code> splits the change in value into <span class="arithmatex">\(\delta^\top\Delta x\)</span> and <span class="arithmatex">\(\tfrac12\Delta x^\top\Gamma\Delta x\)</span>, with <span class="arithmatex">\(\Gamma\)</span> from <code>node_gamma</code>. The remainder is third order. For a zero-coupon bond on a node it is exactly <span class="arithmatex">\(-P\,\Delta x^3/6\)</span> to leading order. For an 8-year OIS, multiplying a market move by five multiplies the remainder by about <span class="arithmatex">\(5^3 = 125\)</span>.</p>
+<h3 id="74-principal-components">7.4 Principal components</h3>
+<p><code>curve_pca</code> diagonalises the sample covariance of zero-rate changes on fixed tenors. Its first three loadings are level, slope and curvature (Litterman &amp; Scheinkman, 1991). Signs are fixed so that the level loadings sum to a positive number, the slope rises from short to long tenors, and the curvature is positive at the middle tenor. For a book with key-rate deltas <span class="arithmatex">\(d\)</span> on the same tenors, the factor deltas are <span class="arithmatex">\(d^\top v_j\)</span>. The book's P&amp;L variance under the retained factors is <span class="arithmatex">\(\sum_j\lambda_j(d^\top v_j)^2\)</span>, which equals the first-order P&amp;L variance when the changes have exactly that rank.</p>
+<h2 id="8-volatility-products">8. Volatility products</h2>
+<h3 id="81-caps-floors-and-swaptions">8.1 Caps, floors and swaptions</h3>
+<p>A caplet on a term index fixing at <span class="arithmatex">\(T\)</span> for the period <span class="arithmatex">\([t_s, t_e]\)</span> pays <span class="arithmatex">\(\tau(L - K)^+\)</span> at <span class="arithmatex">\(t_e\)</span>. Under the <span class="arithmatex">\(t_e\)</span>-forward measure <span class="arithmatex">\(L\)</span> is a martingale, so its value is <span class="arithmatex">\(P(t_e)\,\tau\,\mathrm{Black}(F, K, T, \sigma)\)</span>, with <span class="arithmatex">\(F\)</span> the forward from the projection curve and <span class="arithmatex">\(P\)</span> from the discount curve. <code>CapFloor.price</code> accepts Black, shifted Black or normal (Bachelier) vols, either one flat number or a function <span class="arithmatex">\(\sigma(T, K)\)</span>. <code>cap_floor</code> skips the first period by default, since it is already fixed: a 5Y EURIBOR6M cap has 9 caplets. Caps minus floors at the same strike equal the floating leg minus <span class="arithmatex">\(K\)</span> times the caplet annuity.</p>
+<p>A physically settled payer swaption is a call on the forward swap rate <span class="arithmatex">\(S\)</span> under the annuity measure, worth <span class="arithmatex">\(A\,\mathrm{Black}(S, K, T, \sigma)\)</span>. Cash-settled swaptions use the cash annuity</p>
+<div class="arithmatex">\[
+\bar A(S) = \sum_{i=1}^{n} \frac{1/m}{(1 + S/m)^i} = \frac{1 - (1 + S/m)^{-n}}{S},
+\]</div>
+<p>which <code>cash_annuity</code> evaluates without cancellation as <span class="arithmatex">\(S \to 0\)</span>.</p>
+<h3 id="82-sabr">8.2 SABR</h3>
+<p>In SABR (Hagan et al., 2002) <span class="arithmatex">\(dF = \alpha F^\beta dW\)</span> and <span class="arithmatex">\(d\alpha = \nu\alpha\,dZ\)</span>, with <span class="arithmatex">\(d\langle W, Z\rangle = \rho\,dt\)</span>. <code>SABR.lognormal_vol</code> gives Hagan's expansion, or Obłój's (2008) correction with <code>method="obloj"</code>. The two agree at the money. They differ in the wings even at <span class="arithmatex">\(T = 0\)</span>: with <span class="arithmatex">\(\alpha = 0.035\)</span>, <span class="arithmatex">\(\beta = 0.5\)</span>, <span class="arithmatex">\(\rho = -0.3\)</span>, <span class="arithmatex">\(\nu = 0.4\)</span> and <span class="arithmatex">\(F = 0.03\)</span>, at <span class="arithmatex">\(K = F/e\)</span> Hagan gives <span class="arithmatex">\(0.35902\)</span> and Obłój <span class="arithmatex">\(0.36024\)</span>. <code>calibrate_sabr</code> fixes <span class="arithmatex">\(\beta\)</span> and fits <span class="arithmatex">\((\alpha, \rho, \nu)\)</span> to a smile by least squares. If an ATM vol is given, it solves for <span class="arithmatex">\(\alpha\)</span> from that vol through <code>alpha_from_atm</code>, so the ATM quote is matched exactly. A shift <span class="arithmatex">\(s\)</span> applies the model to <span class="arithmatex">\(F + s\)</span>, for negative rates.</p>
+<h3 id="83-arbitrage-free-sabr">8.3 Arbitrage-free SABR</h3>
+<p>At long expiries and low rates, Hagan's formula implies a negative density near zero. <code>ArbitrageFreeSABR</code> instead solves the effective one-dimensional forward equation of Hagan et al. (2014) for the density, with absorbing mass at the boundary, using the variable <span class="arithmatex">\(z\)</span> and the Lawson–Swayne scheme of Le Floc'h &amp; Kennedy (2017):</p>
+<div class="arithmatex">\[
+\frac{\partial Q}{\partial T} = \frac{\partial^2 (M Q)}{\partial F^2}, \qquad M = \tfrac12 D(F)^2 E(F, T).
+\]</div>
+<p>Mass and the forward are conserved to rounding error. For <span class="arithmatex">\(\alpha = 0.02\)</span>, <span class="arithmatex">\(\beta = 0.5\)</span>, <span class="arithmatex">\(\rho = -0.3\)</span>, <span class="arithmatex">\(\nu = 0.5\)</span>, <span class="arithmatex">\(F = 1\%\)</span> and <span class="arithmatex">\(T = 10\)</span>, Hagan's prices have a negative density near zero, while the PDE puts <span class="arithmatex">\(8.74\%\)</span> of the mass at zero. With <span class="arithmatex">\(\beta = 0\)</span> and <span class="arithmatex">\(\nu = 0\)</span> the model is Brownian motion absorbed at zero, and the PDE converges to the reflection-principle prices at second order.</p>
+<p><code>sabr_paths</code> simulates the model itself, with absorption at zero. With <span class="arithmatex">\(\beta = 0\)</span> it adds a Brownian-bridge crossing test, which removes the <span class="arithmatex">\(O(\sqrt{\Delta t})\)</span> bias of checking only at the grid times. The PDE is an expansion of the true dynamics, so at long expiries its prices differ from Monte Carlo by more than sampling error.</p>
+<h3 id="84-caplet-stripping-and-the-swaption-cube">8.4 Caplet stripping and the swaption cube</h3>
+<p>Cap markets quote one flat vol per maturity. <code>strip_caplet_vols</code> turns these into caplet vols by bootstrapping. It sorts the caps by maturity and gives the caplets that each longer cap adds one common vol, chosen so that the cap reprices; earlier caplets keep the vols already stripped. The result is a piecewise-constant <code>CapletVolCurve</code> in expiry, usable directly as <span class="arithmatex">\(\sigma(T, K)\)</span> in <code>CapFloor.price</code>. If flat vols fall faster than the bootstrap can absorb, the required caplet variance becomes negative and the function raises.</p>
+<p><code>SwaptionCube</code> holds one SABR smile per (expiry, tenor) node, with a common <span class="arithmatex">\(\beta\)</span>. Between nodes it interpolates <span class="arithmatex">\(\log\alpha\)</span>, <span class="arithmatex">\(\rho\)</span> and <span class="arithmatex">\(\log\nu\)</span> bilinearly, which keeps <span class="arithmatex">\(\alpha, \nu &gt; 0\)</span> and <span class="arithmatex">\(|\rho| &lt; 1\)</span>. Beyond the matrix the parameters are held flat.</p>
+<h3 id="85-cms">8.5 CMS</h3>
+<p>A coupon paying the swap rate <span class="arithmatex">\(S_T\)</span> at <span class="arithmatex">\(T_p\)</span> is worth <span class="arithmatex">\(A_0\,E^A[S_T\,\alpha(S_T)]\)</span>, where the annuity mapping <span class="arithmatex">\(\alpha(S) \approx P(T, T_p)/A(T)\)</span> comes from a terminal swap-rate model. <code>CMSReplication</code> evaluates such expectations by Carr–Madan replication with swaption prices:</p>
+<div class="arithmatex">\[
+E^A[f(S_T)] = f(S_0) + \int_{-\infty}^{S_0} f''(K)\,P(K)\,dK + \int_{S_0}^{\infty} f''(K)\,C(K)\,dK.
+\]</div>
+<p>The standard mapping (Hagan, 2003) is <span class="arithmatex">\(\alpha \propto G(S) = S(1 + S/m)^{-\delta}/(1 - (1 + S/m)^{-n})\)</span>. The linear mapping is <span class="arithmatex">\(\alpha(S) = P(T_p)/A_0 + a(S - S_0)\)</span>. With the linear mapping and a lognormal swap rate, the convexity adjustment has the closed form</p>
+<div class="arithmatex">\[
+E^{T_p}[S_T] - S_0 = \frac{a A_0}{P(T_p)}\,S_0^2\,\bigl(e^{\sigma^2 T} - 1\bigr),
+\]</div>
+<p>which the replication reproduces to <span class="arithmatex">\(10^{-8}\)</span> relative. With the slope <span class="arithmatex">\(a\)</span> taken from the standard mapping, the adjustment for a 5-year fixing of a 10-year annual swap rate at <span class="arithmatex">\(S_0 = 3\%\)</span> and <span class="arithmatex">\(\sigma = 20\%\)</span> is <span class="arithmatex">\(10.2\)</span> bp. The standard mapping itself gives <span class="arithmatex">\(10.8\)</span> bp. The smile matters as well. The payoff is most convex at high rates, so raising the vols at high strikes (a larger <span class="arithmatex">\(\nu\)</span>) raises the adjustment, while a downward skew (<span class="arithmatex">\(\beta &lt; 1\)</span>, <span class="arithmatex">\(\rho &lt; 0\)</span>) lowers it; <code>examples/rates_vol_example.py</code> shows the second case.</p>
+<h2 id="9-short-rate-models">9. Short-rate models</h2>
+<h3 id="91-hullwhite">9.1 Hull–White</h3>
+<p><code>HullWhite</code> writes the short rate as <span class="arithmatex">\(r_t = f(0, t) + x_t\)</span> with</p>
+<div class="arithmatex">\[
+dx_t = \bigl(y(t) - a x_t\bigr)\,dt + \sigma(t)\,dW_t, \qquad x_0 = 0, \qquad y(t) = \int_0^t e^{-2a(t-u)}\sigma(u)^2\,du,
+\]</div>
+<p>which fits the discount curve by construction (Andersen &amp; Piterbarg's form; <span class="arithmatex">\(\sigma\)</span> may be piecewise constant). Bond prices are <span class="arithmatex">\(P(t, T) = \frac{P(0,T)}{P(0,t)}\exp\bigl(-B x_t - \tfrac12 B^2 y(t)\bigr)\)</span> with <span class="arithmatex">\(B = (1 - e^{-a(T-t)})/a\)</span>, so zero-bond options are Black formulas on the bond forward, and caplets are bond puts. A swap with discount-curve cashflows (<code>swap_cashflows</code>, with the projection basis kept as a deterministic spread) is a portfolio of bonds. When its amounts change sign once, Jamshidian's decomposition prices the swaption as bond options struck at <span class="arithmatex">\(P(T, t_i | x^*)\)</span>. Otherwise <code>swaption</code> integrates against the Gaussian.</p>
+<h3 id="92-trees-pde-and-simulation">9.2 Trees, PDE and simulation</h3>
+<p><code>HullWhiteTree</code> is the Hull–White (1994) trinomial tree, with the drift fitted step by step so that every grid bond reprices exactly. <code>HullWhitePDE</code> solves the pricing equation in <span class="arithmatex">\(x\)</span> on the <code>spxa.pde</code> solvers, with exercise events and American constraints. <code>hull_white_paths</code> simulates <span class="arithmatex">\((x, \int x)\)</span> exactly, so the bank-account discount factor reprices the curve without bias. These engines handle early exercise. On a flat 3% curve, with <span class="arithmatex">\(a = 0.05\)</span> and <span class="arithmatex">\(\sigma = 1\%\)</span>, an American put expiring in 2 years on the 6-year bond, struck at <span class="arithmatex">\(P(0, 6)\)</span>, is worth <span class="arithmatex">\(0.0094954\)</span>, against <span class="arithmatex">\(0.0020894\)</span> for the European. Exercise pays as soon as rates fall far enough to lift the bond above its current price.</p>
+<h3 id="93-calibration">9.3 Calibration</h3>
+<p><code>calibrate_hull_white</code> fixes <span class="arithmatex">\(a\)</span> and fits <span class="arithmatex">\(\sigma\)</span> to swaptions or caps. In bootstrap mode, <span class="arithmatex">\(\sigma\)</span> is piecewise constant between instrument expiries and each level is solved in turn. In global mode, <span class="arithmatex">\(a\)</span> and one <span class="arithmatex">\(\sigma\)</span> are fitted together by least squares. <code>calibrate_g2pp</code> fits all five G2++ parameters to a grid of swaptions. It keeps <span class="arithmatex">\(a &gt; b\)</span> (so <span class="arithmatex">\(x\)</span> is the fast factor) and <span class="arithmatex">\(|\rho| &lt; 1\)</span> through its parametrisation, and it recovers the parameters of a synthetic <span class="arithmatex">\(3 \times 3\)</span> grid to <span class="arithmatex">\(10^{-5}\)</span>. <code>model_implied_vols</code> quotes any <code>ShortRateModel</code> (Hull–White, G2++, CIR++) in Black or Bachelier vols for comparison with the market.</p>
+<h3 id="94-g2-and-the-two-factor-hullwhite-model">9.4 G2++ and the two-factor Hull–White model</h3>
+<p>In G2++ (Brigo &amp; Mercurio, §4.2) <span class="arithmatex">\(r = x + y + \varphi(t)\)</span>, with two correlated Ornstein–Uhlenbeck factors of speeds <span class="arithmatex">\(a, b\)</span> and vols <span class="arithmatex">\(\sigma, \eta\)</span>. Bonds stay exponential-affine. Swaptions reduce to a one-dimensional integral: given <span class="arithmatex">\(x_T\)</span>, the payoff is monotone in <span class="arithmatex">\(y_T\)</span>, and the conditional expectation is a sum of normal distribution functions. Correlation decorrelates the curve: a negative <span class="arithmatex">\(\rho\)</span> cancels part of the short-end variance while long rates follow the slow factor. With <span class="arithmatex">\(a = 0.5\)</span>, <span class="arithmatex">\(\sigma = 1.2\%\)</span>, <span class="arithmatex">\(b = 0.05\)</span> and <span class="arithmatex">\(\eta = 0.9\%\)</span>, a 5Y×20Y swaption is worth <span class="arithmatex">\(12.2\)</span> times a 5Y×1Y at <span class="arithmatex">\(\rho = -0.7\)</span>, and <span class="arithmatex">\(8.3\)</span> times at <span class="arithmatex">\(\rho = 0.7\)</span>. Hull and White's two-factor model, with a stochastic drift <span class="arithmatex">\(u\)</span> in the short rate, is the same model: <code>HullWhite2F.to_g2pp</code> and <code>from_g2pp</code> map the parameters both ways, preserving the instantaneous covariance of <span class="arithmatex">\((dr, du)\)</span>.</p>
+<h3 id="95-positive-rates-blackkarasinski-and-cir">9.5 Positive rates: Black–Karasinski and CIR++</h3>
+<p>Gaussian models give negative rates. For <span class="arithmatex">\(a = 0.1\)</span> and <span class="arithmatex">\(\sigma = 0.85\%\)</span>, the 10-year Hull–White tree reaches <span class="arithmatex">\(-9.2\%\)</span> at its lowest node. In Black–Karasinski <span class="arithmatex">\(\log r\)</span> is an Ornstein–Uhlenbeck process, so rates stay positive. There are no closed forms, so <code>BlackKarasinskiTree</code> solves for each step's drift by Newton's method to fit the curve, and <code>black_karasinski_paths</code> simulates on the fitted drift. CIR++ (Brigo &amp; Mercurio, 2001) shifts a CIR factor by <span class="arithmatex">\(\varphi = f^M - f^{\rm CIR}\)</span>. It keeps CIR's closed forms: bond options are scaled non-central <span class="arithmatex">\(\chi^2\)</span> formulas, and swaptions follow by Jamshidian, since bond prices decrease in <span class="arithmatex">\(x\)</span>. Rates stay above <span class="arithmatex">\(\varphi\)</span>. With <span class="arithmatex">\(\kappa = 0.3\)</span>, <span class="arithmatex">\(\theta = 2.5\%\)</span>, <span class="arithmatex">\(\sigma = 0.08\)</span> and <span class="arithmatex">\(x_0 = 2\%\)</span> on the flat 3% curve, <span class="arithmatex">\(\varphi\)</span> is positive out to 30 years. The square-root diffusion also produces a smile. For a 2Y×5Y swaption at the money and <span class="arithmatex">\(\pm 100\)</span> bp, this CIR++ gives normal vols of <span class="arithmatex">\(27.48\)</span>, <span class="arithmatex">\(46.42\)</span> and <span class="arithmatex">\(57.09\)</span> bp, while Hull–White (<span class="arithmatex">\(a = 0.05\)</span>, <span class="arithmatex">\(\sigma = 1\%\)</span>) is nearly flat at <span class="arithmatex">\(86.64\)</span>, <span class="arithmatex">\(87.14\)</span> and <span class="arithmatex">\(87.65\)</span> bp.</p>
+<h2 id="10-hjm-and-cheyette">10. HJM and Cheyette</h2>
+<h3 id="101-gaussian-hjm">10.1 Gaussian HJM</h3>
+<p>Heath, Jarrow and Morton model the whole forward curve. With a deterministic vector volatility <span class="arithmatex">\(\sigma(t, T)\)</span> driving independent Brownian motions,</p>
+<div class="arithmatex">\[
+df(t, T) = \sigma(t, T)\cdot\Sigma(t, T)\,dt + \sigma(t, T)\cdot dW_t, \qquad \Sigma(t, T) = \int_t^T \sigma(t, s)\,ds,
+\]</div>
+<p>and the drift is forced by no-arbitrage, so <code>GaussianHJM</code> fits the initial curve for any choice of volatility. Bonds are lognormal, and under the <span class="arithmatex">\(T\)</span>-forward measure <span class="arithmatex">\(P(t, S)/P(t, T)\)</span> has log-variance <span class="arithmatex">\(\int_0^T |\Sigma(u, S) - \Sigma(u, T)|^2\,du\)</span>. Bond options and caplets are therefore Black formulas. <code>exponential_vol</code> (<span class="arithmatex">\(\sigma e^{-a(T-t)}\)</span>) gives Hull–White, and two exponential factors with correlated loadings give G2++. <code>GaussianHJM.from_hull_white</code> covers piecewise-constant volatility: its jump times are passed as <code>breakpoints</code>, so the quadrature never straddles a jump. <code>hump_vol</code> gives <span class="arithmatex">\((\alpha + \beta\tau)e^{-\gamma\tau}\)</span> in time to maturity <span class="arithmatex">\(\tau = T - t\)</span>. It peaks at <span class="arithmatex">\(\tau = 1/\gamma - \alpha/\beta\)</span>, the hump seen in historical forward-rate volatilities.</p>
+<h3 id="102-simulating-the-curve">10.2 Simulating the curve</h3>
+<p><code>hjm_paths</code> evolves log deflated bonds <span class="arithmatex">\(Z(t, T_j) = P(t, T_j)/B(t)\)</span> on a maturity grid. Each step freezes <span class="arithmatex">\(\Sigma\)</span> at its start, and the increment <span class="arithmatex">\(-\tfrac12|\Sigma|^2\Delta t - \Sigma\cdot\Delta W\)</span> has <span class="arithmatex">\(E[e^{\cdot}] = 1\)</span> exactly. Every <span class="arithmatex">\(Z(\cdot, T_j)\)</span> is then a discrete martingale, and the curve is repriced with no discretisation bias. The deflator is <span class="arithmatex">\(Z(t, t)\)</span>. The remaining error sits in option prices, through the left-point variance <span class="arithmatex">\(\sum_k |\Sigma(t_k, S) - \Sigma(t_k, T)|^2\Delta t\)</span>. The simulated payoff is priced exactly by Black at that variance, which converges at first order.</p>
+<h3 id="103-cheyette">10.3 Cheyette</h3>
+<p>A separable volatility <span class="arithmatex">\(\sigma_r(t)\,e^{-\kappa(T - t)}\)</span> makes HJM Markovian in two states. Cheyette's model (Andersen &amp; Piterbarg, ch. 13) lets the short-rate volatility depend on the state, <span class="arithmatex">\(\sigma_r(t, x)\)</span>, while keeping that structure:</p>
+<div class="arithmatex">\[
+dx = (y - \kappa x)\,dt + \sigma_r\,dW, \qquad dy = (\sigma_r^2 - 2\kappa y)\,dt, \qquad P(t, T) = \frac{P(0, T)}{P(0, t)}e^{-G x - \frac12 G^2 y},
+\]</div>
+<p>with <span class="arithmatex">\(G = (1 - e^{-\kappa(T - t)})/\kappa\)</span>. <code>Cheyette</code> uses the linear local volatility <span class="arithmatex">\(\sigma_r = \max(\sigma(t) + \beta x, 0)\)</span>. With <span class="arithmatex">\(\beta = 0\)</span>, <span class="arithmatex">\(y\)</span> is deterministic and the model is Hull–White. A positive <span class="arithmatex">\(\beta\)</span> raises the volatility as rates rise, which produces the upward-sloping normal-vol skew of rate markets.</p>
+<h3 id="104-engines">10.4 Engines</h3>
+<p><code>cheyette_paths</code> freezes <span class="arithmatex">\(\sigma_r\)</span> and <span class="arithmatex">\(y\)</span> over each step and solves the step exactly. For <span class="arithmatex">\(\beta = 0\)</span> this is the exact Hull–White transition. <code>CheyettePDE</code> solves the two-dimensional pricing equation. Because <span class="arithmatex">\(y\)</span> has no diffusion, each step splits into semi-Lagrangian advection in <span class="arithmatex">\(y\)</span> and an implicit solve in <span class="arithmatex">\(x\)</span> on each <span class="arithmatex">\(y\)</span>-slice. Exercise dates apply <span class="arithmatex">\(\max(V, g)\)</span>, so the PDE prices American and Bermudan claims as well.</p>
+<h3 id="105-swaptions-and-calibration">10.5 Swaptions and calibration</h3>
+<p><code>cheyette_swaption</code> follows Andersen &amp; Piterbarg's projection. Freezing <span class="arithmatex">\(y\)</span> at <span class="arithmatex">\(\bar y(t)\)</span>, the swap-rate volatility <span class="arithmatex">\(S_x\sigma_r\)</span> is linearised into a displaced diffusion <span class="arithmatex">\(\lambda(t)(b(t)S + (1 - b(t))S_0)\)</span>. The skew is averaged with weights <span class="arithmatex">\(\lambda^2(t)\int_0^t\lambda^2\)</span> (Piterbarg), and the swaption is priced in displaced Black. For a 2Y×5Y swaption with <span class="arithmatex">\(\kappa = 0.05\)</span> and <span class="arithmatex">\(\sigma = 1\%\)</span> on the flat 3% curve, the averaged skew is <span class="arithmatex">\(\bar b = 0.04\)</span> at <span class="arithmatex">\(\beta = 0\)</span> and <span class="arithmatex">\(1.21\)</span> at <span class="arithmatex">\(\beta = 0.3\)</span>. With <span class="arithmatex">\(\beta = 0.3\)</span> the PDE gives normal vols of <span class="arithmatex">\(70.6\)</span>, <span class="arithmatex">\(85.9\)</span> and <span class="arithmatex">\(100.7\)</span> bp at strikes <span class="arithmatex">\(2.5\%\)</span>, <span class="arithmatex">\(3.46\%\)</span> and <span class="arithmatex">\(4.5\%\)</span>, and the approximation gives <span class="arithmatex">\(71.0\)</span>, <span class="arithmatex">\(86.5\)</span> and <span class="arithmatex">\(101.5\)</span> bp, within 1 bp across the smile. With <span class="arithmatex">\(\beta = 0\)</span> the same strikes are nearly flat, at <span class="arithmatex">\(86.7\)</span>, <span class="arithmatex">\(87.1\)</span> and <span class="arithmatex">\(87.6\)</span> bp. <code>calibrate_cheyette</code> fits one <span class="arithmatex">\(\sigma\)</span> level per expiry, plus <span class="arithmatex">\(\beta\)</span>, to a grid of strikes at each expiry using this formula.</p>
+<h2 id="11-libor-and-forward-market-models">11. LIBOR and forward market models</h2>
+<h3 id="111-parametrisation">11.1 Parametrisation</h3>
+<p>The LIBOR market model (Brace, Gątarek &amp; Musiela; Jamshidian) takes the simply compounded forwards <span class="arithmatex">\(L_i\)</span> on a tenor structure <span class="arithmatex">\(T_0 &lt; \dots &lt; T_n\)</span> as its state. Each one is lognormal under its own payment measure, possibly displaced by <span class="arithmatex">\(\delta\)</span>:</p>
+<div class="arithmatex">\[
+dL_i = \sigma_i(t)\,(L_i + \delta)\,dW_i^{T_{i+1}}, \qquad d\langle W_i, W_j\rangle = \rho_{ij}\,dt,
+\]</div>
+<p>so caplets are Black formulas, exactly as quoted. <code>LiborMarketModel</code> uses Rebonato's time-homogeneous shape <span class="arithmatex">\(\sigma_i(t) = k_i f(T_i - t)\)</span> with <span class="arithmatex">\(f(\tau) = (a + b\tau)e^{-c\tau} + d\)</span> (<code>AbcdVol</code>). Its hump sits at <span class="arithmatex">\(\tau = 1/c - a/b\)</span>, which is <span class="arithmatex">\(1.72\)</span> years for <span class="arithmatex">\((a, b, c, d) = (0.05, 0.09, 0.44, 0.11)\)</span>. <code>AbcdVol.covariance</code> integrates <span class="arithmatex">\(f(T_i - t)f(T_j - t)\)</span> in closed form. The correlation is <code>exponential_correlation</code>, <span class="arithmatex">\(e^{-\beta|T_i - T_j|}\)</span>, or Rebonato's <code>rebonato_correlation</code>, <span class="arithmatex">\(\rho_\infty + (1 - \rho_\infty)e^{-\beta|T_i - T_j|}\)</span>. <code>reduce_rank</code> keeps its leading principal components and renormalises the diagonal. On 20 semi-annual forwards with <span class="arithmatex">\(\beta = 0.1\)</span> and <span class="arithmatex">\(\rho_\infty = 0.4\)</span>, three factors leave a largest correlation error of <span class="arithmatex">\(0.089\)</span>.</p>
+<h3 id="112-simulation">11.2 Simulation</h3>
+<p><code>lmm_paths</code> simulates the log displaced forwards under the spot LIBOR measure, whose numeraire rolls over the shortest bond. Forward <span class="arithmatex">\(i\)</span> then has drift</p>
+<div class="arithmatex">\[
+\sigma_i\sum_{j = q(t)}^{i}\frac{\tau_j\rho_{ij}\sigma_j(L_j + \delta)}{1 + \tau_j L_j},
+\]</div>
+<p>summed over the forwards still alive. Each step draws Gaussian increments with the exact integrated covariance of the step, so only the drift is discretised. It is either frozen at the start of the step or averaged with a predicted end value (predictor–corrector). The deflator <span class="arithmatex">\(P(0, T_0)/\prod_{j&lt;k}(1 + \tau_j L_j(T_j))\)</span> prices any payoff fixed on the tenor dates. Deflated bonds are martingales, and caplets reproduce Black within Monte Carlo error.</p>
+<h3 id="113-swaptions-and-calibration">11.3 Swaptions and calibration</h3>
+<p>The forward swap rate over <span class="arithmatex">\([T_\alpha, T_\beta]\)</span> is a weighted average <span class="arithmatex">\(S = \sum_i w_i L_i\)</span>, with <span class="arithmatex">\(w_i = \tau_i P(0, T_{i+1})/A\)</span>. Freezing the weights and the forwards gives Rebonato's formula (<code>LiborMarketModel.swaption_vol</code>):</p>
+<div class="arithmatex">\[
+\sigma_{\alpha\beta}^2 T_\alpha = \frac{1}{(S + \delta)^2}\sum_{i, j = \alpha}^{\beta - 1} w_i w_j (L_i + \delta)(L_j + \delta)\,\rho_{ij}\int_0^{T_\alpha}\sigma_i\sigma_j\,dt.
+\]</div>
+<p>The swaption is then Black on the annuity. On the flat 3% curve, the abcd shape above with the Rebonato correlation gives a 2Y×5Y volatility of <span class="arithmatex">\(17.84\%\)</span>, at an ATM swap rate of <span class="arithmatex">\(3.02\%\)</span>. Its caplets carry between <span class="arithmatex">\(18.3\%\)</span> and <span class="arithmatex">\(19.7\%\)</span>. With perfect correlation the swaption volatility would be <span class="arithmatex">\(18.66\%\)</span>. Simulation agrees with the formula within Monte Carlo error (three standard errors plus 1%) at strikes of 2.5%, ATM and 4%.</p>
+<p><code>calibrate_lmm</code> calibrates in two stages. <code>fit_abcd</code> fits the shape to the caplet volatilities, and the <span class="arithmatex">\(k_i\)</span> then make every caplet exact. The correlation parameters <span class="arithmatex">\((\beta, \rho_\infty)\)</span> are fitted to swaption volatilities through Rebonato's formula, so no simulation is needed.</p>
+<h3 id="114-backward-looking-rates">11.4 Backward-looking rates</h3>
+<p>Risk-free rates are compounded in arrears, so the coupon <span class="arithmatex">\(R_i\)</span> over <span class="arithmatex">\([T_i, T_{i+1}]\)</span> is known only at <span class="arithmatex">\(T_{i+1}\)</span>. Lyashenko and Mercurio's forward market model (<code>ForwardMarketModel</code>) keeps each rate diffusing through its accrual period, with a volatility that decays linearly to zero:</p>
+<div class="arithmatex">\[
+dR_i = \sigma_i(t)\,g_i(t)\,(R_i + \delta)\,dW_i, \qquad g_i(t) = \min\Bigl(1, \frac{(T_{i+1} - t)^+}{T_{i+1} - T_i}\Bigr).
+\]</div>
+<p>Before <span class="arithmatex">\(T_i\)</span> it is the forward-looking LMM. A caplet on <span class="arithmatex">\(R_i\)</span> is a Black formula to <span class="arithmatex">\(T_{i+1}\)</span> with variance <span class="arithmatex">\(\int_0^{T_{i+1}}\sigma_i^2 g_i^2\,dt\)</span>, which is <span class="arithmatex">\(\sigma^2(T_i + \tau_i/3)\)</span> for a flat volatility. A flat 20% on the 4Y×6M period therefore quotes as <span class="arithmatex">\(19.25\%\)</span> to the payment date. Even so, the backward-looking caplet is worth more than the forward-looking one, because its variance keeps growing through the accrual period. <code>fmm_paths</code> simulates under the spot measure of the compounded bank account. A rate stays in the drift sum until its accrual ends, and the deflator compounds the realised rates.</p>
+<h3 id="115-sabr-lmm">11.5 SABR-LMM</h3>
+<p><code>SABRLMM</code> gives every forward a SABR smile through a CEV exponent and one stochastic volatility factor for the curve:</p>
+<div class="arithmatex">\[
+dL_i = \alpha_i V_t (L_i + \delta)^\beta\,dW_i, \qquad dV_t = \nu V_t\,dZ_t, \qquad d\langle W_i, Z\rangle = \rho\,dt.
+\]</div>
+<p>Under its own measure each forward is SABR with parameters <span class="arithmatex">\((\alpha_i, \beta, \rho, \nu)\)</span>, up to a drift on <span class="arithmatex">\(V\)</span> from the change of measure. That drift is zero for the first forward. Caplets are therefore priced by Hagan's formula, and <code>sabr_lmm_paths</code> reproduces the smile within Monte Carlo error. The paths use Euler steps with absorption for the forwards and exact lognormal steps for <span class="arithmatex">\(V\)</span>. Because the volatility factor is shared, swaptions inherit a consistent smile instead of being fitted one by one.</p>
+<h2 id="12-bermudan-swaptions">12. Bermudan swaptions</h2>
+<h3 id="121-the-contract-and-lattice-engines">12.1 The contract and lattice engines</h3>
+<p>A Bermudan swaption can be exercised on any of the dates <span class="arithmatex">\(t_1 &lt; \dots &lt; t_m\)</span>. Exercising at <span class="arithmatex">\(t_k\)</span> enters the remaining co-terminal swap, so the exercise value is <span class="arithmatex">\(g_k = (\sum_i a^{(k)}_i P(t_k, t_i))^+\)</span>, where <span class="arithmatex">\(a^{(k)}\)</span> are that swap's model cashflows. Its value <span class="arithmatex">\(\sup_\tau E[D(\tau)g_\tau]\)</span> lies above every co-terminal European and below their sum. <code>bermudan_swaption</code> builds the contract from a <code>Swap</code>, with exercise on the fixing date of each fixed period start after a lockout. <code>coterminal_swaptions</code> returns the matching Europeans with identical dates and underlyings, which is the natural calibration set. On a lattice the value is the dynamic programme <span class="arithmatex">\(V(t_k) = \max(g_k, E_{t_k}[D(t_k, t_{k+1})V(t_{k+1})])\)</span>.</p>
+<p><code>bermudan_pde</code> solves it on <code>HullWhitePDE</code> or <code>CheyettePDE</code>, with the exercise dates inserted into the time grid. <code>bermudan_tree</code> uses the Hull–White trinomial tree, mapping node rates to the model state by <span class="arithmatex">\(x = r - \varphi(t)\)</span>. Take a 1Y×5Y payer at 3.5% on 10,000 notional in Hull–White with <span class="arithmatex">\(a = 0.05\)</span> and <span class="arithmatex">\(\sigma = 1\%\)</span> (3% discounting, 3.4% projection), exercisable annually. The PDE gives <span class="arithmatex">\(224.98\)</span>, against co-terminal Europeans of <span class="arithmatex">\(149.17\)</span>, <span class="arithmatex">\(168.83\)</span>, <span class="arithmatex">\(153.91\)</span>, <span class="arithmatex">\(116.67\)</span> and <span class="arithmatex">\(64.60\)</span>. With <span class="arithmatex">\(\beta = 0.3\)</span> and the same volatility level, Cheyette gives <span class="arithmatex">\(223.29\)</span>.</p>
+<h3 id="122-monte-carlo-bounds">12.2 Monte Carlo bounds</h3>
+<p><code>lsm</code> implements Longstaff and Schwartz. Regressions of the realised discounted value on basis functions of the state, over in-the-money paths, give a continuation estimate and hence an exercise policy. The policy is then valued on independent paths, which makes the result an unbiased <strong>lower bound</strong>. <code>ExerciseProblem</code> only needs a transition function, so the code is shared between models. <code>hull_white_exercise_problem</code> uses the exact step <code>hull_white_transition</code>, and <code>cheyette_exercise_problem</code> uses the frozen-volatility step of <code>cheyette_paths</code>.</p>
+<p>The dual of Rogers and of Haugh and Kogan bounds the value from above by <span class="arithmatex">\(E[\max_k(D(t_k)g_k - M_{t_k})]\)</span> for any martingale with <span class="arithmatex">\(M_0 = 0\)</span>. <code>andersen_broadie</code> builds <span class="arithmatex">\(M\)</span> from the LSM policy itself, with continuation values from nested simulation. The martingale only jumps where the policy exercises, and the width of the gap shows how far the policy is from optimal. For the swaption above, 200,000 paths give a lower bound of <span class="arithmatex">\(225.07 \pm 0.53\)</span>. With 1,000 outer and 500 inner paths, the upper bound is <span class="arithmatex">\(225.16\)</span>, a gap of <span class="arithmatex">\(0.09\)</span>. The PDE value of <span class="arithmatex">\(224.98\)</span> lies within the Monte Carlo error of both bounds. A naive policy that exercises as soon as it is in the money is worth only <span class="arithmatex">\(194.22\)</span>. Its dual bound is <span class="arithmatex">\(227.19\)</span>, which is still valid but much wider.</p>
+<h2 id="13-inflation">13. Inflation</h2>
+<h3 id="131-indices-and-reference-cpi">13.1 Indices and reference CPI</h3>
+<p>Price indices are published monthly and used with a lag of <span class="arithmatex">\(L\)</span> months. US TIPS, Canadian real return bonds and euro-area linkers interpolate daily between lagged months:</p>
+<div class="arithmatex">\[
+\mathrm{RefCPI}(d) = \mathrm{CPI}_{m-L} + \frac{t-1}{D}\bigl(\mathrm{CPI}_{m-L+1} - \mathrm{CPI}_{m-L}\bigr),
+\]</div>
+<p>for day <span class="arithmatex">\(t\)</span> of a month with <span class="arithmatex">\(D\)</span> days. <code>InflationIndex</code> implements this, with optional rounding to five places. On 15 January 2023, the October and November 2022 CPI-U levels <span class="arithmatex">\(298.012\)</span> and <span class="arithmatex">\(297.711\)</span> give TreasuryDirect's <span class="arithmatex">\(297.87606\)</span>. Zero-coupon swaps on HICP and RPI use the lagged month without interpolation.</p>
+<h3 id="132-the-inflation-curve">13.2 The inflation curve</h3>
+<p>A zero-coupon inflation swap pays <span class="arithmatex">\(I(M)/I(S) - 1\)</span> against <span class="arithmatex">\((1+K)^n - 1\)</span>. Its fair rate depends only on the forward index, so each quote fixes one forward fixing, <span class="arithmatex">\(I(S)(1+K)^n\)</span>, <span class="arithmatex">\(n\)</span> years after the base month. <code>bootstrap_inflation_curve</code> stores these with <span class="arithmatex">\(\log I\)</span> linear in months between pillars. A <code>Seasonality</code> multiplies intra-year months by monthly factors that are demeaned to net to zero over a year, so the pillars stay exact. <code>Seasonality.estimate</code> recovers the factors from fixing history. The real discount curve is the value of index-linked money, <span class="arithmatex">\(P_r(0,T) = P_n(0,T)\hat I(T)/I(0)\)</span>, and <code>real_curve</code> returns it.</p>
+<h3 id="133-jarrowyildirim">13.3 Jarrow–Yildirim</h3>
+<p>Under the nominal measure, the nominal and real short rates are Hull–White, and the index is lognormal with drift <span class="arithmatex">\(n_t - r_t\)</span>. The real rate's drift carries <span class="arithmatex">\(-\rho_{rI}\sigma_r\sigma_I\)</span>, the change of numeraire from real to nominal money. A year-on-year swaplet is worth <span class="arithmatex">\(P_n(0,T_1)E^{T_1}[P_r(T_1,T_2)] - P_n(0,T_2)\)</span>. Moving <span class="arithmatex">\(r_{T_1}\)</span> from the real to the nominal forward measure shifts its mean and gives the convexity factor <span class="arithmatex">\(e^{C(T_1,T_2)}\)</span>:</p>
+<div class="arithmatex">\[
+C = B_r(T_1,T_2)\Bigl[\rho_{rI}\sigma_r\sigma_I B_r(0,T_1) + \rho_{nr}\sigma_n\sigma_r\int_0^{T_1}e^{-a_r u}B_n(0,u)\,du - \tfrac12\sigma_r^2B_r(0,T_1)^2\Bigr].
+\]</div>
+<p>This agrees with Mercurio (2005) to <span class="arithmatex">\(10^{-15}\)</span>. Take <span class="arithmatex">\(a_n = 0.1\)</span>, <span class="arithmatex">\(\sigma_n = 1\%\)</span>, <span class="arithmatex">\(a_r = 0.05\)</span>, <span class="arithmatex">\(\sigma_r = 0.8\%\)</span>, <span class="arithmatex">\(\sigma_I = 1.2\%\)</span> and <span class="arithmatex">\((\rho_{nr}, \rho_{nI}, \rho_{rI}) = (0.6, 0.2, -0.3)\)</span>, on flat 3% nominal and 1% real curves. The ten-year year-on-year rate is then 2.98 bp below the zero-coupon rate. <code>jy_paths</code> reprices both bond curves and the 9y–10y swaplet within Monte Carlo error, and sits more than eight standard errors from the swaplet without convexity. The log of an index ratio is Gaussian, so year-on-year caplets and zero-coupon caps and floors are Black formulas on the convexity-adjusted forwards. <code>calibrate_jarrow_yildirim</code> fits the volatilities to them. The real-rate volatility enters through the correlations, and the fit has local minima in it. A single start stalls at <span class="arithmatex">\(\sigma_r = 0.12\%\)</span>, while the default grid of starts recovers <span class="arithmatex">\(0.8\%\)</span> to <span class="arithmatex">\(10^{-12}\)</span>.</p>
+<h3 id="134-linked-bonds-and-swaps">13.4 Linked bonds and swaps</h3>
+<p><code>InflationLinkedBond</code> follows Treasury's conventions. Prices are quoted in real terms at a semiannual real yield, with simple interest over the current period, and the settlement amount is the price plus accrued interest, times the index ratio. Treasury's example, the 3.875% TIPS of January 2009 at a 3.898% real yield, prices at <span class="arithmatex">\(99.811030\)</span>. On curves, each cash flow is worth <span class="arithmatex">\(P_n(0,t)\hat I(t)/I_{\text{base}}\)</span> times its real amount. The principal floor at par is a zero-coupon inflation put struck at the base CPI. For a new ten-year 0.125% bond with the model above, the floor is worth <span class="arithmatex">\(0.455\)</span> per 100 when expected inflation is 2% and <span class="arithmatex">\(3.204\)</span> when it is 0.25%. <code>ZeroCouponInflationSwap</code> and <code>YearOnYearInflationSwap</code> price the dated swaps. The latter applies the model's convexity on each period after the first.</p>
+<h2 id="14-connections">14. Connections</h2>
+<h3 id="141-stress-testing">14.1 Stress testing</h3>
+<p><code>curve_price</code> values the <code>InterestRateSwap</code> contracts of <code>spxa.risk</code> on a curve stored in the market dictionary under <code>&lt;rate id&gt;_CURVE</code>. It falls back to a flat curve at <code>r</code> when no curve is stored. The fixed leg pays <span class="arithmatex">\(K\)</span> every <span class="arithmatex">\(\delta\)</span> years on <span class="arithmatex">\(t_k = k\delta\)</span>, with a short last period ending at <span class="arithmatex">\(T\)</span>, and the single-curve floating leg is worth <span class="arithmatex">\(1 - P(T)\)</span>. Per unit notional the payer swap is worth</p>
+<div class="arithmatex">\[
+V = 1 - P(T) - K\sum_k \tau_k P(t_k),
+\]</div>
+<p>and its DV01 for a parallel rise <span class="arithmatex">\(z\)</span> of continuously compounded zero rates is exact:</p>
+<div class="arithmatex">\[
+\frac{\partial V}{\partial z} = T\,P(T) + K\sum_k \tau_k t_k P(t_k).
+\]</div>
+<p>Against a base market, the change in <code>r</code> shifts the stored curve in parallel. A scenario's <code>rate_shifts_bps</code> therefore moves the whole curve, and <code>curve_pricing_fn</code> plugs a book into <code>StressTestingEngine</code>.</p>
+<h3 id="142-key-rates-from-a-graph">14.2 Key rates from a graph</h3>
+<p><code>spxa.graph.rates</code> makes each zero rate <span class="arithmatex">\(z_i\)</span> at pillar <span class="arithmatex">\(T_i\)</span> an input node, with linear interpolation in zero rate, <span class="arithmatex">\(z(t) = \sum_i w_i(t) z_i\)</span>. The par rate <span class="arithmatex">\(S = (1 - P(T))/A\)</span> of a swap with annuity <span class="arithmatex">\(A = \sum_k \tau_k P(t_k)\)</span> has the adjoint</p>
+<div class="arithmatex">\[
+\frac{\partial S}{\partial z_i} = \frac{T P(T) w_i(T) + S\sum_k \tau_k t_k P(t_k) w_i(t_k)}{A},
+\]</div>
+<p>so one reverse pass of <code>GradientTape</code> gives every key rate. Because the weights sum to one, the key rates add up to the parallel sensitivity. Take the ESTR curve bootstrapped with <code>MonotoneConvex</code> from the eleven OIS quotes of <code>examples/rates_curve_example.py</code>, with its nodes as pillars. The 10Y annual par rate is <span class="arithmatex">\(2.6172\%\)</span>, with a sensitivity of <span class="arithmatex">\(0.9287\)</span> to the 10Y zero, <span class="arithmatex">\(0.0515\)</span> to the 7Y zero and <span class="arithmatex">\(1.0293\)</span> in total.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

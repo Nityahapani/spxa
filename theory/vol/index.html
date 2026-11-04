@@ -1,0 +1,2336 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/vol/">
+      
+      
+        <link rel="prev" href="../rates/">
+      
+      
+        <link rel="next" href="../calibration/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Volatility - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#volatility" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Volatility
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-coordinates-and-static-arbitrage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Coordinates and static arbitrage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-svi-slices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. SVI slices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-ssvi-and-essvi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. SSVI and eSSVI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-surfaces-of-svi-slices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Surfaces of SVI slices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-implied-distributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Implied distributions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-surfaces-from-option-quotes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Surfaces from option quotes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Surfaces from option quotes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-forwards-and-quotes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Forwards and quotes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-repairing-prices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Repairing prices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-smoothing-prices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Smoothing prices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-the-surface-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. The surface object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. The surface object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-strikes-volatilities-and-time-interpolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1 Strikes, volatilities and time interpolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#72-delta-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.2 Delta conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#73-bumps-and-bucketed-vega" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.3 Bumps and bucketed vega
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#74-simulation-and-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.4 Simulation and persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-local-volatility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Local volatility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Local volatility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-dupires-formula-in-implied-variance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 Dupire's formula in implied variance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-pricing-under-local-volatility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 Pricing under local volatility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-andreasenhuge-interpolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 Andreasen–Huge interpolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-monte-carlo-and-the-forward-smile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4 Monte Carlo and the forward smile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#85-densities-and-diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.5 Densities and diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-stochastic-local-volatility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Stochastic local volatility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Stochastic local volatility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 The model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-the-forward-equation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 The forward equation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-calibration-by-forward-induction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 Calibration by forward induction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-particles-monte-carlo-and-the-pde" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 Particles, Monte Carlo and the PDE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#95-the-mixing-fraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.5 The mixing fraction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-rough-volatility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Rough volatility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Rough volatility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-rough-heston" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 Rough Heston
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-lifted-heston" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 Lifted Heston
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3 Calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#104-rough-bergomi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.4 Rough Bergomi
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#105-vix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.5 VIX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#106-joint-spxvix-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.6 Joint SPX/VIX calibration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-martingale-optimal-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. Martingale optimal transport
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. Martingale optimal transport">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-marginals-and-the-convex-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 Marginals and the convex order
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-bounds-by-linear-programming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 Bounds by linear programming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-entropic-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 Entropic transport
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114-hedges-as-trades-and-a-backtest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 Hedges as trades, and a backtest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#115-several-dates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.5 Several dates
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-variance-and-volatility-swaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. Variance and volatility swaps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="12. Variance and volatility swaps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#121-replication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.1 Replication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#122-term-structure-and-the-vix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.2 Term structure and the VIX
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#123-volatility-swaps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.3 Volatility swaps
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#124-discrete-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12.4 Discrete monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-model-risk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. Model risk
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="13. Model risk">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#131-coherent-and-penalised-measures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.1 Coherent and penalised measures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#132-mixing-fractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13.2 Mixing fractions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14. Connections
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14. Connections">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#141-stress-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14.1 Stress testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#142-surfaces-of-zoo-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14.2 Surfaces of zoo processes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#143-graph-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14.3 Graph nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="volatility">Volatility</h1>
+<p><code>spxa.vol</code> builds implied-volatility surfaces that are free of static arbitrage, and calibrates models to them.</p>
+<ul>
+<li>§1–7 cover the parametric layer, from SVI slices, SSVI and eSSVI through calibration, interpolation in time and the risk-neutral distributions they imply, up to the surface object built from option quotes.</li>
+<li>§8–10 cover the models consistent with a surface: local volatility, stochastic local volatility, and rough Heston and rough Bergomi with the VIX.</li>
+<li>§11–13 cover what a surface does not pin down: model-free bounds by martingale optimal transport, variance and volatility swaps, and the model risk of exotics.</li>
+<li>§14 connects the package to stress testing, the process zoo and computational graphs.</li>
+</ul>
+<p>Option formulas, implied-volatility inversion and quote handling come from <a href="../market/">Market conventions</a>.
+| Object | Implementation |
+| :--- | :--- |
+| Coordinates | <code>log_moneyness</code>, <code>total_variance</code>, <code>normalised_call_from_total_variance</code>, <code>total_variance_from_price</code> |
+| SVI slices | <code>SVIRaw</code>, <code>SVINatural</code>, <code>SVIJumpWings</code> |
+| Surfaces | <code>SSVI</code>, <code>HestonLikePhi</code>, <code>PowerLawPhi</code>, <code>ESSVI</code>, <code>ESSVISlice</code> |
+| Calibration | <code>calibrate_svi</code>, <code>calibrate_svi_butterfly_free</code>, <code>calibrate_svi_surface</code>, <code>calibrate_ssvi</code>, <code>calibrate_essvi</code> |
+| Diagnostics | <code>durrleman_g</code>, <code>check_butterfly</code>, <code>check_calendar</code>, <code>wing_asymptotics</code>, <code>rogers_tehranchi_slope</code> |
+| Interpolation and densities | <code>PriceInterpolatedSurface</code>, <code>ImpliedDistribution</code>, <code>risk_neutral_density</code> |
+| Surface objects | <code>VolSurface</code>, <code>ForwardTermStructure</code>, <code>VarianceInterpolatedSurface</code> |
+| Building from quotes | <code>build_vol_surface</code>, <code>SurfaceBuild</code>, <code>SurfaceQuality</code>, <code>chain_total_variance</code> |
+| Price-level repair and smoothing | <code>repair_call_prices</code>, <code>call_arbitrage_constraints</code>, <code>fengler_smooth</code>, <code>fengler_surface</code> |
+| Delta conventions | <code>black_delta</code>, <code>strike_from_delta</code>, <code>atm_dns_strike</code> |
+| Risk and persistence | <code>parallel_bump</code>, <code>skew_bump</code>, <code>expiry_buckets</code>, <code>bucketed_vega</code>, <code>dumps</code>, <code>loads</code> |
+| Local volatility | <code>dupire_local_variance</code>, <code>LocalVolSurface</code>, <code>LocalVolGrid</code>, <code>bbf_implied_vol</code> |
+| Andreasen–Huge | <code>AndreasenHugeSurface</code>, <code>calibrate_andreasen_huge</code>, <code>AndreasenHugeFit</code>, <code>andreasen_huge_grid</code>, <code>piecewise_constant_vol</code> |
+| Local-vol simulation and checks | <code>local_vol_paths</code>, <code>LocalVolPaths</code>, <code>local_vol_diagnostics</code>, <code>LocalVolDiagnostics</code> |
+| Stochastic local volatility | <code>Heston</code>, <code>slv_grid</code>, <code>LeverageSurface</code>, <code>slv_forward</code>, <code>calibrate_leverage</code>, <code>calibrate_leverage_particles</code>, <code>slv_paths</code>, <code>SLVPDE</code>, <code>calibrate_slv</code>, <code>as_local_vol</code> |
+| Rough Heston | <code>RoughHeston</code>, <code>fractional_riccati</code>, <code>LiftedHeston</code>, <code>lifted_weights</code>, <code>calibrate_rough_heston</code>, <code>RoughHestonFit</code> |
+| Rough Bergomi and VIX | <code>rbergomi_paths</code>, <code>RBergomiPaths</code>, <code>calibrate_rbergomi</code>, <code>RBergomiVIX</code>, <code>HestonVIX</code>, <code>VIX_WINDOW</code>, <code>calibrate_heston_joint</code>, <code>SmileQuote</code>, <code>VIXQuote</code> |
+| Martingale optimal transport | <code>DiscreteMarginal</code>, <code>marginal_from_calls</code>, <code>surface_marginals</code>, <code>mot_solve</code>, <code>mot_bounds</code>, <code>ot_solve</code>, <code>MOTResult</code>, <code>mot_sinkhorn</code>, <code>SinkhornResult</code>, <code>mot_multi</code> |
+| Robust pricing | <code>robust_bounds</code>, <code>forward_start_call</code>, <code>forward_start_straddle</code>, <code>static_replication</code>, <code>StaticReplication</code>, <code>superhedge_pnl</code> |
+| Variance and volatility swaps | <code>fair_variance</code>, <code>variance_swap_strike</code>, <code>gamma_swap_strike</code>, <code>variance_swap_mtm</code>, <code>variance_swap_curve</code>, <code>ForwardVarianceCurve</code>, <code>vix_index</code>, <code>heston_volatility_swap</code>, <code>heston_integrated_variance_laplace</code>, <code>realised_variance</code>, <code>variance_swap_payoff</code> |
+| Model risk | <code>ModelRisk</code>, <code>smile_rmse</code> |
+| Connections | <code>surface_price</code>, <code>surface_pricing_fn</code>, <code>SurfaceQuote</code>, <code>process_vol_surface</code>, <code>ProcessSurface</code> |</p>
+<hr />
+<h2 id="1-coordinates-and-static-arbitrage">1. Coordinates and static arbitrage</h2>
+<p>Surfaces are written in log-forward moneyness and total implied variance,</p>
+<div class="arithmatex">\[
+k = \log\frac{K}{F_T}, \qquad w(k, T) = \sigma_{\text{BS}}^2(k, T)\,T,
+\]</div>
+<p>and the undiscounted call price over the forward is <span class="arithmatex">\(c(k, w) = \Phi(d_+) - e^k\Phi(d_-)\)</span> with <span class="arithmatex">\(d_\pm = -k/\sqrt w \pm \sqrt w/2\)</span>.</p>
+<p><strong>Butterfly arbitrage.</strong> A slice <span class="arithmatex">\(w(k)\)</span> is free of butterfly arbitrage if and only if the density of <span class="arithmatex">\(X = \log(S_T/F_T)\)</span>,</p>
+<div class="arithmatex">\[
+p(k) = \frac{g(k)}{\sqrt{2\pi w(k)}}\,e^{-d_-(k)^2/2}, \qquad
+g(k) = \Bigl(1 - \frac{k w'}{2w}\Bigr)^2 - \frac{w'^2}{4}\Bigl(\frac1w + \frac14\Bigr) + \frac{w''}{2},
+\]</div>
+<p>is non-negative and call prices vanish as <span class="arithmatex">\(k \to \infty\)</span> (Gatheral &amp; Jacquier 2014, Lemma 2.2). Here <span class="arithmatex">\(g\)</span> is Durrleman's function. <code>check_butterfly</code> scans <span class="arithmatex">\(g\)</span> on a grid and reports its minimum and the intervals where it is negative.</p>
+<p><strong>Calendar arbitrage.</strong> With proportional dividends, a surface is free of calendar-spread arbitrage if and only if <span class="arithmatex">\(T \mapsto w(k, T)\)</span> is non-decreasing for every <span class="arithmatex">\(k\)</span> (Lemma 2.1). <code>check_calendar</code> reports the worst decrease between consecutive slices.</p>
+<p><strong>Wings.</strong> Lee's moment formula links the wing slopes <span class="arithmatex">\(\beta_R = \limsup_{k\to\infty} w/k\)</span> and <span class="arithmatex">\(\beta_L = \limsup_{k\to-\infty} w/|k|\)</span> to the critical moments <span class="arithmatex">\(\tilde p = \sup\{p : E[S^{1+p}] &lt; \infty\}\)</span> and <span class="arithmatex">\(\tilde q = \sup\{q : E[S^{-q}] &lt; \infty\}\)</span>:</p>
+<div class="arithmatex">\[
+\beta = 2 - 4\bigl(\sqrt{x^2 + x} - x\bigr), \qquad x = \frac{(2 - \beta)^2}{8\beta},
+\]</div>
+<p>so no wing can be steeper than 2. With <span class="arithmatex">\(w \approx \beta|k|\)</span>, the density above decays like <span class="arithmatex">\(e^{-\lambda|k|}\)</span> with <span class="arithmatex">\(\lambda_R = 1 + \tilde p\)</span> and <span class="arithmatex">\(\lambda_L = \tilde q\)</span>. The tests check both rates from log-density slopes at <span class="arithmatex">\(|k| = 2000\)</span> to <span class="arithmatex">\(4000\)</span>. They also show that <span class="arithmatex">\(E[S^{1+p}]\)</span> converges just below <span class="arithmatex">\(\tilde p\)</span> and diverges just above it. Separately, an arbitrage-free surface has <span class="arithmatex">\(|\partial_k w| \le 4\)</span> (Rogers &amp; Tehranchi 2010).</p>
+<hr />
+<h2 id="2-svi-slices">2. SVI slices</h2>
+<p>The raw SVI slice of Gatheral (2004) is</p>
+<div class="arithmatex">\[
+w(k) = a + b\Bigl(\rho(k - m) + \sqrt{(k - m)^2 + \sigma^2}\Bigr),
+\]</div>
+<p>with minimum <span class="arithmatex">\(a + b\sigma\sqrt{1 - \rho^2}\)</span> at <span class="arithmatex">\(k^* = m - \rho\sigma/\sqrt{1 - \rho^2}\)</span> and wing slopes <span class="arithmatex">\(b(1 \pm \rho)\)</span>. The natural parametrisation <span class="arithmatex">\((\Delta, \mu, \rho, \omega, \zeta)\)</span> maps to raw SVI by</p>
+<div class="arithmatex">\[
+a = \Delta + \tfrac{\omega}{2}(1 - \rho^2), \quad b = \tfrac{\omega\zeta}{2}, \quad m = \mu - \rho/\zeta, \quad \sigma = \sqrt{1 - \rho^2}/\zeta.
+\]</div>
+<p>The jump-wings parametrisation <span class="arithmatex">\((v_t, \psi_t, p_t, c_t, \tilde v_t)\)</span> uses the ATM variance, ATM skew, put and call wing slopes and minimum variance, all of which scale sensibly across expiries.</p>
+<p>Not every raw SVI slice is arbitrage-free. Axel Vogt's slice <span class="arithmatex">\((a, b, \rho, m, \sigma) = (-0.0410, 0.1331, 0.3060, 0.3586, 0.4153)\)</span> has <span class="arithmatex">\(\min g = -0.032864\)</span> at <span class="arithmatex">\(k = 0.879\)</span>. Its jump-wings parameters at <span class="arithmatex">\(t = 1\)</span> are <span class="arithmatex">\((0.01742625, -0.1752111, 0.6997381, 1.316798, 0.0116249)\)</span>, as in Gatheral &amp; Jacquier (2014, Example 3.1). There are two repairs:</p>
+<ul>
+<li><strong>Projection</strong> (Gatheral &amp; Jacquier, §5.1). Keep <span class="arithmatex">\((v, \psi, p)\)</span> and set <span class="arithmatex">\(c' = p + 2\psi\)</span> and <span class="arithmatex">\(\tilde v' = 4vpc'/(p + c')^2\)</span>. The result is an SSVI slice with the same ATM level and skew. For Vogt's slice <span class="arithmatex">\(c' = 0.3493158\)</span>.</li>
+<li><strong>Constrained fit.</strong> <code>calibrate_svi_butterfly_free</code> imposes <span class="arithmatex">\(g \ge 10^{-8}\)</span> on a grid. Wherever <span class="arithmatex">\(g\)</span> dips between grid nodes, it adds cutting planes at the local minima. Refitting Vogt's slice on 61 points of <span class="arithmatex">\([-1.5, 1.5]\)</span> gives an arbitrage-free slice with rmse <span class="arithmatex">\(0.00231\)</span> in total variance.</li>
+</ul>
+<p><code>calibrate_svi</code> is the quasi-explicit method of Zeliade and De Marco &amp; Martini. For fixed <span class="arithmatex">\((m, \sigma)\)</span> the slice is linear in <span class="arithmatex">\((a, b\sigma, \rho b\sigma)\)</span> on a box, so the inner problem is an exact bounded least-squares solve and only <span class="arithmatex">\((m, \sigma)\)</span> are searched. It recovers Vogt's raw parameters exactly from noiseless quotes.</p>
+<hr />
+<h2 id="3-ssvi-and-essvi">3. SSVI and eSSVI</h2>
+<p><strong>SSVI</strong> (Gatheral &amp; Jacquier 2014) writes the whole surface through the ATM total variance <span class="arithmatex">\(\theta_t\)</span>:</p>
+<div class="arithmatex">\[
+w(k, \theta_t) = \frac{\theta_t}{2}\Bigl(1 + \rho\varphi(\theta_t)k + \sqrt{(\varphi(\theta_t)k + \rho)^2 + 1 - \rho^2}\Bigr).
+\]</div>
+<p>The surface is free of calendar arbitrage when <span class="arithmatex">\(\theta_t\)</span> is non-decreasing and <span class="arithmatex">\(0 \le \partial_\theta(\theta\varphi) \le \frac{1 + \sqrt{1 - \rho^2}}{\rho^2}\varphi\)</span> (Theorem 4.1). It is free of butterfly arbitrage when <span class="arithmatex">\(\theta\varphi(1 + |\rho|) &lt; 4\)</span> and <span class="arithmatex">\(\theta\varphi^2(1 + |\rho|) \le 4\)</span> (Theorem 4.2). The Heston-like curvature <span class="arithmatex">\(\varphi(\theta) = \frac{1}{\lambda\theta}\bigl(1 - \frac{1 - e^{-\lambda\theta}}{\lambda\theta}\bigr)\)</span> is arbitrage-free for <span class="arithmatex">\(\lambda \ge (1 + |\rho|)/4\)</span>. The power law <span class="arithmatex">\(\varphi(\theta) = \eta\theta^{-\gamma}(1 + \theta)^{\gamma - 1}\)</span> is arbitrage-free for <span class="arithmatex">\(\gamma \le 1/2\)</span> and <span class="arithmatex">\(\eta(1 + |\rho|) \le 2\)</span>. <code>calibrate_ssvi</code> fits <span class="arithmatex">\(\rho\)</span>, the curvature parameters and <span class="arithmatex">\(\theta_t\)</span> under these constraints. It recovers <span class="arithmatex">\((\rho, \eta, \gamma) = (-0.7, 1.1, 0.4)\)</span> and the Heston-like <span class="arithmatex">\((\rho, \lambda) = (-0.6, 2)\)</span> to about <span class="arithmatex">\(10^{-7}\)</span>.</p>
+<p><strong>eSSVI</strong> (Hendriks &amp; Martini) gives each expiry its own <span class="arithmatex">\((\theta, \psi, \rho)\)</span> with <span class="arithmatex">\(\psi = \theta\varphi\)</span>. The butterfly conditions become <span class="arithmatex">\(\psi(1 + |\rho|) &lt; 4\)</span> and <span class="arithmatex">\(\psi^2(1 + |\rho|) \le 4\theta\)</span>. Two slices are free of calendar arbitrage when</p>
+<div class="arithmatex">\[
+\theta_2 \ge \theta_1, \qquad \psi_2 \ge \psi_1, \qquad |\rho_2\psi_2 - \rho_1\psi_1| \le \psi_2 - \psi_1,
+\]</div>
+<p>which <code>spxa</code> uses as a sufficient condition. <code>calibrate_essvi</code> follows Corbetta, Cohort, Laachir &amp; Martini (2019). Each slice is anchored at the quote <span class="arithmatex">\((k^*, \theta^*)\)</span> closest to the money, through the exact relation</p>
+<div class="arithmatex">\[
+\theta = \frac{(2\theta^* - \rho\psi k^*)^2 - \psi^2 k^{*2}}{4\theta^*}.
+\]</div>
+<p>The fit then scans <span class="arithmatex">\(\rho\)</span> and solves for <span class="arithmatex">\(\psi\)</span> within the closed-form bounds implied by the butterfly and calendar conditions. Between expiries, <span class="arithmatex">\(\theta\)</span>, <span class="arithmatex">\(\psi\)</span> and <span class="arithmatex">\(\rho\psi\)</span> are interpolated linearly in time, which preserves both conditions. The tests recover the published SPX slices of Corbetta et al. (Table 1) to about <span class="arithmatex">\(10^{-9}\)</span>.</p>
+<hr />
+<h2 id="4-surfaces-of-svi-slices">4. Surfaces of SVI slices</h2>
+<p><code>calibrate_svi_surface</code> fits raw SVI slices from the shortest expiry upwards, in the spirit of Gatheral &amp; Jacquier (§5). Each slice must satisfy Durrleman's condition and stay above the previous slice on a common grid, <span class="arithmatex">\(w_i(k_j) \ge w_{i-1}(k_j)\)</span>. Both constraints are refined with cutting planes. The wing slopes must also be ordered, <span class="arithmatex">\(b_i(1 \pm \rho_i) \ge b_{i-1}(1 \pm \rho_{i-1})\)</span>, which prevents crossings beyond the grid. When the quotes themselves cross, the shorter slice is kept and the longer one is fitted as closely as the constraints allow. Slices taken from an arbitrage-free SSVI surface are reproduced to <span class="arithmatex">\(5 \times 10^{-7}\)</span>.</p>
+<p><strong>Interpolation in time.</strong> <code>PriceInterpolatedSurface</code> interpolates prices rather than variances (Gatheral &amp; Jacquier, §5.3). Take <span class="arithmatex">\(\theta_t\)</span> linear in <span class="arithmatex">\(t\)</span> between the ATM nodes, starting from <span class="arithmatex">\(\theta_0 = 0\)</span>. For <span class="arithmatex">\(t_i \le t \le t_{i+1}\)</span>, set</p>
+<div class="arithmatex">\[
+c(k, t) = \alpha_t\,c_i(k) + (1 - \alpha_t)\,c_{i+1}(k), \qquad
+\alpha_t = \frac{\sqrt{\theta_{i+1}} - \sqrt{\theta_t}}{\sqrt{\theta_{i+1}} - \sqrt{\theta_i}}.
+\]</div>
+<p>Below the first expiry, <span class="arithmatex">\(c_0(k) = (1 - e^k)^+\)</span> is intrinsic value. A convex combination of call-price functions is the call-price function of a mixture of distributions, so butterfly arbitrage cannot appear. Because <span class="arithmatex">\(\alpha_t\)</span> decreases in <span class="arithmatex">\(t\)</span> and the slices are ordered, prices are non-decreasing in <span class="arithmatex">\(t\)</span>, so calendar arbitrage cannot appear either. In <span class="arithmatex">\(s = \sqrt\theta\)</span> the ATM price is <span class="arithmatex">\((s - s^3/24 + \dots)/\sqrt{2\pi}\)</span>, and the weights are linear in <span class="arithmatex">\(s\)</span>. The only error comes from interpolating <span class="arithmatex">\(s^3\)</span> linearly, which is exactly <span class="arithmatex">\((s - s_i)(s_{i+1} - s)(s_i + s + s_{i+1})\)</span>. The interpolated ATM total variance therefore falls short of <span class="arithmatex">\(\theta_t\)</span> by</p>
+<div class="arithmatex">\[
+\theta_t - w(0, t) = \frac{s}{12}(s - s_i)(s_{i+1} - s)(s_i + s + s_{i+1})\bigl(1 + O(\theta_{i+1})\bigr), \qquad s = \sqrt{\theta_t}.
+\]</div>
+<p>The tests check this to a relative accuracy of <span class="arithmatex">\(\theta_{i+1}/20\)</span>.</p>
+<hr />
+<h2 id="5-implied-distributions">5. Implied distributions</h2>
+<p><code>ImpliedDistribution</code> turns a slice into the law of <span class="arithmatex">\(X = \log(S_T/F_T)\)</span>. Differentiating the call price along the slice gives the survival function, which is also the price of a normalised digital call:</p>
+<div class="arithmatex">\[
+\mathbb{Q}(X &gt; k) = \Phi(d_-) - \varphi(d_-)\,\frac{w'(k)}{2\sqrt{w}}.
+\]</div>
+<p>Together with the density of §1, this is exact in <span class="arithmatex">\(w\)</span>, <span class="arithmatex">\(w'\)</span> and <span class="arithmatex">\(w''\)</span>. Moments, the forward ratio <span class="arithmatex">\(E[e^X]\)</span>, call repricing, quantiles and inverse-transform samples are built on top. The integration range is widened until the exact tail mass beyond it is below <span class="arithmatex">\(10^{-17}\)</span>. For an arbitrage-free slice the tests find unit mass and <span class="arithmatex">\(E[e^X] = 1\)</span> to <span class="arithmatex">\(10^{-11}\)</span>, and they reprice calls by quadrature to the same accuracy. A slice with butterfly arbitrage shows up as a cdf that decreases somewhere; quantiles and samples refuse such slices.</p>
+<hr />
+<h2 id="6-surfaces-from-option-quotes">6. Surfaces from option quotes</h2>
+<h3 id="61-forwards-and-quotes">6.1 Forwards and quotes</h3>
+<p><code>build_vol_surface</code> takes bid/ask chains, one per expiry, and fits a surface in four steps:</p>
+<ol>
+<li><strong>Forward and discount factor.</strong> Each expiry's forward <span class="arithmatex">\(F_i\)</span> and discount factor <span class="arithmatex">\(D_i\)</span> come from the chain if set. Otherwise they are implied from put-call parity, <span class="arithmatex">\(C - P = D(F - K)\)</span>, by a robust line fit across strikes.</li>
+<li><strong>Term structure.</strong> <code>ForwardTermStructure</code> interpolates <span class="arithmatex">\(\log F\)</span> and <span class="arithmatex">\(\log D\)</span> linearly in <span class="arithmatex">\(t\)</span> between expiries, which means constant carry and flat discount forwards. It starts from <span class="arithmatex">\((0, \log S)\)</span> when the spot is known.</li>
+<li><strong>Total variances.</strong> <code>chain_total_variance</code> converts the out-of-the-money mids to <span class="arithmatex">\((k, w)\)</span> pairs and drops quotes that break the price bounds. Weights are uniform, by vega, or from the bid-ask spread.</li>
+<li><strong>Fit.</strong> The pairs are fitted with calendar-free SVI (§4), eSSVI or SSVI (§3).</li>
+</ol>
+<p>The result is a <code>SurfaceBuild</code> holding a <code>VolSurface</code> and the fitted data. <code>SurfaceBuild.quality()</code> reports the following per expiry, together with a calendar check across expiries:</p>
+<ul>
+<li>the RMSE and largest implied-volatility error;</li>
+<li>ATM volatility and skew;</li>
+<li>the minimum of Durrleman's <span class="arithmatex">\(g\)</span> (§1).</li>
+</ul>
+<h3 id="62-repairing-prices">6.2 Repairing prices</h3>
+<p>Some quotes cannot be fitted without arbitrage at all. Cohen, Reisinger &amp; Wang (2020) work in normalised units <span class="arithmatex">\(c = C/(DF)\)</span> and <span class="arithmatex">\(\kappa = K/F\)</span>. A grid then extends to an arbitrage-free surface, linear in <span class="arithmatex">\(\kappa\)</span> between quotes, exactly when four conditions hold:</p>
+<ul>
+<li><span class="arithmatex">\((1 - \kappa)^+ \le c \le 1\)</span>;</li>
+<li>slopes lie in <span class="arithmatex">\([-1, 0]\)</span>, with <span class="arithmatex">\(c(0) = 1\)</span>;</li>
+<li>slopes are non-decreasing (no butterfly arbitrage);</li>
+<li><span class="arithmatex">\(c\)</span> is non-decreasing in <span class="arithmatex">\(T\)</span> at every strike of either slice inside both ranges.</li>
+</ul>
+<p>All four conditions are linear in the prices. <code>repair_call_prices</code> therefore finds the smallest weighted <span class="arithmatex">\(\ell^1\)</span> change with a linear programme, and moves that stay inside the bid-ask spread can be made free. For <span class="arithmatex">\(F = 100\)</span>, <span class="arithmatex">\(D = 1\)</span> and calls 13, 8 and 2 at strikes 90, 100 and 110, the slopes <span class="arithmatex">\(-0.5\)</span> and <span class="arithmatex">\(-0.6\)</span> break convexity. The cheapest repair lowers the middle price to 7.5, an <span class="arithmatex">\(\ell^1\)</span> change of <span class="arithmatex">\(0.005\)</span> in normalised units.</p>
+<h3 id="63-smoothing-prices">6.3 Smoothing prices</h3>
+<p>Fengler (2009) fits a natural cubic spline <span class="arithmatex">\(g(\kappa)\)</span> to normalised call prices by quadratic programming:</p>
+<div class="arithmatex">\[
+\min_{g,\,\gamma}\ \sum_i w_i\bigl(y_i - g(u_i)\bigr)^2 + \lambda\,\gamma^\top R\,\gamma,
+\]</div>
+<p>Here <span class="arithmatex">\(\gamma = g''\)</span> at the knots, so <span class="arithmatex">\(\gamma \ge 0\)</span> makes <span class="arithmatex">\(g\)</span> convex. The spline must also satisfy <span class="arithmatex">\((1 - u)^+ \le g \le 1\)</span>. <code>fengler_surface</code> fits the longest expiry first and each shorter one under <span class="arithmatex">\(g_{T_1} \le g_{T_2}\)</span>. Imposing this only at the knots leaves small violations between them. Instead, each spline piece is written in Bernstein form on the union of both knot sets, halved, and every Bernstein coefficient of the difference is constrained. The difference then stays non-negative to below <span class="arithmatex">\(10^{-12}\)</span> everywhere on the overlap.</p>
+<hr />
+<h2 id="7-the-surface-object">7. The surface object</h2>
+<h3 id="71-strikes-volatilities-and-time-interpolation">7.1 Strikes, volatilities and time interpolation</h3>
+<p><code>VolSurface(model, forward)</code> combines a total-variance model with a forward curve. It works in strikes: prices, implied volatilities, deltas and the smile at each expiry, all broadcasting <span class="arithmatex">\(K\)</span> against <span class="arithmatex">\(T\)</span>. The forward variance between two expiries at fixed <span class="arithmatex">\(k\)</span> is <span class="arithmatex">\(\bigl(w(k, T_2) - w(k, T_1)\bigr)/(T_2 - T_1)\)</span>. It is non-negative for every <span class="arithmatex">\(k\)</span> exactly when there is no calendar arbitrage, and <code>forward_vol</code> raises otherwise.</p>
+<p><code>VolSurface.from_slices</code> interpolates between fitted slices, in one of three ways:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Mode</th>
+<th style="text-align: left;">Interpolates</th>
+<th style="text-align: left;">Guarantee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>price</code> (default)</td>
+<td style="text-align: left;"><span class="arithmatex">\(c(k, t)\)</span>, by §4</td>
+<td style="text-align: left;">no static arbitrage if the slices have none</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>fixed_k</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(w(k, t)\)</span> linearly in <span class="arithmatex">\(t\)</span> at fixed <span class="arithmatex">\(k\)</span></td>
+<td style="text-align: left;">no calendar arbitrage if the slices are ordered</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>normalised</code></td>
+<td style="text-align: left;"><span class="arithmatex">\(w/\theta_t\)</span> at fixed <span class="arithmatex">\(x = k/\sqrt{\theta_t}\)</span>, with <span class="arithmatex">\(\theta_t\)</span> linear</td>
+<td style="text-align: left;">exact for SSVI with <span class="arithmatex">\(\varphi(\theta)\sqrt\theta\)</span> constant</td>
+</tr>
+</tbody>
+</table>
+<p>Only the variance modes extrapolate beyond the last expiry. In the normalised mode <span class="arithmatex">\(w_i(x\sqrt{\theta_i})/\theta_i\)</span> is the same function of <span class="arithmatex">\(x\)</span> on every slice of such an SSVI surface. The interpolation then returns the SSVI surface itself at every intermediate <span class="arithmatex">\(\theta_t\)</span>.</p>
+<h3 id="72-delta-conventions">7.2 Delta conventions</h3>
+<p>The Black forward delta of a call is <span class="arithmatex">\(N(d_1)\)</span>, and with premium adjustment it is <span class="arithmatex">\((K/F)N(d_2)\)</span>. <code>strike_from_delta</code> inverts either convention at the slice's own volatility. The premium-adjusted call delta is not monotone in <span class="arithmatex">\(K\)</span>, so it is inverted on the branch above its maximum. The ATM delta-neutral straddle strike solves call delta + put delta <span class="arithmatex">\(= 0\)</span>. At a fixed volatility this is <span class="arithmatex">\(Fe^{w/2}\)</span>, or <span class="arithmatex">\(Fe^{-w/2}\)</span> with premium adjustment. For <span class="arithmatex">\(F = 100\)</span>, <span class="arithmatex">\(\sigma = 20\%\)</span> and <span class="arithmatex">\(T = 1\)</span> these are 102.0201 and 98.0199, and the 25-delta call strike is <span class="arithmatex">\(F\exp\bigl(\sigma N^{-1}(0.75) + w/2\bigr) = 116.7539\)</span>.</p>
+<p>Under a smile, the forward delta depends on how <span class="arithmatex">\(\sigma\)</span> moves with the forward. Sticky strike keeps Black's delta. Sticky moneyness, <span class="arithmatex">\(\sigma = \sigma(\log(K/F))\)</span>, gives <span class="arithmatex">\(\Delta = \Delta_{BS} - \mathcal V_{BS}\,\sigma_k/F\)</span>. Under a negative skew this sticky-moneyness delta is the larger of the two.</p>
+<h3 id="73-bumps-and-bucketed-vega">7.3 Bumps and bucketed vega</h3>
+<p>A bump adds <span class="arithmatex">\(\delta(k, T)\)</span> to the implied volatility at fixed log-moneyness, <span class="arithmatex">\(w' = (\sigma + \delta)^2T\)</span>. There are three shapes:</p>
+<ul>
+<li><code>parallel_bump</code> is <span class="arithmatex">\(\delta = s\)</span>;</li>
+<li><code>skew_bump</code> is <span class="arithmatex">\(\delta = sk\)</span>, which raises the ATM skew by exactly <span class="arithmatex">\(s\)</span>;</li>
+<li><code>expiry_buckets</code> are triangular hats in <span class="arithmatex">\(T\)</span> on pillar expiries that sum to one. A book at 0.75 years with pillars at 0.5 and 1 year therefore splits its vega equally between them.</li>
+</ul>
+<p><code>bucketed_vega</code> reprices any function of a surface under central bumps. The bucketed vegas add up to the parallel vega to first order.</p>
+<h3 id="74-simulation-and-persistence">7.4 Simulation and persistence</h3>
+<p><code>VolSurface.terminal_distribution(T)</code> is the implied law of <span class="arithmatex">\(\log(S_T/F_T)\)</span> (§5), and <code>sample_terminal</code> draws <span class="arithmatex">\(S_T\)</span> by inverse transform. Monte Carlo then reprices the forward, calls and digitals to within four standard errors, which checks the surface end to end. <code>dumps</code> and <code>loads</code> serialise surfaces, models, forwards and curves to JSON, with a type tag on each object. The round trip is bit-exact, because JSON writes each float as the shortest decimal that reads back to it.</p>
+<h2 id="8-local-volatility">8. Local volatility</h2>
+<h3 id="81-dupires-formula-in-implied-variance">8.1 Dupire's formula in implied variance</h3>
+<p>Dupire (1994) showed that exactly one diffusion <span class="arithmatex">\(dS_t = (r - q)S_t\,dt + \sigma_{\mathrm{loc}}(S_t, t)S_t\,dW_t\)</span> reproduces a given arbitrage-free call surface. In log-forward moneyness <span class="arithmatex">\(y = \log(K/F_T)\)</span> and total implied variance <span class="arithmatex">\(w(y, T)\)</span> the formula reads (Gatheral, 2006)</p>
+<div class="arithmatex">\[
+\sigma^2_{\mathrm{loc}}(K, T) = \frac{\partial_T w}{1 - \dfrac{y}{w}\,\partial_y w + \dfrac14\Bigl(-\dfrac14 - \dfrac1w + \dfrac{y^2}{w^2}\Bigr)(\partial_y w)^2 + \dfrac12\,\partial_{yy} w}.
+\]</div>
+<p>Rates and dividends drop out because strikes are measured against the forward. The denominator is Durrleman's <span class="arithmatex">\(g\)</span> (§1), and the numerator is the forward variance at fixed moneyness (§7.1). The local variance is therefore positive exactly where the surface is free of butterfly and calendar arbitrage. <code>LocalVolSurface</code> returns <code>nan</code> elsewhere: if <span class="arithmatex">\(w = (0.04T - 0.02T^2)\)</span> at every <span class="arithmatex">\(y\)</span>, the local vol is <span class="arithmatex">\(\sqrt{0.02}\)</span> at <span class="arithmatex">\(T = 1/2\)</span> and undefined at <span class="arithmatex">\(T = 1.5\)</span>. <code>VolSurface.local_vol</code> evaluates the formula with five-point differences of any surface. <code>LocalVolGrid</code> tabulates it for fast lookups.</p>
+<p>As <span class="arithmatex">\(T \to 0\)</span>, the implied vol is the harmonic mean of the local vol between spot and strike (Berestycki, Busca &amp; Florent, 2002):</p>
+<div class="arithmatex">\[
+\frac{1}{\sigma_{\mathrm{imp}}(k)} = \int_0^1 \frac{du}{\sigma_{\mathrm{loc}}(uk)}.
+\]</div>
+<p><code>bbf_implied_vol</code> evaluates this integral. For <span class="arithmatex">\(\sigma_{\mathrm{loc}} = a + by\)</span> it gives <span class="arithmatex">\(bk/\log(1 + bk/a)\)</span>. Differentiating at <span class="arithmatex">\(k = 0\)</span> gives the familiar rule that the short-dated local skew is twice the implied skew: for a time-independent smile <span class="arithmatex">\(\sigma(k) = 0.2 - 0.1k\)</span>, the ATM local skew tends to <span class="arithmatex">\(-0.2\)</span>.</p>
+<h3 id="82-pricing-under-local-volatility">8.2 Pricing under local volatility</h3>
+<p>A <code>LocalVolSurface</code> is a volatility function <span class="arithmatex">\(\sigma(S, t)\)</span> for the solvers of <a href="../pde/">PDE methods</a>. <code>dupire_pde</code> solves the forward Dupire equation for all strikes and expiries at once, and must give back the surface it came from. <code>black_scholes_pde</code>, <code>american</code> and <code>barrier</code> price backwards, one contract at a time. Two checks tie the two directions together: the forward and backward vanilla prices converge to the surface, and down-and-out plus down-and-in equals the vanilla. With <span class="arithmatex">\(q = 0\)</span> an American call under local vol is worth its European value, as it is under any diffusion.</p>
+<h3 id="83-andreasenhuge-interpolation">8.3 Andreasen–Huge interpolation</h3>
+<p>Dupire's formula needs a smooth, arbitrage-free surface. Andreasen &amp; Huge (2011) start from the quotes instead. They take <span class="arithmatex">\(\vartheta(x, t)\)</span> piecewise constant in normalised strike <span class="arithmatex">\(x = K/F_t\)</span>, with one level per quote, and advance normalised calls <span class="arithmatex">\(c(x, t)\)</span> over each expiry interval with one fully implicit step:</p>
+<div class="arithmatex">\[
+\Bigl[I - \tfrac12 (t_i - t_{i-1})\,\vartheta_i^2(x)\,x^2 D_{xx}\Bigr] c_i = c_{i-1}.
+\]</div>
+<p>The matrix is an M-matrix, so <span class="arithmatex">\(c_i\)</span> stays convex in <span class="arithmatex">\(x\)</span>, within <span class="arithmatex">\((1 - x)^+ \le c \le 1\)</span>, and <span class="arithmatex">\(c_i \ge c_{i-1}\)</span>. The surface is free of static arbitrage by construction, between expiries as well, where the same step is taken with a partial time step. <code>calibrate_andreasen_huge</code> fits the levels expiry by expiry, and reproduces arbitrage-free quotes to solver tolerance.</p>
+<h3 id="84-monte-carlo-and-the-forward-smile">8.4 Monte Carlo and the forward smile</h3>
+<p><code>local_vol_paths</code> simulates <span class="arithmatex">\(\log S\)</span> by Euler steps on a <code>LocalVolGrid</code>, storing only the requested times. Forward-start options pay <span class="arithmatex">\((S_{T_2}/S_{T_1} - k)^+\)</span> at <span class="arithmatex">\(T_2\)</span>. Their value depends on the joint law of <span class="arithmatex">\(S_{T_1}\)</span> and <span class="arithmatex">\(S_{T_2}\)</span>, which the surface does not determine. <code>LocalVolPaths.forward_start</code> prices them under local vol. Put–call parity holds path by path: call minus put pays <span class="arithmatex">\(S_{T_2}/S_{T_1} - k\)</span>, and its expectation is <span class="arithmatex">\(e^{-rT_2}\bigl(e^{(r - q)(T_2 - T_1)} - k\bigr)\)</span>. With a constant volatility the price is <span class="arithmatex">\(e^{-rT_1}\)</span> times a Black–Scholes call on unit spot, with strike <span class="arithmatex">\(k\)</span>, expiry <span class="arithmatex">\(T_2 - T_1\)</span> and the same <span class="arithmatex">\(r\)</span> and <span class="arithmatex">\(q\)</span>.</p>
+<h3 id="85-densities-and-diagnostics">8.5 Densities and diagnostics</h3>
+<p>By Gyöngy's theorem, the marginal laws of the local-vol diffusion are those implied by the surface. <code>LocalVolSurface.density</code> solves the Fokker–Planck equation of <span class="arithmatex">\(\log S\)</span> with <code>FokkerPlanck1D</code> and returns the density of <span class="arithmatex">\(y = \log(S_T/F_T)\)</span>. It matches the Breeden–Litzenberger density <span class="arithmatex">\(e^{rT}\partial_{KK}C\)</span> (§5), keeps unit mass, and keeps <span class="arithmatex">\(E[S_T] = F_T\)</span>.</p>
+<p><code>local_vol_diagnostics</code> combines these checks for a given surface. It maps where the local vol is undefined on a (moneyness, time) grid. If it is defined everywhere, it reprices a strike × expiry grid with one forward Dupire solve and reports the implied-vol errors, which shrink as the grid is refined. For an SSVI surface whose <span class="arithmatex">\(\theta_t = 0.04t - 0.012t^2\)</span> peaks at <span class="arithmatex">\(t = 5/3\)</span>, a 40-step time grid to <span class="arithmatex">\(t = 2\)</span> first flags undefined points at <span class="arithmatex">\(t = 1.7\)</span>.</p>
+<h2 id="9-stochastic-local-volatility">9. Stochastic local volatility</h2>
+<h3 id="91-the-model">9.1 The model</h3>
+<p>Local volatility fits every vanilla but implies a forward smile that flattens too quickly. Stochastic volatility has realistic dynamics but cannot fit the whole surface. SLV combines the two. In forward log-moneyness <span class="arithmatex">\(y = \log(S_t/F_t)\)</span>,</p>
+<div class="arithmatex">\[
+dy = -\tfrac12 L^2(t, y)\,v\,dt + L(t, y)\sqrt v\,dW^1, \qquad dv = \kappa(\theta - v)\,dt + \eta\,\xi\sqrt v\,dW^2, \qquad d\langle W^1, W^2\rangle = \rho\,dt,
+\]</div>
+<p>with a Heston variance (<code>Heston</code>, priced in forward coordinates by Lewis's integral; in 't Hout and Foulon's case 1 gives <span class="arithmatex">\(8.8948693600540\)</span>) and a leverage function <span class="arithmatex">\(L\)</span>. The <em>mixing fraction</em> <span class="arithmatex">\(\eta \in [0, 1]\)</span> scales the vol-of-variance. By Gyöngy's theorem, the marginals of <span class="arithmatex">\(y\)</span>, and therefore all vanillas, are those of local volatility if and only if</p>
+<div class="arithmatex">\[
+L^2(t, y)\,E[v_t \mid y_t = y] = \sigma_{LV}^2(t, y).
+\]</div>
+<p>The leverage depends on the model's own conditional expectation, so the model is a McKean nonlinear diffusion, and calibrating it means solving for that conditional expectation.</p>
+<h3 id="92-the-forward-equation">9.2 The forward equation</h3>
+<p><code>slv_forward</code> evolves the joint density <span class="arithmatex">\(p(t, y, v)\)</span> from a delta at <span class="arithmatex">\((0, v_0)\)</span>. As in the one-dimensional <code>FokkerPlanck1D</code>, the forward operator is the discrete adjoint <span class="arithmatex">\(W^{-1}A_j^{\mathsf T}W\)</span> of each part of the backward ADI splitting of <code>spxa.pde</code>, where <span class="arithmatex">\(W\)</span> holds the control-volume areas. Every generator row sums to zero, so the mass is conserved to rounding. The degenerate edge <span class="arithmatex">\(v = 0\)</span> is "natural". The far edges in <span class="arithmatex">\(y\)</span> and the top of the variance grid are absorbing: with a natural condition on a non-degenerate edge, the adjoint scheme blows up. <code>slv_grid</code> clusters variance nodes towards zero, places <span class="arithmatex">\(v_0\)</span> on a node, and takes the top of the grid at the <span class="arithmatex">\(1 - 10^{-6}\)</span> non-central chi-square quantile of <span class="arithmatex">\(v_t\)</span> over the horizon. With <span class="arithmatex">\(L \equiv 1\)</span> the density reproduces the Heston smile within 5 bp on a <span class="arithmatex">\(121 \times 61\)</span> grid with 100 steps, and within 1.5 bp on <span class="arithmatex">\(161 \times 81\)</span> with 200 steps.</p>
+<h3 id="93-calibration-by-forward-induction">9.3 Calibration by forward induction</h3>
+<p><code>calibrate_leverage</code> reads <span class="arithmatex">\(E[v \mid y]\)</span> from the current density at each step, sets <span class="arithmatex">\(L^2 = \sigma_{LV}^2/E[v \mid y]\)</span> with the local variance at the step midpoint, and advances the density with that leverage (Ren, Madan &amp; Qian). Where the marginal density is negligible, the conditional expectation is extended flat. Calibrated to the SSVI surface of §8, the model reprices the smile at one year within 5 bp at <span class="arithmatex">\(\eta = 0.5\)</span> on the <span class="arithmatex">\(121 \times 61\)</span> grid, and within 2.5 bp at <span class="arithmatex">\(\eta = 1\)</span> on <span class="arithmatex">\(161 \times 81\)</span>. The local variance must be tabulated finely in <span class="arithmatex">\(y\)</span> (<code>as_local_vol</code> uses 601 points): linear interpolation of a convex function biases the volatility upwards. As a consistency check, feeding the model its own Gyöngy local variance returns <span class="arithmatex">\(L \equiv 1\)</span> to <span class="arithmatex">\(10^{-9}\)</span>.</p>
+<h3 id="94-particles-monte-carlo-and-the-pde">9.4 Particles, Monte Carlo and the PDE</h3>
+<p><code>calibrate_leverage_particles</code> is the particle method of Guyon and Henry-Labordère. It simulates <span class="arithmatex">\(N\)</span> particles and estimates <span class="arithmatex">\(E[v \mid y]\)</span> at each step by Gaussian kernel regression, with bandwidth <span class="arithmatex">\(\propto \sigma\sqrt t\,N^{-1/5}\)</span>. On the same problem its leverage agrees with the forward equation's within 2.5%. <code>slv_paths</code> simulates the calibrated model with full-truncation Euler for <span class="arithmatex">\(v\)</span> and a log-Euler step for <span class="arithmatex">\(y\)</span>, so <span class="arithmatex">\(e^y\)</span> is an exact martingale step by step. Knock-out barriers are monitored continuously through the Brownian-bridge survival probability <span class="arithmatex">\(1 - e^{-2d_0d_1/(a^2\Delta t)}\)</span>. In the Black–Scholes limit this matches Reiner–Rubinstein at 20 steps, while discrete monitoring overprices by more than five standard errors. <code>SLVPDE</code> prices backwards in <span class="arithmatex">\((S, v)\)</span>. Its far spot edge uses the linearity condition, which is exact for payoffs linear in <span class="arithmatex">\(S\)</span> (in log-spot the same condition breaks put–call parity). Spot barriers become zero-Dirichlet edges. The PDE and Monte Carlo agree on calibrated-SLV barriers within three standard errors.</p>
+<h3 id="95-the-mixing-fraction">9.5 The mixing fraction</h3>
+<p>Every <span class="arithmatex">\(\eta\)</span> reprices the same vanillas, but path-dependent prices move. At <span class="arithmatex">\(\eta = 0\)</span> the variance is deterministic and the model is local volatility: a one-year down-and-out call (spot and strike 100, barrier 85, <span class="arithmatex">\(r = 3\%\)</span>, <span class="arithmatex">\(q = 1\%\)</span>) on the SSVI surface agrees with the one-factor local-vol PDE value <span class="arithmatex">\(8.18\)</span> within 0.2%. A one-year up-and-out call with barrier 130 is worth <span class="arithmatex">\(5.80\)</span>, <span class="arithmatex">\(6.00\)</span> and <span class="arithmatex">\(6.33\)</span> at <span class="arithmatex">\(\eta = 0\)</span>, <span class="arithmatex">\(0.5\)</span> and <span class="arithmatex">\(1\)</span>, while the smile is matched within 6 bp in each case. <code>calibrate_slv</code> builds the model for a given <span class="arithmatex">\(\eta\)</span> from a local-vol surface or a <code>VolSurface</code>. In practice <span class="arithmatex">\(\eta\)</span> is set from barrier or forward-start quotes, which the vanillas cannot pin down.</p>
+<h2 id="10-rough-volatility">10. Rough volatility</h2>
+<h3 id="101-rough-heston">10.1 Rough Heston</h3>
+<p>Realised volatility is rough: its log increments behave like fractional Brownian motion with Hurst index <span class="arithmatex">\(H \approx 0.1\)</span>. Implied volatility shows the same roughness, with an at-the-money skew that grows like <span class="arithmatex">\(T^{H - 1/2}\)</span> as <span class="arithmatex">\(T \to 0\)</span>. A classical diffusion gives a flat skew there. In the rough Heston model (El Euch &amp; Rosenbaum) the variance is a Volterra process,</p>
+<div class="arithmatex">\[
+v_t = v_0 + \frac{1}{\Gamma(\alpha)}\int_0^t (t - s)^{\alpha - 1}\bigl(\lambda(\theta - v_s)\,ds + \nu\sqrt{v_s}\,dB_s\bigr), \qquad \alpha = H + \tfrac12,
+\]</div>
+<p>and the characteristic function of <span class="arithmatex">\(X_T = \log(S_T/F_T)\)</span> stays semi-closed:</p>
+<div class="arithmatex">\[
+E\,e^{iuX_T} = \exp\Bigl(\theta\lambda\int_0^T h(u, s)\,ds + v_0\,I^{1-\alpha}h(u, T)\Bigr), \qquad
+D^\alpha h = -\tfrac12(u^2 + iu) + (iu\rho\nu - \lambda)h + \tfrac12\nu^2h^2,
+\]</div>
+<p>with <span class="arithmatex">\(h(u, 0) = 0\)</span>. <code>fractional_riccati</code> solves the fractional Riccati equation with the fractional Adams predictor–corrector, vectorised over <span class="arithmatex">\(u\)</span>. At <span class="arithmatex">\(H = 1/2\)</span> the model is Heston with <span class="arithmatex">\(\kappa = \lambda\)</span> and <span class="arithmatex">\(\xi = \nu\)</span>, and the characteristic function converges to Heston's at second order in the step. <code>RoughHeston</code> prices vanillas by a Fourier integral on the normalised Lewis contour. The explicit predictor becomes unstable at large <span class="arithmatex">\(|u|\)</span> when <span class="arithmatex">\(H\)</span> is small, so the integral is truncated at <span class="arithmatex">\(U = 20/\sqrt{\bar vT}\)</span>, beyond which the integrand is negligible. <span class="arithmatex">\(E[v_t]\)</span> has a closed form through the Mittag-Leffler function. For <span class="arithmatex">\(v_0 = \theta = 0.04\)</span>, <span class="arithmatex">\(\lambda = \nu = 0.3\)</span>, <span class="arithmatex">\(\rho = -0.7\)</span> and <span class="arithmatex">\(H = 0.1\)</span>, the one-year implied volatilities at strikes <span class="arithmatex">\(0.8\)</span>, <span class="arithmatex">\(1\)</span> and <span class="arithmatex">\(1.2\)</span> (unit forward) are <span class="arithmatex">\(23.23\%\)</span>, <span class="arithmatex">\(17.38\%\)</span> and <span class="arithmatex">\(13.63\%\)</span>. Between expiries of <span class="arithmatex">\(0.0025\)</span> and <span class="arithmatex">\(0.01\)</span> years (about one and four days), the log-log slope of the at-the-money skew is within <span class="arithmatex">\(0.05\)</span> of <span class="arithmatex">\(H - 1/2 = -0.4\)</span>.</p>
+<h3 id="102-lifted-heston">10.2 Lifted Heston</h3>
+<p>The fractional kernel is a completely monotone function, so it is a mixture of exponentials, <span class="arithmatex">\(t^{\alpha-1}/\Gamma(\alpha) = \int_0^\infty e^{-xt}\,\mu(dx)\)</span>. The lifted Heston model of Abi Jaber replaces <span class="arithmatex">\(\mu\)</span> by <span class="arithmatex">\(n\)</span> atoms <span class="arithmatex">\(c_i\delta_{x_i}\)</span> on a geometric grid (<code>lifted_weights</code>). The variance is then a sum of <span class="arithmatex">\(n\)</span> Markovian Ornstein–Uhlenbeck-like factors, and the Riccati equation becomes a system of <span class="arithmatex">\(n\)</span> ordinary equations. <code>LiftedHeston</code> solves it by exponential time differencing. With one factor at speed zero it is classical Heston. As <span class="arithmatex">\(n\)</span> grows the smile converges to rough Heston's: in the example of §10.1 the largest one-year gap over strikes <span class="arithmatex">\(0.8\)</span>–<span class="arithmatex">\(1.2\)</span> is <span class="arithmatex">\(1.34\)</span>, <span class="arithmatex">\(0.79\)</span>, <span class="arithmatex">\(0.46\)</span> and <span class="arithmatex">\(0.24\)</span> vol points for <span class="arithmatex">\(n = 5\)</span>, <span class="arithmatex">\(10\)</span>, <span class="arithmatex">\(20\)</span> and <span class="arithmatex">\(50\)</span>. Lifted Heston is Markovian in a finite state, so it can be simulated and fed to PDE solvers, at the cost of a factor count that grows as maturities get shorter.</p>
+<h3 id="103-calibration">10.3 Calibration</h3>
+<p><code>calibrate_rough_heston</code> fits <span class="arithmatex">\((v_0, \theta, \nu, \rho, H)\)</span> to implied-volatility smiles by bounded least squares, with <span class="arithmatex">\(\lambda\)</span> fixed by default because it is weakly identified alongside <span class="arithmatex">\(\theta\)</span>. Fitted to its own smiles at three expiries from <span class="arithmatex">\(0.1\)</span> to <span class="arithmatex">\(1.5\)</span> years, it recovers the parameters to a relative <span class="arithmatex">\(10^{-8}\)</span>. That needs enough Adams steps (<code>n_steps</code>, 400 by default) for the explicit scheme to stay stable up to <span class="arithmatex">\(U\)</span>. With 100 steps at <span class="arithmatex">\(H = 0.08\)</span>, a third to a half of the Fourier nodes diverge and are dropped. The values just before them are inaccurate, so the model vols are not smooth enough in the parameters for a finite-difference Jacobian. Where the fit then stalls depends on floating-point rounding, and so on the platform. Fixing <span class="arithmatex">\(H = 1/2\)</span> (classical Heston) on the same smiles leaves an RMSE above one vol point: no choice of <span class="arithmatex">\(\nu\)</span> and <span class="arithmatex">\(\rho\)</span> makes the skew steep at <span class="arithmatex">\(0.1\)</span> years and still right at <span class="arithmatex">\(1.5\)</span> years.</p>
+<h3 id="104-rough-bergomi">10.4 Rough Bergomi</h3>
+<p>Rough Bergomi (Bayer, Friz &amp; Gatheral) models the forward variance curve <span class="arithmatex">\(\xi_t(u) = E_t[v_u]\)</span> directly:</p>
+<div class="arithmatex">\[
+v_t = \xi_0(t)\exp\Bigl(\eta\widetilde W_t - \tfrac12\eta^2\operatorname{Var}\widetilde W_t\Bigr), \qquad \widetilde W_t = \sqrt{2H}\int_0^t (t - s)^{H - 1/2}\,dW_s,
+\]</div>
+<p>with spot driven by <span class="arithmatex">\(\rho\,dW + \sqrt{1 - \rho^2}\,dW^\perp\)</span>. It fits any initial term structure <span class="arithmatex">\(\xi_0\)</span> by construction, but it has no characteristic function. <code>rbergomi_paths</code> uses the hybrid scheme of Bennedsen, Lunde &amp; Pakkanen. The kernel's singular first cell is sampled exactly, jointly with <span class="arithmatex">\(dW\)</span>, and the rest of the convolution uses the optimal discretisation points through an FFT. The compensator uses the scheme's own variance, so <span class="arithmatex">\(E[v_t] = \xi_0(t)\)</span> holds on the grid. On the same grid, the smile agrees with exact Cholesky simulation of the Volterra process (<code>spxa.rough.RoughBergomi</code>). Prices use the mixed estimator of Romano &amp; Touzi: conditional on <span class="arithmatex">\(W\)</span>, <span class="arithmatex">\(\log S_T\)</span> is Gaussian, so the orthogonal noise integrates out in a Black formula. At <span class="arithmatex">\(\rho = -0.9\)</span> only <span class="arithmatex">\(19\%\)</span> of the variance is orthogonal, and the standard error falls by a factor of about <span class="arithmatex">\(1.3\)</span> at the money and <span class="arithmatex">\(1.7\)</span> at strike <span class="arithmatex">\(1.2\)</span>.</p>
+<p><code>calibrate_rbergomi</code> fits <span class="arithmatex">\((H, \eta, \rho, \xi_0)\)</span> to one smile with common random numbers. Every evaluation reuses one fixed sample, so the objective is a smooth deterministic function and a finite-difference least-squares solver applies. Quotes generated from the same sample are fitted exactly. Quotes from an independent simulation with ten times as many paths, fitted with <span class="arithmatex">\(\eta\)</span> and <span class="arithmatex">\(\rho\)</span> free and <span class="arithmatex">\(H\)</span> at its true value, leave an RMSE of <span class="arithmatex">\(0.3\)</span> vol points. That residual is the Monte Carlo error of the calibration sample, and it moves <span class="arithmatex">\((\eta, \rho)\)</span> from <span class="arithmatex">\((1.6, -0.85)\)</span> to <span class="arithmatex">\((1.56, -0.86)\)</span>.</p>
+<h3 id="105-vix">10.5 VIX</h3>
+<p>The squared VIX index at <span class="arithmatex">\(T\)</span> is the 30-day forward variance, <span class="arithmatex">\(\mathrm{VIX}_T^2 = \frac1\Delta\int_T^{T+\Delta}\xi_T(u)\,du\)</span> with <span class="arithmatex">\(\Delta = 30/365\)</span> (<code>VIX_WINDOW</code>). In rough Bergomi, <span class="arithmatex">\(\xi_T(u) = \xi_0(u)\exp(\eta G_u - \frac12\eta^2\operatorname{Var}G_u)\)</span>, where <span class="arithmatex">\(G_u = \sqrt{2H}\int_0^T(u - s)^{H-1/2}\,dW_s\)</span> is Gaussian. Its covariance has a closed form through <span class="arithmatex">\({}_2F_1\)</span>. <code>RBergomiVIX</code> puts the window on 24 Gauss–Legendre nodes and samples <span class="arithmatex">\(\mathrm{VIX}_T^2\)</span> exactly, so the only error is Monte Carlo noise. A moment-matched lognormal gives a fast approximation. For <span class="arithmatex">\(H = 0.1\)</span>, <span class="arithmatex">\(\eta = 1.9\)</span> and <span class="arithmatex">\(\xi_0(t) = 0.04 + 0.01t\)</span> at <span class="arithmatex">\(T = 0.5\)</span>:</p>
+<ul>
+<li><span class="arithmatex">\(\sqrt{E[\mathrm{VIX}_T^2]} = 21.31\%\)</span>;</li>
+<li>the futures price is <span class="arithmatex">\(18.04\%\)</span> (lognormal approximation: <span class="arithmatex">\(17.98\%\)</span>), the gap being Jensen's concavity adjustment;</li>
+<li>VIX option implied volatilities rise only from <span class="arithmatex">\(81.2\%\)</span> to <span class="arithmatex">\(81.9\%\)</span> between strikes <span class="arithmatex">\(0.14\)</span> and <span class="arithmatex">\(0.36\)</span>;</li>
+<li>at-the-money VIX implied volatility falls with expiry: <span class="arithmatex">\(135.5\%\)</span>, <span class="arithmatex">\(97.6\%\)</span>, <span class="arithmatex">\(66.5\%\)</span> and <span class="arithmatex">\(53.6\%\)</span> at <span class="arithmatex">\(0.05\)</span>, <span class="arithmatex">\(0.25\)</span>, <span class="arithmatex">\(1\)</span> and <span class="arithmatex">\(2\)</span> years.</li>
+</ul>
+<p>Lognormal forward variances make the VIX nearly lognormal, so the VIX smile is almost flat, while the market's slopes clearly upward.</p>
+<p>In Heston, <span class="arithmatex">\(E_T[v_u]\)</span> is affine in <span class="arithmatex">\(v_T\)</span>, so <span class="arithmatex">\(\mathrm{VIX}_T^2 = av_T + b\)</span> with <span class="arithmatex">\(a = (1 - e^{-\kappa\Delta})/(\kappa\Delta)\)</span> and <span class="arithmatex">\(b = \theta(1 - a)\)</span>. <code>HestonVIX</code> integrates against the noncentral <span class="arithmatex">\(\chi^2\)</span> law of <span class="arithmatex">\(v_T\)</span>. The substitution <span class="arithmatex">\(x = y^p\)</span> removes the density's singularity at zero when the Feller condition fails, and a smile takes a few milliseconds. For <span class="arithmatex">\((v_0, \kappa, \theta, \xi, \rho) = (0.04, 1.5, 0.04, 0.5, -0.7)\)</span> at <span class="arithmatex">\(T = 0.5\)</span>, the futures price is <span class="arithmatex">\(17.06\%\)</span> against <span class="arithmatex">\(\sqrt{E[\mathrm{VIX}_T^2]} = 20\%\)</span>. The VIX smile slopes <em>down</em>, from <span class="arithmatex">\(94.8\%\)</span> at strike <span class="arithmatex">\(0.12\)</span> to <span class="arithmatex">\(76.0\%\)</span> at <span class="arithmatex">\(0.30\)</span>, the wrong sign against the market.</p>
+<h3 id="106-joint-spxvix-calibration">10.6 Joint SPX/VIX calibration</h3>
+<p><code>calibrate_heston_joint</code> fits Heston to SPX smiles (<code>SmileQuote</code>), VIX futures and VIX option smiles (<code>VIXQuote</code>) together, with a weight per block. With consistent quotes it recovers the parameters. The interesting case is the market's: take SPX smiles and VIX futures from one Heston model, and give the VIX options an upward skew of <span class="arithmatex">\(+0.4\)</span> per unit of log-moneyness. An SPX-only fit is exact on SPX and on the futures, but misses the VIX smile by <span class="arithmatex">\(17\)</span> vol points RMS. The joint fit cuts that to <span class="arithmatex">\(3.6\)</span> vol points, at the cost of <span class="arithmatex">\(2.0\)</span> vol points on SPX and <span class="arithmatex">\(2.0\)</span> VIX points on the futures. It does this by raising the vol of variance to <span class="arithmatex">\(\xi = 1.66\)</span>, far beyond the Feller condition, so that mass piles up near zero variance. This is the SPX/VIX joint calibration problem: models that price SPX options well disagree with VIX options. It is a standard argument for rough and path-dependent volatility models.</p>
+<h2 id="11-martingale-optimal-transport">11. Martingale optimal transport</h2>
+<h3 id="111-marginals-and-the-convex-order">11.1 Marginals and the convex order</h3>
+<p>A smile at one expiry fixes the law of <span class="arithmatex">\(X = S_T/F_T\)</span> (§5). For two expiries <span class="arithmatex">\(T_1 &lt; T_2\)</span>, the laws <span class="arithmatex">\(\mu\)</span> of <span class="arithmatex">\(X\)</span> and <span class="arithmatex">\(\nu\)</span> of <span class="arithmatex">\(Y = S_{T_2}/F_{T_2}\)</span> are all that vanillas reveal about the joint law of <span class="arithmatex">\((X, Y)\)</span>. Absence of arbitrage adds one constraint: <span class="arithmatex">\((X, Y)\)</span> is a martingale, <span class="arithmatex">\(E[Y \mid X] = X\)</span>. Strassen's theorem says a martingale coupling exists if and only if <span class="arithmatex">\(\mu \le_{cx} \nu\)</span>, that is, the means are equal and every call is worth at least as much at <span class="arithmatex">\(T_2\)</span> as at <span class="arithmatex">\(T_1\)</span>. This is the calendar condition of §1. <code>marginal_from_calls</code> builds the law on an even strike grid whose call function is the linear interpolant of the quotes. Its weights are second differences of the prices. Truncating the grid loses the tails, and an exponential tilt <span class="arithmatex">\(p_i e^{\beta k_i}\)</span> restores the unit mean exactly. Rounding-level calendar violations are repaired by flooring the later calls with the earlier ones: a maximum of convex functions is convex. <code>surface_marginals</code> does this for a whole surface. The grid must cover the tails. On the SSVI surface of §8, a grid that stops at <span class="arithmatex">\(k = 0.2\)</span> loses the put value below it (<span class="arithmatex">\(4.76 \times 10^{-5}\)</span> at one year).</p>
+<h3 id="112-bounds-by-linear-programming">11.2 Bounds by linear programming</h3>
+<p>The model-free price interval of a claim <span class="arithmatex">\(c(X, Y)\)</span> is the minimum and maximum of <span class="arithmatex">\(E_\pi[c]\)</span> over martingale couplings <span class="arithmatex">\(\pi \in \mathcal M(\mu, \nu)\)</span>. On grids this is a linear programme. <code>mot_solve</code> solves it with HiGHS. Its dual is the cheapest superhedge,</p>
+<div class="arithmatex">\[
+\varphi(x) + \psi(y) + h(x)(y - x) \ge c(x, y),
+\]</div>
+<p>with no duality gap (Beiglböck, Henry-Labordère &amp; Penkner): vanillas <span class="arithmatex">\(\varphi\)</span> on <span class="arithmatex">\(T_1\)</span> and <span class="arithmatex">\(\psi\)</span> on <span class="arithmatex">\(T_2\)</span>, plus <span class="arithmatex">\(h(X)\)</span> units of the forward from <span class="arithmatex">\(T_1\)</span> to <span class="arithmatex">\(T_2\)</span>. For a forward-start straddle <span class="arithmatex">\(|Y - X|\)</span> between flat 20% smiles at <span class="arithmatex">\(0.5\)</span> and <span class="arithmatex">\(1\)</span> year, <code>mot_bounds</code> gives <span class="arithmatex">\([0.0507, 0.1389]\)</span>, which contains the Black–Scholes value <span class="arithmatex">\(0.1127\)</span>. Dropping the martingale constraint, classical optimal transport (<code>ot_solve</code>) gives the much wider <span class="arithmatex">\([0.0466, 0.2721]\)</span>. A claim <span class="arithmatex">\(\varphi(X) + \psi(Y) + g(X)(Y - X)\)</span> is replicated by vanillas and the forward, so its interval has zero width. The same holds for <span class="arithmatex">\((Y - X)^2\)</span> and the forward log contract <span class="arithmatex">\(\log Y - \log X\)</span>. HiGHS presolve has to be switched off, because tail weights of <span class="arithmatex">\(10^{-14}\)</span> make it report infeasibility.</p>
+<h3 id="113-entropic-transport">11.3 Entropic transport</h3>
+<p>Penalising the plan with <span class="arithmatex">\(\varepsilon\,\mathrm{KL}(\pi \,\|\, \mu\otimes\nu)\)</span> gives a Gibbs-form solution, <span class="arithmatex">\(\pi_{ij} \propto \mu_i\nu_j\exp\bigl((c_{ij} - a_i - b_j - h_i(y_j - x_i))/\varepsilon\bigr)\)</span>. <code>mot_sinkhorn</code> finds the potentials by alternating closed-form log-sum-exp updates for <span class="arithmatex">\(a\)</span> and <span class="arithmatex">\(b\)</span> with Newton steps on each row's martingale condition for <span class="arithmatex">\(h\)</span>, and decreases <span class="arithmatex">\(\varepsilon\)</span> geometrically with warm starts. Each iteration costs <span class="arithmatex">\(O(nm)\)</span> and needs no LP solver. The plans are feasible, so their values approach the LP bounds from inside. For the straddle above, the gap to the upper bound is <span class="arithmatex">\(3.0 \times 10^{-3}\)</span> at <span class="arithmatex">\(\varepsilon = 10^{-2}\)</span> and <span class="arithmatex">\(2.0 \times 10^{-4}\)</span> at <span class="arithmatex">\(\varepsilon = 3 \times 10^{-3}\)</span>.</p>
+<h3 id="114-hedges-as-trades-and-a-backtest">11.4 Hedges as trades, and a backtest</h3>
+<p>The dual potentials live on the grid. <code>static_replication</code> writes any grid-piecewise-linear function as cash, a forward and a strip of calls whose weights are the slope changes. The superhedge then becomes concrete trades: calls on <span class="arithmatex">\(T_1\)</span> and <span class="arithmatex">\(T_2\)</span> costing exactly the upper bound, plus <span class="arithmatex">\(h(X)\)</span> forwards entered at <span class="arithmatex">\(T_1\)</span> for free. <code>robust_bounds</code> runs the whole chain from a surface for forward-start payoffs (<code>forward_start_call</code>, <code>forward_start_straddle</code>). <code>superhedge_pnl</code> evaluates hedge minus payoff along simulated paths, interpolating the potentials linearly between nodes. Take Heston marginals (<span class="arithmatex">\(v_0 = \theta = 0.04\)</span>, <span class="arithmatex">\(\kappa = 1.5\)</span>, <span class="arithmatex">\(\xi = 0.5\)</span>, <span class="arithmatex">\(\rho = -0.7\)</span>) at <span class="arithmatex">\(0.5\)</span> and <span class="arithmatex">\(1\)</span> year on a 121-node grid, and a forward-start at-the-money call. The bounds are <span class="arithmatex">\([0.0205, 0.0606]\)</span>, and the Heston price on 50,000 paths is <span class="arithmatex">\(0.0457\)</span>. Along those paths the superhedge never loses more than <span class="arithmatex">\(0.0009\)</span>, under 4% of the grid spacing, an interpolation error between nodes. Its mean gain equals the gap between the bound and the model price. Paths must stay on the grid: on a coarser grid ending at <span class="arithmatex">\(0.2\)</span>, the hedge has no instruments below the last strike and loses on paths that fall there.</p>
+<h3 id="115-several-dates">11.5 Several dates</h3>
+<p><code>mot_multi</code> bounds claims <span class="arithmatex">\(c(X_1, \dots, X_n)\)</span> over joint laws that are martingales in their own filtration, with one constraint per path prefix. A claim on two consecutive dates has the same bounds as the two-marginal problem, because any coupling extends by a Markov kernel. Intermediate smiles can only tighten a claim on the first and last dates. With flat 20% smiles at <span class="arithmatex">\(0.5\)</span>, <span class="arithmatex">\(1\)</span> and <span class="arithmatex">\(1.5\)</span> years, a three-date Asian call on the average of <span class="arithmatex">\(X_1, X_2, X_3\)</span>, struck at the forward, lies in <span class="arithmatex">\([0.0634, 0.0778]\)</span>, around the Black–Scholes value <span class="arithmatex">\(0.0705\)</span>.</p>
+<h2 id="12-variance-and-volatility-swaps">12. Variance and volatility swaps</h2>
+<h3 id="121-replication">12.1 Replication</h3>
+<p>A variance swap pays the realised variance <span class="arithmatex">\(\frac1T\int_0^T v_t\,dt\)</span> against a fixed strike. For a continuous price process, Itô's formula applied to <span class="arithmatex">\(\log S\)</span> turns the integrated variance into a static position in the log contract plus a dynamic forward hedge. Carr–Madan then writes the log contract as a strip of out-of-the-money options with weight <span class="arithmatex">\(1/K^2\)</span>. In log moneyness <span class="arithmatex">\(k = \log(K/F_T)\)</span> and with undiscounted prices <span class="arithmatex">\(\mathrm{OTM}(k)\)</span> over the forward, the fair strike is</p>
+<div class="arithmatex">\[
+K_{\text{var}}\,T = 2\int_{-\infty}^{\infty} \mathrm{OTM}(k)\, e^{-k}\,dk .
+\]</div>
+<p>The gamma swap weights realised variance by <span class="arithmatex">\(S_t/S_0\)</span>, and its strike uses the weight <span class="arithmatex">\(1/K\)</span>, which drops the factor <span class="arithmatex">\(e^{-k}\)</span>. <code>fair_variance</code> integrates a vectorised OTM pricer by composite Gauss–Legendre quadrature on panels scaled by the at-the-money total volatility. <code>variance_swap_strike</code> and <code>gamma_swap_strike</code> apply it to a surface. A flat smile returns <span class="arithmatex">\(\sigma^2\)</span> to <span class="arithmatex">\(10^{-12}\)</span>. Replication on Fourier prices recovers Heston's <span class="arithmatex">\(E[V]/T\)</span> to <span class="arithmatex">\(10^{-6}\)</span> and rough Heston's <span class="arithmatex">\(\frac1T\int_0^T E[v_t]\,dt\)</span> to <span class="arithmatex">\(2 \times 10^{-5}\)</span>. With negative skew, the <span class="arithmatex">\(1/K^2\)</span> weight loads the expensive puts. On the SSVI surface of §8 at one year, <span class="arithmatex">\(K_{\text{var}} = 0.0569\)</span>, above the gamma swap strike <span class="arithmatex">\(0.0494\)</span>, which is above the at-the-money variance <span class="arithmatex">\(0.043\)</span>. <code>variance_swap_mtm</code> values a seasoned swap from realised and remaining fair variance.</p>
+<h3 id="122-term-structure-and-the-vix">12.2 Term structure and the VIX</h3>
+<p>The strikes <span class="arithmatex">\(K_i\)</span> at expiries <span class="arithmatex">\(T_i\)</span> fix the integrated forward variance <span class="arithmatex">\(\int_0^{T_i}\xi_0 = K_i T_i\)</span>. <code>ForwardVarianceCurve</code> interpolates it with <span class="arithmatex">\(\xi_0\)</span> flat between expiries and rejects strikes whose total variance falls. It is the input of the forward-variance models in §10. Built from the SSVI surface and passed to rough Bergomi, it reproduces the 30-day strike as <span class="arithmatex">\(E[\mathrm{VIX}_0^2]\)</span> exactly and the one-year strike as the mean of <span class="arithmatex">\(\int_0^1 v_t\,dt\)</span> over simulated paths. The VIX index itself is the 30-day replication, <span class="arithmatex">\(100\sqrt{K_{\text{var}}(30/365)}\)</span>. <code>vix_index</code> gives <span class="arithmatex">\(21.61\)</span> on the SSVI surface.</p>
+<h3 id="123-volatility-swaps">12.3 Volatility swaps</h3>
+<p>A volatility swap pays <span class="arithmatex">\(\sqrt{V/T}\)</span>. Concavity puts its strike below <span class="arithmatex">\(\sqrt{K_{\text{var}}}\)</span>, and the gap depends on the dynamics, not only on the smile. In Heston the Laplace transform of <span class="arithmatex">\(V = \int_0^T v_t\,dt\)</span> is exponential-affine (the CIR bond-price formula), and</p>
+<div class="arithmatex">\[
+E\sqrt V = \frac{1}{2\sqrt\pi}\int_0^\infty \frac{1 - E e^{-sV}}{s^{3/2}}\,ds .
+\]</div>
+<p><code>heston_volatility_swap</code> evaluates this after substituting <span class="arithmatex">\(s = u^2\)</span>. It writes the transform with <span class="arithmatex">\(g - \kappa = 2\xi^2 s/(g + \kappa)\)</span>, so it stays accurate as <span class="arithmatex">\(\xi \to 0\)</span>, where the strike tends to <span class="arithmatex">\(\sqrt{E[V]/T}\)</span>. For <span class="arithmatex">\(v_0 = 0.04\)</span>, <span class="arithmatex">\(\kappa = 1.5\)</span>, <span class="arithmatex">\(\theta = 0.06\)</span>, <span class="arithmatex">\(\xi = 0.5\)</span> and <span class="arithmatex">\(\rho = -0.7\)</span>, the one-year volatility swap is <span class="arithmatex">\(0.2090\)</span> against <span class="arithmatex">\(\sqrt{K_{\text{var}}} = 0.2228\)</span>, and an Euler simulation of <span class="arithmatex">\(V\)</span> agrees within its standard error.</p>
+<h3 id="124-discrete-monitoring">12.4 Discrete monitoring</h3>
+<p>Term sheets use daily log returns, <span class="arithmatex">\(\sigma_R^2 = \frac1T\sum_i(\log S_{t_i}/S_{t_{i-1}})^2\)</span>, often capped at <span class="arithmatex">\(2.5^2 K\)</span>. <code>realised_variance</code> and <code>variance_swap_payoff</code> compute these. Under Black–Scholes with step <span class="arithmatex">\(\Delta t\)</span>, the drift of the log return adds a bias, <span class="arithmatex">\(E[\sigma_R^2] = \sigma^2 + \sigma^4\Delta t/4\)</span>. The demeaned convention with divisor <span class="arithmatex">\(n - 1\)</span> removes it. On daily Heston paths the bias is below the Monte Carlo error, and realised variance prices the swap at <span class="arithmatex">\(E[V]/T\)</span>.</p>
+<h2 id="13-model-risk">13. Model risk</h2>
+<h3 id="131-coherent-and-penalised-measures">13.1 Coherent and penalised measures</h3>
+<p>Models calibrated to the same smiles agree on vanillas but not on path-dependent claims. Cont (2006) measures the disagreement over a set of models <span class="arithmatex">\(\mathcal Q\)</span>, each with calibration error <span class="arithmatex">\(\epsilon_Q\)</span>:</p>
+<div class="arithmatex">\[
+\mu_\delta(X) = \sup_{\epsilon_Q \le \delta} E_Q[X] - \inf_{\epsilon_Q \le \delta} E_Q[X].
+\]</div>
+<p>It is coherent in <span class="arithmatex">\(X\)</span>: subadditive and positively homogeneous, zero on claims every model prices alike, and unchanged by adding them. Charging each model for its error instead of using a hard tolerance gives the convex version, with upper price <span class="arithmatex">\(\max_Q(E_Q[X] - \lambda\epsilon_Q)\)</span> and lower price <span class="arithmatex">\(\min_Q(E_Q[X] + \lambda\epsilon_Q)\)</span>. Its width falls monotonically in <span class="arithmatex">\(\lambda\)</span> to the spread among the best-fitting models. <code>ModelRisk</code> implements both, for exact or Monte Carlo prices. <code>significant</code> tests a width against the simulation error. <code>smile_rmse</code> is the usual calibration error. Every martingale model with the given marginals lies inside the MOT interval of §11, and <code>share</code> gives the fraction of that interval a family spans.</p>
+<h3 id="132-mixing-fractions">13.2 Mixing fractions</h3>
+<p>Calibrate local volatility (<span class="arithmatex">\(\eta = 0\)</span>) and SLV with <span class="arithmatex">\(\eta = 0.5\)</span> and <span class="arithmatex">\(\eta = 1\)</span> (§9) to the SSVI surface of §8. All three fit the smiles at <span class="arithmatex">\(0.5\)</span> and <span class="arithmatex">\(1\)</span> year within 15 bp, and their vanilla prices agree to calibration noise. Forward-start calls <span class="arithmatex">\((Y - kX)^+\)</span> between <span class="arithmatex">\(0.5\)</span> and <span class="arithmatex">\(1\)</span> year do not agree. Local volatility prices them highest and the full Heston mix lowest, a relative spread of 7% at the money and 21% at <span class="arithmatex">\(k = 1.1\)</span>. All prices lie inside the MOT bounds, yet the family covers only 2%, 8% and 11% of the bounds at <span class="arithmatex">\(k = 0.9, 1, 1.1\)</span>. The space of models that fit the smiles is far larger than one SLV family. On the SLV PDE, a one-year up-and-out call (barrier 130, strike 100) moves by 9% across the family and a down-and-out (barrier 85) by 1%. A variance swap is fixed by replication (§12), and all three models price it at <span class="arithmatex">\(K_{\text{var}}\)</span>. The one-year volatility swap spreads by <span class="arithmatex">\(0.008\)</span>, falling as the vol of variance rises with <span class="arithmatex">\(\eta\)</span>.</p>
+<h2 id="14-connections">14. Connections</h2>
+<h3 id="141-stress-testing">14.1 Stress testing</h3>
+<p><code>surface_price</code> values the <code>EuropeanOption</code> contracts of <code>spxa.risk</code> on a surface stored in the market dictionary under <code>&lt;id&gt;_SURFACE</code>, so <code>StressTestingEngine</code> scenarios reach the smile. A spot move scales every forward by <span class="arithmatex">\(S/S_0\)</span>. Against a base market, the change in <code>&lt;id&gt;_VOL</code> is a parallel vol shift and the change in <code>r</code> multiplies discount factors by <span class="arithmatex">\(e^{-\Delta r T}\)</span> and forwards by <span class="arithmatex">\(e^{\Delta r T}\)</span>. Under sticky strike the vol is read at the strike, <span class="arithmatex">\(\sigma(K, T)\)</span>. Under sticky moneyness it is read at the shifted log-moneyness <span class="arithmatex">\(\log(K/F)\)</span>, so the smile moves with the forward. Moving the forward to <span class="arithmatex">\(F + h\)</span> then gives the delta of §7.2, <span class="arithmatex">\(\Delta_{BS} - \mathcal V_{BS}\,\sigma_k/F\)</span>, and a put's delta is less negative on a downward skew.</p>
+<p>A parallel shift of continuously compounded zero rates is exactly <span class="arithmatex">\(P \mapsto Pe^{-\Delta r T}\)</span>, <span class="arithmatex">\(F \mapsto Fe^{\Delta r T}\)</span>. So under sticky moneyness a rate scenario on a surface over a bootstrapped OIS curve reprices to <span class="arithmatex">\(10^{-12}\)</span> like rebuilding the surface on the shifted curve.</p>
+<h3 id="142-surfaces-of-zoo-processes">14.2 Surfaces of zoo processes</h3>
+<p><code>process_vol_surface</code> (and <code>Process.to_vol_surface</code>) turns an exponential-Lévy model <span class="arithmatex">\(S_T = S_0e^{(r-q)T + X_T}\)</span> from <code>spxa.zoo</code> into a surface. It prices out-of-the-money options by Lewis's formula, inverts Black at strikes spaced in at-the-money standard deviations, and fits raw SVI per expiry. The model vols are exact: for a Merton jump diffusion they match the Poisson series to <span class="arithmatex">\(10^{-8}\)</span>. Take <span class="arithmatex">\(\sigma = 15\%\)</span>, half a jump a year of mean <span class="arithmatex">\(-10\%\)</span> and spread <span class="arithmatex">\(15\%\)</span>, with <span class="arithmatex">\(r = 3\%\)</span>, <span class="arithmatex">\(q = 1\%\)</span> and expiries from 3 months to 2 years. The surface then shows a downside skew that flattens with maturity, and SVI misses the model smile by 12.4 bp at most.</p>
+<h3 id="143-graph-nodes">14.3 Graph nodes</h3>
+<p><code>spxa.graph.vol</code> gives the SVI total variance as a node of its five parameters, with the analytic gradient</p>
+<div class="arithmatex">\[
+\partial_b w = \rho(k - m) + R,\quad \partial_\rho w = b(k - m),\quad
+\partial_m w = -b\Bigl(\rho + \frac{k - m}{R}\Bigr),\quad \partial_\sigma w = \frac{b\sigma}{R},
+\]</div>
+<p>where <span class="arithmatex">\(R = \sqrt{(k - m)^2 + \sigma^2}\)</span> and <span class="arithmatex">\(\partial_a w = 1\)</span>. It also gives the value of an option on a surface as a node of spot and a parallel vol shift, whose vector–Jacobian product is the adapter's delta and vega.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

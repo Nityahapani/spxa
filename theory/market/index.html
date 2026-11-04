@@ -1,0 +1,1694 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/market/">
+      
+      
+        <link rel="prev" href="../pde/">
+      
+      
+        <link rel="next" href="../rates/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Market conventions - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#market-conventions-and-building-blocks" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Market conventions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-dates-day-counts-and-calendars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Dates, day counts and calendars
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Dates, day counts and calendars">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-adding-months" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 Adding months
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-day-counts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 Day counts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13-calendars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 Calendars
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#14-business-day-conventions-and-schedules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.4 Business-day conventions and schedules
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-curves-and-forwards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Curves and forwards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-option-formulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Option formulas
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-implied-volatility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Implied volatility
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Implied volatility">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-black" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Black
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-bachelier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Bachelier
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-quotes-static-arbitrage-and-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Quotes, static arbitrage and parity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="market-conventions-and-building-blocks">Market Conventions and Building Blocks</h1>
+<p><code>spxa.market</code> holds the pieces that <code>spxa.rates</code> and <code>spxa.vol</code> share: dates and accrual conventions, holiday calendars, payment schedules, discount and forward curves, the standard option formulas, implied volatility, option quotes, static-arbitrage checks and forwards implied by put–call parity. Everything works with plain <code>datetime.date</code> objects and year fractions; no external market-data library is needed.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Object</th>
+<th style="text-align: left;">Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Dates and tenors</td>
+<td style="text-align: left;"><code>to_date</code>, <code>add_months</code>, <code>add_tenor</code>, <code>Tenor</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Day counts</td>
+<td style="text-align: left;"><code>DayCount</code>, <code>year_fraction</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Calendars</td>
+<td style="text-align: left;"><code>get_calendar</code> (TARGET, US-FED, US-SIFMA, UK), <code>JointCalendar</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Schedules</td>
+<td style="text-align: left;"><code>adjust</code>, <code>Schedule</code>, <code>AccrualPeriod</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Curves and forwards</td>
+<td style="text-align: left;"><code>FlatCurve</code>, <code>InterpolatedDiscountCurve</code>, <code>EquityForward</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Option formulas</td>
+<td style="text-align: left;"><code>black_price</code>, <code>bachelier_price</code>, <code>shifted_black_price</code>, <code>black_scholes_price</code> and their Greeks</td>
+</tr>
+<tr>
+<td style="text-align: left;">Implied volatility</td>
+<td style="text-align: left;"><code>implied_black_volatility</code>, <code>implied_normal_volatility</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Quotes and arbitrage</td>
+<td style="text-align: left;"><code>OptionChain</code>, <code>OptionSurfaceQuotes</code>, <code>check_surface_quotes</code></td>
+</tr>
+<tr>
+<td style="text-align: left;">Parity and carry</td>
+<td style="text-align: left;"><code>implied_forward</code>, <code>ImpliedForwardCurve</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-dates-day-counts-and-calendars">1. Dates, day counts and calendars</h2>
+<h3 id="11-adding-months">1.1 Adding months</h3>
+<p>Adding <span class="arithmatex">\(n\)</span> months to a date keeps the day of the month and clips it to the length of the target month, so 31 January plus one month is 28 or 29 February. With the <strong>end-of-month rule</strong> a date that is the last day of its month maps to the last day of the target month: 28 February 2023 plus one month is 31 March 2023 with the rule and 28 March without it. Tenors such as <code>"3M"</code>, <code>"2Y"</code>, <code>"1W"</code> and <code>"10D"</code> are parsed by <code>Tenor</code>.</p>
+<h3 id="12-day-counts">1.2 Day counts</h3>
+<p>A day count turns a period <span class="arithmatex">\([d_1, d_2)\)</span> into an accrual fraction. <code>DayCount</code> implements:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Convention</th>
+<th style="text-align: left;">Fraction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">ACT/360, ACT/365F</td>
+<td style="text-align: left;">actual days over 360 or 365</td>
+</tr>
+<tr>
+<td style="text-align: left;">ACT/ACT ISDA</td>
+<td style="text-align: left;">days in each calendar year over that year's length</td>
+</tr>
+<tr>
+<td style="text-align: left;">ACT/ACT ICMA</td>
+<td style="text-align: left;">days over (frequency × days in the reference coupon period)</td>
+</tr>
+<tr>
+<td style="text-align: left;">30/360 Bond Basis, 30/360 US, 30E/360, 30E/360 ISDA</td>
+<td style="text-align: left;"><span class="arithmatex">\(\bigl(360\,\Delta Y + 30\,\Delta M + \Delta D\bigr)/360\)</span> with convention-specific day adjustments</td>
+</tr>
+<tr>
+<td style="text-align: left;">BUS/252</td>
+<td style="text-align: left;">business days over 252 (needs a calendar)</td>
+</tr>
+</tbody>
+</table>
+<p>The tests reproduce the ISDA examples. For a regular semi-annual period from 1 November 2003 to 1 May 2004, ACT/ACT ISDA gives <span class="arithmatex">\(61/365 + 121/366 = 0.497724380567\)</span> while ICMA gives exactly <span class="arithmatex">\(0.5\)</span>. For the long first coupon from 15 August 2002 to 15 July 2003, ISDA gives <span class="arithmatex">\(0.915068493151\)</span> and ICMA <span class="arithmatex">\(0.915760869565\)</span>. The 30/360 variants differ only at month ends: from 28 February 2007 to 31 March 2007, Bond Basis counts 33 days, 30/360 US counts 30, 30E/360 counts 32 and 30E/360 ISDA counts 30.</p>
+<h3 id="13-calendars">1.3 Calendars</h3>
+<p>Holiday rules are computed from first principles: fixed dates, weekend observance rules, nth-weekday rules and Easter (the anonymous Meeus/Jones/Butcher algorithm). The TARGET calendar closes on New Year's Day, Good Friday, Easter Monday, 1 May, Christmas and 26 December, which gives 256 TARGET business days in 2024. <code>JointCalendar</code> combines calendars, treating a day as a holiday if any member (<code>rule="holiday_if_any"</code>, the default) or every member (<code>"holiday_if_all"</code>) closes.</p>
+<h3 id="14-business-day-conventions-and-schedules">1.4 Business-day conventions and schedules</h3>
+<p><code>adjust(date, calendar, convention)</code> implements Following, Modified Following, Preceding, Modified Preceding and Unadjusted. <code>Schedule</code> generates unadjusted dates backwards (or forwards) from the termination date at the tenor of the frequency, then adjusts them. It supports front and back stubs, short or long, explicit first and next-to-last dates and the end-of-month rule. Each <code>AccrualPeriod</code> keeps the reference period that ACT/ACT ICMA needs for stubs.</p>
+<hr />
+<h2 id="2-curves-and-forwards">2. Curves and forwards</h2>
+<p>A <code>YieldCurve</code> returns discount factors <span class="arithmatex">\(P(0, t)\)</span>; zero rates and simple or compounded forward rates are derived from them. <code>InterpolatedDiscountCurve</code> is linear in <span class="arithmatex">\(\log P\)</span> (piecewise-constant instantaneous forwards) and extrapolates the last forward flat.</p>
+<p><code>EquityForward</code> combines spot <span class="arithmatex">\(S\)</span>, a funding (repo) curve <span class="arithmatex">\(P_f\)</span>, a continuous dividend curve <span class="arithmatex">\(Q\)</span> and discrete dividends. Cash dividends <span class="arithmatex">\(d_i\)</span> at <span class="arithmatex">\(t_i\)</span> and proportional dividends <span class="arithmatex">\(\delta_j\)</span> give</p>
+<div class="arithmatex">\[
+F(t) = \frac{Q(t)}{P_f(t)} \Bigl[ S\prod_{t_j \le t}(1-\delta_j) - \sum_{t_i \le t} d_i\,\frac{P_f(t_i)}{Q(t_i)}\prod_{t_i &lt; t_j \le t}(1-\delta_j) \Bigr],
+\]</div>
+<p>so a cash dividend is reduced only by the proportional dividends paid after it.</p>
+<hr />
+<h2 id="3-option-formulas">3. Option formulas</h2>
+<p>With forward <span class="arithmatex">\(F\)</span>, strike <span class="arithmatex">\(K\)</span>, expiry <span class="arithmatex">\(T\)</span>, discount factor <span class="arithmatex">\(P\)</span> and <span class="arithmatex">\(\eta = \pm 1\)</span> for calls and puts,</p>
+<div class="arithmatex">\[
+\text{Black: } P\eta\bigl[F\Phi(\eta d_1) - K\Phi(\eta d_2)\bigr], \quad d_{1,2} = \frac{\ln(F/K)}{\sigma\sqrt T} \pm \tfrac12\sigma\sqrt T,
+\]</div>
+<div class="arithmatex">\[
+\text{Bachelier: } P\bigl[\eta(F-K)\Phi(\eta d) + \sigma_N\sqrt T\,\varphi(d)\bigr], \quad d = \frac{F-K}{\sigma_N\sqrt T}.
+\]</div>
+<p>When <span class="arithmatex">\(F\Phi(d_1) - K\Phi(d_2)\)</span> would cancel (small total volatility near the money, or far wings), <code>black_price</code> recomputes the out-of-the-money value with the normalised formulation of Section 4, so the relative error stays below <span class="arithmatex">\(5\times10^{-14}\)</span> even where the textbook formula loses nine digits. Shifted Black applies Black to <span class="arithmatex">\(F + s\)</span> and <span class="arithmatex">\(K + s\)</span>, allowing negative rates. Each formula returns its Greeks analytically; the tests check every Greek against finite differences and identities such as volga <span class="arithmatex">\(=\)</span> vega <span class="arithmatex">\(\cdot d_1 d_2/\sigma\)</span>. At the money the Bachelier price is <span class="arithmatex">\(P\sigma_N\sqrt{T/(2\pi)}\)</span>.</p>
+<hr />
+<h2 id="4-implied-volatility">4. Implied volatility</h2>
+<h3 id="41-black">4.1 Black</h3>
+<p>Write <span class="arithmatex">\(x = \ln(F/K)\)</span>, <span class="arithmatex">\(s = \sigma\sqrt T\)</span> and <span class="arithmatex">\(\beta = V/(P\sqrt{FK})\)</span>. The normalised call price is</p>
+<div class="arithmatex">\[
+b(x, s) = e^{x/2}\Phi\!\left(\frac{x}{s} + \frac s2\right) - e^{-x/2}\Phi\!\left(\frac{x}{s} - \frac s2\right),
+\]</div>
+<p>and puts follow from <span class="arithmatex">\(b(x, s) - b(-x, s) = e^{x/2} - e^{-x/2}\)</span>, so every price reduces to an out-of-the-money value. Following Jäckel's normalised formulation, the solver works with <span class="arithmatex">\(\log b\)</span>, evaluated without cancellation:</p>
+<ul>
+<li>directly when the two terms are well separated;</li>
+<li>through the scaled complementary error function <span class="arithmatex">\(\operatorname{erfcx}\)</span> in the far wings;</li>
+<li>otherwise through the positive integral <span class="arithmatex">\(b(x, s) = \int_0^s e^{x/2}\varphi(x/u + u/2)\,du\)</span>, computed by composite Gauss–Legendre quadrature on geometric panels.</li>
+</ul>
+<p>The equation <span class="arithmatex">\(\log b(x, s) = \log\beta\)</span> is solved by a safeguarded Newton iteration that keeps a shrinking bracket, starting near the inflection point <span class="arithmatex">\(s = \sqrt{2|x|}\)</span>. At the money, <span class="arithmatex">\(s = 2\sqrt 2\,\operatorname{erf}^{-1}(\beta)\)</span> exactly. Against 50-digit reference prices the round trip is accurate to better than <span class="arithmatex">\(10^{-13}\)</span> relative error for out-of-the-money options over <span class="arithmatex">\(x \in [-15, 15]\)</span> and <span class="arithmatex">\(s \in [10^{-4}, 15]\)</span>.</p>
+<h3 id="42-bachelier">4.2 Bachelier</h3>
+<p>The out-of-the-money time value is <span class="arithmatex">\(\sigma_N\sqrt T\,\psi(-u)\)</span> with <span class="arithmatex">\(u = |F-K|/(\sigma_N\sqrt T)\)</span> and <span class="arithmatex">\(\psi(d) = d\Phi(d) + \varphi(d)\)</span>. Writing <span class="arithmatex">\(\psi(-u) = \varphi(u)\bigl(1 - u M(u)\bigr)\)</span> with the Mills ratio <span class="arithmatex">\(M\)</span> cancels catastrophically for large <span class="arithmatex">\(u\)</span>, so there the solver uses the positive representation</p>
+<div class="arithmatex">\[
+\psi(-u) = \frac{\varphi(u)}{u}\int_0^\infty M\!\left(u + \frac wu\right) e^{-w - w^2/(2u^2)}\,dw
+\]</div>
+<p>with Gauss–Laguerre quadrature. The solver iterates on <span class="arithmatex">\(u\)</span>; at the money <span class="arithmatex">\(\sigma_N\sqrt T = \sqrt{2\pi}\,V/P\)</span>. Round trips are accurate to <span class="arithmatex">\(5\times 10^{-14}\)</span>.</p>
+<p>Prices outside the no-arbitrage bounds return <code>NaN</code>, or raise with <code>errors="raise"</code>.</p>
+<hr />
+<h2 id="5-quotes-static-arbitrage-and-parity">5. Quotes, static arbitrage and parity</h2>
+<p><code>OptionChain</code> stores the bids and asks of one expiry and produces mids, out-of-the-money selections and implied volatilities; <code>OptionSurfaceQuotes</code> groups chains by expiry.</p>
+<p><strong>Static arbitrage.</strong> Call prices of one expiry are free of static arbitrage when <span class="arithmatex">\(P(F-K)^+ \le C(K) \le PF\)</span>, when <span class="arithmatex">\(0 \le C(K_1) - C(K_2) \le P(K_2 - K_1)\)</span> for <span class="arithmatex">\(K_1 &lt; K_2\)</span>, and when <span class="arithmatex">\(C\)</span> is convex in <span class="arithmatex">\(K\)</span>. <code>check_call_prices</code> reports each violation with the profit of the corresponding portfolio of quoted options. Across expiries, the normalised price <span class="arithmatex">\(C(kF_T, T)/(P_T F_T)\)</span> must be non-decreasing in <span class="arithmatex">\(T\)</span> at fixed forward moneyness <span class="arithmatex">\(k\)</span> when dividends are proportional. <code>check_calendar_arbitrage</code> interpolates the later expiry only along chords: a convex combination of calls dominates the call at the combined strike, so every reported violation is a genuine arbitrage.</p>
+<p><strong>Put–call parity.</strong> <span class="arithmatex">\(C(K) - P(K) = P(F - K)\)</span> is linear in <span class="arithmatex">\(K\)</span>, with slope <span class="arithmatex">\(-P\)</span> and intercept <span class="arithmatex">\(PF\)</span>. <code>implied_forward</code> fits it by weighted least squares, with weights equal to the inverse squared bid–ask width of each synthetic forward. It can restrict the fit to strikes near the money and rejects outliers beyond a multiple of the robust scale. On exact prices it recovers <span class="arithmatex">\(F\)</span> to <span class="arithmatex">\(10^{-13}\)</span> and <span class="arithmatex">\(P\)</span> to <span class="arithmatex">\(10^{-12}\)</span> relative error.</p>
+<p><strong>Carry.</strong> A forward fixes only the net carry <span class="arithmatex">\(\ln(F/S)/T\)</span>. Given the funding discount factor, the dividend yield is <span class="arithmatex">\(q = -\ln(F P_f/S)/T\)</span>. <code>ImpliedForwardCurve</code> interpolates market forwards linearly in <span class="arithmatex">\(\ln(F/S)\)</span> and converts to an <code>EquityForward</code> that reproduces them at every time.</p>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>ISDA (1998). <em>"EMU and Market Conventions: Recent Developments"</em> (ACT/ACT examples).</li>
+<li>Jäckel, P. (2015). Let's be rational. <em>Wilmott</em>, 2015(75), 40–53.</li>
+<li>Jäckel, P. (2017). Implied normal volatility. <em>Wilmott</em>, 2017(90), 54–57.</li>
+<li>Carr, P. &amp; Madan, D. (2005). A note on sufficient conditions for no arbitrage. <em>Finance Research Letters</em>, 2(3), 125–130.</li>
+<li>Gatheral, J. (2006). <em>The Volatility Surface</em>. Wiley.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
