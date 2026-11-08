@@ -46,6 +46,7 @@ the running library. All signatures are exact.
    - [SABRProcess](#sabrprocess)
    - [FractionalBrownianMotion](#fractionalbrownianmotion)
    - [MarkovModulatedPoissonProcess](#markovmodulatedpoissonprocess)
+   - [MG1WorkloadProcess](#mg1workloadprocess)
    - [HawkesProcess](#hawkesprocess)
    - [HestonProcess](#hestonprocess)
    - [SchobelZhuProcess](#schobelzhuprocess)
@@ -428,6 +429,8 @@ spxa.StickyBrownianMotion
 spxa.StickyBM
 spxa.ReflectedBrownianMotion
 spxa.ReflectedBM
+spxa.MG1WorkloadProcess
+spxa.JobSizeDistribution
 spxa.SkewBrownianMotion
 spxa.SkewBM
 spxa.ReflectedOrnsteinUhlenbeck
@@ -3212,6 +3215,73 @@ The MMPP has `has_stationary_increments=False`, `has_independent_increments=Fals
 Although its counting paths are non-decreasing, a general MMPP is not a Lévy subordinator because its increments are generally dependent. It is therefore not eligible to act as a subordination clock through the `@` operator.
 
 **Reference:** Fischer and Meier-Hellstern (1993), “The Markov-modulated Poisson process (MMPP) cookbook,” *Performance Evaluation*, 18, 149–171.
+
+---
+
+### MG1WorkloadProcess
+
+```python
+from spxa.zoo.beyond import JobSizeDistribution, MG1WorkloadProcess
+
+MG1WorkloadProcess(lam: float, job_size: JobSizeLaw, w0: float = 0.0)
+JobSizeDistribution(sampler, m1: float, m2: float, m3: float)
+```
+
+The workload (virtual waiting time) of an M/G/1 queue. Jobs arrive as a Poisson process $N_t$ with rate $\lambda$, bring i.i.d. sizes $S_i \ge 0$, and the server works at unit rate. With $X_t = \sum_{i \le N_t} S_i - t$, the workload is the reflection of $X$ at zero:
+
+$$
+W_t = X_t + \sup_{s \le t}(-X_s)^+ \qquad (w_0 = 0).
+$$
+
+The reflection term depends on the whole past, so increments are neither independent nor stationary. `triplet` raises `ExactnessError`, and the exactness level is `MOMENT_PROPAGATION`.
+
+**Parameters**
+
+| Parameter | Meaning |
+|---|---|
+| `lam` | Arrival rate $\lambda > 0$. |
+| `job_size` | Any object with `sample(rng, size)` and `moment(n)` for `n = 1, 2, 3`, e.g. `JobSizeDistribution` or `ExponentialJump`. Requires $0 < E[S] < \infty$; $E[S^2]$ and $E[S^3]$ may be `inf`. |
+| `w0` | Initial workload $W_0 \ge 0$; defaults to `0`. |
+
+`JobSizeDistribution(sampler, m1, m2, m3)` wraps a sampler `sampler(rng, size)` and the raw moments $E[S]$, $E[S^2]$, $E[S^3]$.
+
+The constructor rejects moments that no law on $[0, \infty)$ can have: it requires $E[S^2] \ge E[S]^2$ and $E[S]\,E[S^3] \ge E[S^2]^2$ (Cauchy–Schwarz), and it rejects a finite $E[S^3]$ paired with an infinite $E[S^2]$. This catches, for example, a variance passed in place of $E[S^2]$. `simulate` raises `ValueError` if a sampled size is negative, NaN or infinite, or if the sampler returns the wrong number of values.
+
+**Methods and properties**
+
+```python
+q.rho                          # λ E[S]
+q.has_stationary_distribution  # ρ < 1
+q.idle_probability             # 1 - ρ
+q.stationary_mean              # λ E[S²] / (2(1 - ρ))
+q.stationary_second_moment     # 2 E[W]² + λ E[S³] / (3(1 - ρ))
+q.stationary_variance
+q.cumulants(order)             # {1: mean, 2: variance, 3+: nan}
+
+q.simulate(
+    n_steps: int,
+    n_paths: int = 1,
+    T: float = 1.0,
+    rng: np.random.Generator | None = None,
+) -> np.ndarray
+```
+
+- The stationary quantities follow Pollaczek–Khinchine and raise `ValueError` when $\rho \ge 1$. The process can still be built and simulated in that case.
+- `cumulants(order)` returns cumulants of the **stationary** law $W_\infty$: $\kappa_1 = E[W_\infty]$, $\kappa_2 = \mathrm{Var}(W_\infty)$, and `nan` for orders 3 and above. Unlike for Lévy processes, these are not cumulants of $W_1$ or per-unit-time values. Transient cumulants of $W_t$ at finite $t$ have no closed form and are not provided; estimate them from `simulate`.
+- `simulate` draws the Poisson arrival epochs, applies the Lindley recursion $W(a_k) = \max(W(a_{k-1}) - (a_k - a_{k-1}), 0) + S_k$ and drains linearly to each grid point. Paths are right-continuous, so $W(a_k)$ is the workload immediately after the $k$-th arrival (its job included), with $a_0 = 0$ and $W(a_0) = w_0$. It has no discretisation error. The output shape is `(n_paths, n_steps + 1)` with `paths[:, 0] == w0`.
+
+**Example**
+
+```python
+from spxa.zoo.beyond import MG1WorkloadProcess
+from spxa.zoo.levy import ExponentialJump
+
+q = MG1WorkloadProcess(lam=0.5, job_size=ExponentialJump(rate=1.0))
+q.stationary_mean      # 1.0  (M/M/1: ρ / (μ(1 - ρ)))
+paths = q.simulate(n_steps=1000, n_paths=100, T=100.0)
+```
+
+**References:** Pollaczek (1930), *Mathematische Zeitschrift*, 32, 64–100; Khinchine (1932), *Matematicheskii Sbornik*, 39(4), 73–84; Lindley (1952), *Proc. Cambridge Philos. Soc.*, 48(2), 277–289.
 
 ---
 

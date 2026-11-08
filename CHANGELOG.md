@@ -112,8 +112,19 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
     surface of an exponential-Lévy zoo process; `spxa.graph.vol` adds SVI and surface-price nodes.
   - See `docs/theory/vol.md` and section 22 of the API reference; examples
     `examples/vol_*_example.py`.
+- `zoo/beyond/mg1_workload.py` — M/G/1 workload process, a reflected compound Poisson process
+  (`MG1WorkloadProcess`, `JobSizeDistribution`):
+  Poisson arrivals at rate $\lambda$ with i.i.d. job sizes $S$, unit drain and reflection at 0,
+  $W_t = X_t + \sup_{s \le t}(-X_s)^+$; exact Pollaczek–Khinchine stationary mean, variance and idle
+  probability $1 - \rho$ for $\rho = \lambda E[S] < 1$; checks that the job-size moments are
+  consistent; and exact Lindley-recursion simulation between arrivals.
 
 ### Fixed
+
+- `vol.andreasen_huge`: the implicit step now solves only the interior nodes and sets the Dirichlet
+  ends exactly. Keeping the boundary rows in the banded solve let LAPACK's partial pivoting leave
+  rounding error of about $10^{-14}$ at $x_0$, so long-maturity calls fell just below the intrinsic
+  bound $(1 - x)^+$.
 
 - `zoo.levy.CGMY`: the Lévy density, total mass, tail and drift now temper upward jumps with $M$ and
   downward jumps with $G$, as the characteristic exponent does; previously they described the

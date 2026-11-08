@@ -246,6 +246,7 @@ from spxa.zoo.beyond.double_mean_reverting import (
 )
 from spxa.zoo.beyond.sticky_bm import StickyBM, StickyBrownianMotion
 from spxa.zoo.beyond.reflected_bm import ReflectedBM, ReflectedBrownianMotion
+from spxa.zoo.beyond.mg1_workload import JobSizeDistribution, MG1WorkloadProcess
 from spxa.zoo.beyond.skew_bm import SkewBM, SkewBrownianMotion
 from spxa.zoo.beyond.reflected_ou import ReflectedOU, ReflectedOrnsteinUhlenbeck
 from spxa.zoo.beyond.absorbing_bachelier import (
@@ -484,6 +485,8 @@ __all__ = [
     "StickyBM",
     "ReflectedBrownianMotion",
     "ReflectedBM",
+    "MG1WorkloadProcess",
+    "JobSizeDistribution",
     "SkewBrownianMotion",
     "SkewBM",
     "ReflectedOrnsteinUhlenbeck",
