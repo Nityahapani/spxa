@@ -40,7 +40,9 @@ Y = GammaProcess(a=1.0, b=2.0)
 Z = X + 0.5 * Y            # exact triplet arithmetic
 
 print(Z.exactness)          # ExactnessLevel.EXACT
-print(Z.cumulants(4))       # symbolic cumulants to order 4
+print(Z.triplet.sigma_sq)   # 0.0
+print(float(Z.triplet.b))   # 0.04072233534646699
+print(Z.exactness == spxa.ExactnessLevel.EXACT)  # True
 ```
 
 | Module | Purpose |
