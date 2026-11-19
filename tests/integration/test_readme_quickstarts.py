@@ -18,7 +18,7 @@ def _block(heading: str) -> str:
     return text[begin : text.index("\n```", begin)]
 
 
-@pytest.mark.parametrize("heading", ["### Quickstart"])
+@pytest.mark.parametrize("heading", ["## Quickstart"])
 def test_quickstart_prints_its_comments(heading: str) -> None:
     code = _block(heading)
     expected = [m.group(1).strip() for m in re.finditer(r"^print\(.*\)\s+# (.+)$", code, re.M)]
