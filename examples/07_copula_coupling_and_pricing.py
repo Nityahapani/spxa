@@ -17,7 +17,6 @@ import numpy as np
 # Ensure spxa package is on sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import spxa
 from spxa import (
     BrownianMotion,
     ClaytonCopula,
@@ -27,12 +26,10 @@ from spxa import (
     GumbelCopula,
     MertonJumpDiffusion,
     StudentTCopula,
-    fit_copula,
     plot_copula_cdf,
     plot_copula_pdf,
     plot_copula_samples,
     plot_tail_dependence_curves,
-    pseudo_observations,
     select_best_copula,
 )
 
@@ -51,10 +48,18 @@ def main() -> None:
     student_t = StudentTCopula(df=4.0, corr=0.6)
     gaussian = GaussianCopula(corr=0.6)
 
-    print(f"  Clayton (θ=2.5)   : Kendall's τ = {clayton.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {clayton.tail_dependence()}")
-    print(f"  Gumbel (θ=2.5)    : Kendall's τ = {gumbel.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {gumbel.tail_dependence()}")
-    print(f"  Student-t (ν=4,ρ=0.6): Kendall's τ = {student_t.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {student_t.tail_dependence()}")
-    print(f"  Gaussian (ρ=0.6)  : Kendall's τ = {gaussian.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {gaussian.tail_dependence()}")
+    print(
+        f"  Clayton (θ=2.5)   : Kendall's τ = {clayton.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {clayton.tail_dependence()}"
+    )
+    print(
+        f"  Gumbel (θ=2.5)    : Kendall's τ = {gumbel.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {gumbel.tail_dependence()}"
+    )
+    print(
+        f"  Student-t (ν=4,ρ=0.6): Kendall's τ = {student_t.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {student_t.tail_dependence()}"
+    )
+    print(
+        f"  Gaussian (ρ=0.6)  : Kendall's τ = {gaussian.kendall_tau():.4f}, Tail Dep (λ_L, λ_U) = {gaussian.tail_dependence()}"
+    )
 
     # 2. Coupled Process Simulation
     print("\n2. Coupling Stochastic Processes via Sklar's Theorem:")
@@ -81,7 +86,9 @@ def main() -> None:
 
     # 3. Multi-Asset Exotic Derivative Pricing
     print("\n3. Multi-Asset Exotic Derivative Valuation (Monte Carlo):")
-    basket_price = coupled.basket_call_price(weights=[0.5, 0.5], strike=strike, T=T, r=r, n_paths=n_paths)
+    basket_price = coupled.basket_call_price(
+        weights=[0.5, 0.5], strike=strike, T=T, r=r, n_paths=n_paths
+    )
     worst_of_price = coupled.worst_of_call_price(strike=strike, T=T, r=r, n_paths=n_paths)
     best_of_price = coupled.best_of_call_price(strike=strike, T=T, r=r, n_paths=n_paths)
     spread_price = coupled.spread_option_price(strike=0.0, T=T, r=r, n_paths=n_paths)
@@ -98,18 +105,28 @@ def main() -> None:
     market_data = np.column_stack((log_ret1, log_ret2))
     best_cop, report = select_best_copula(
         market_data[:2000],
-        candidate_families=[GaussianCopula, StudentTCopula, ClaytonCopula, GumbelCopula, FrankCopula],
+        candidate_families=[
+            GaussianCopula,
+            StudentTCopula,
+            ClaytonCopula,
+            GumbelCopula,
+            FrankCopula,
+        ],
     )
     print(f"  Best Fitting Copula Family: {report['best_model']} (AIC = {report['best_aic']:.2f})")
     print("  Model Comparison Table:")
     for model_name, info in report["models"].items():
-        print(f"    - {model_name:18s}: Log-Lik = {info['log_likelihood']:8.2f}, AIC = {info['aic']:8.2f}, Params = {info['parameters']}")
+        print(
+            f"    - {model_name:18s}: Log-Lik = {info['log_likelihood']:8.2f}, AIC = {info['aic']:8.2f}, Params = {info['parameters']}"
+        )
 
     # 5. Visualizations
     print("\n5. Generating Visualizations...")
     pdf_fig, _ = plot_copula_pdf(clayton, save_path=str(output_dir / "clayton_pdf_surface.png"))
     cdf_fig, _ = plot_copula_cdf(clayton, save_path=str(output_dir / "clayton_cdf_surface.png"))
-    scat_fig, _ = plot_copula_samples(clayton, n_samples=1500, save_path=str(output_dir / "clayton_scatter_spaces.png"))
+    scat_fig, _ = plot_copula_samples(
+        clayton, n_samples=1500, save_path=str(output_dir / "clayton_scatter_spaces.png")
+    )
 
     tail_fig, _ = plot_tail_dependence_curves(
         {

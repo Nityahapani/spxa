@@ -17,14 +17,10 @@ from scipy.stats import norm
 
 from spxa.sim import (
     control_variate_estimate,
-    importance_sampling_gaussian_shift,
     milstein,
-    milstein_multivariate,
     mlmc_estimate,
     predictor_corrector_euler,
-    sample_antithetic_brownian,
     sample_qmc_brownian,
-    srk_weak2,
     stochastic_runge_kutta,
 )
 
@@ -56,7 +52,9 @@ def main() -> None:
     emp_mean = np.mean(m_paths[:, -1])
     print(f"  GBM S_0 = ${s0:.2f}, μ = {mu:.1%}, σ = {sigma:.1%}")
     print(f"  Theoretical E[S_T]: ${exact_mean:.4f}")
-    print(f"  Milstein E[S_T]:    ${emp_mean:.4f} (Rel Error: {abs(emp_mean - exact_mean)/exact_mean:.2e})")
+    print(
+        f"  Milstein E[S_T]:    ${emp_mean:.4f} (Rel Error: {abs(emp_mean - exact_mean) / exact_mean:.2e})"
+    )
 
     # ------------------------------------------------------------------
     # 2. Derivative-Free Stochastic Runge-Kutta (SRK)
@@ -72,8 +70,10 @@ def main() -> None:
         rng=np.random.default_rng(42),
     )
     emp_srk_mean = np.mean(srk_paths[:, -1])
-    print(f"  SRK (Strong Order 1.0, No Analytic Derivative Required):")
-    print(f"  SRK E[S_T]:         ${emp_srk_mean:.4f} (Rel Error: {abs(emp_srk_mean - exact_mean)/exact_mean:.2e})")
+    print("  SRK (Strong Order 1.0, No Analytic Derivative Required):")
+    print(
+        f"  SRK E[S_T]:         ${emp_srk_mean:.4f} (Rel Error: {abs(emp_srk_mean - exact_mean) / exact_mean:.2e})"
+    )
 
     # ------------------------------------------------------------------
     # 3. Quasi-Monte Carlo (QMC) with Brownian Bridge
@@ -82,9 +82,11 @@ def main() -> None:
     qmc_paths = sample_qmc_brownian(
         n_paths=1024, n_steps=32, T=t, bridge=True, engine="sobol", seed=123
     )
-    print(f"  Sobol QMC Paths Generated: {qmc_paths.shape[0]} paths across {qmc_paths.shape[1]-1} steps")
+    print(
+        f"  Sobol QMC Paths Generated: {qmc_paths.shape[0]} paths across {qmc_paths.shape[1] - 1} steps"
+    )
     print(f"  Terminal Variance Var(W_T): {np.var(qmc_paths[:, -1]):.4f} (Exact: {t:.4f})")
-    print(f"  Midpoint Variance Var(W_T/2): {np.var(qmc_paths[:, 16]):.4f} (Exact: {t/2:.4f})")
+    print(f"  Midpoint Variance Var(W_T/2): {np.var(qmc_paths[:, 16]):.4f} (Exact: {t / 2:.4f})")
 
     # ------------------------------------------------------------------
     # 4. Variance Reduction: Optimal Control Variates
@@ -95,7 +97,7 @@ def main() -> None:
     n_cv = 10000
     rng_cv = np.random.default_rng(99)
     z = rng_cv.standard_normal(n_cv)
-    s_term = s0 * np.exp((r_rate - 0.5 * sigma ** 2) * t + sigma * math.sqrt(t) * z)
+    s_term = s0 * np.exp((r_rate - 0.5 * sigma**2) * t + sigma * math.sqrt(t) * z)
     call_payoffs = math.exp(-r_rate * t) * np.maximum(s_term - strike, 0.0)
 
     # Use underlying stock price forward as control variate: E[S_T] = S0 * exp(r * T)
@@ -103,14 +105,16 @@ def main() -> None:
     cv_res = control_variate_estimate(y=call_payoffs, x=s_term, mean_x=true_mean_stock)
 
     # Analytical Black-Scholes benchmark
-    d1 = (math.log(s0 / strike) + (r_rate + 0.5 * sigma ** 2) * t) / (sigma * math.sqrt(t))
+    d1 = (math.log(s0 / strike) + (r_rate + 0.5 * sigma**2) * t) / (sigma * math.sqrt(t))
     d2 = d1 - sigma * math.sqrt(t)
     bs_call = s0 * norm.cdf(d1) - strike * math.exp(-r_rate * t) * norm.cdf(d2)
 
     print(f"  European Call (Strike = ${strike:.2f}, Benchmark: ${bs_call:.4f}):")
     print(f"  Raw Standard MC:     ${cv_res.raw_mean:.4f} ± {cv_res.raw_std_err:.4f}")
     print(f"  Control Variate MC:  ${cv_res.mean:.4f} ± {cv_res.std_err:.4f}")
-    print(f"  Variance Reduction:  {cv_res.variance_reduction_ratio:.2f}x (R² = {cv_res.r_squared:.2%})")
+    print(
+        f"  Variance Reduction:  {cv_res.variance_reduction_ratio:.2f}x (R² = {cv_res.r_squared:.2%})"
+    )
 
     # ------------------------------------------------------------------
     # 5. Predictor-Corrector Integration for Stiff SDEs
@@ -131,17 +135,20 @@ def main() -> None:
         n_paths=1000,
         rng=np.random.default_rng(42),
     )
-    print(f"  Stiff Ornstein-Uhlenbeck κ = {kappa_stiff:.1f}, coarse Δt = {dt_coarse:.2f} (κΔt = 3.2 > 2)")
-    print(f"  Explicit Euler Diverges; Predictor-Corrector remains strictly stable!")
+    print(
+        f"  Stiff Ornstein-Uhlenbeck κ = {kappa_stiff:.1f}, coarse Δt = {dt_coarse:.2f} (κΔt = 3.2 > 2)"
+    )
+    print("  Explicit Euler Diverges; Predictor-Corrector remains strictly stable!")
     print(f"  Final State Max Absolute: {np.max(np.abs(pc_paths[:, -1])):.4f}")
 
     # ------------------------------------------------------------------
     # 6. Giles (2008) Multilevel Monte Carlo (MLMC)
     # ------------------------------------------------------------------
     print("\n--- 6. Multilevel Monte Carlo (MLMC) ---")
+
     def gbm_coupler(level: int, n_samples: int, rng: np.random.Generator):
         m_factor = 2
-        n_fine = (m_factor ** level) * 4
+        n_fine = (m_factor**level) * 4
         dt_f = t / n_fine
         sq_dt_f = math.sqrt(dt_f)
 
@@ -166,10 +173,14 @@ def main() -> None:
             return p_f, p_c
 
     target_tol = 0.05
-    mlmc_res = mlmc_estimate(gbm_coupler, target_eps=target_tol, l_min=2, l_max=4, rng=np.random.default_rng(42))
+    mlmc_res = mlmc_estimate(
+        gbm_coupler, target_eps=target_tol, l_min=2, l_max=4, rng=np.random.default_rng(42)
+    )
     print(f"  MLMC Target Tolerance ε = ${target_tol:.2f}:")
     print(f"  MLMC Estimate:       ${mlmc_res.estimate:.4f} ± {mlmc_res.std_err:.4f}")
-    print(f"  Levels Reached:      {mlmc_res.levels} (Samples per level: {mlmc_res.n_samples_per_level})")
+    print(
+        f"  Levels Reached:      {mlmc_res.levels} (Samples per level: {mlmc_res.n_samples_per_level})"
+    )
     print(f"  Variance Decay:      {[f'{v:.2e}' for v in mlmc_res.sample_variances]}")
 
     print("\nDemonstration completed successfully.")

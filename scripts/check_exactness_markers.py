@@ -9,6 +9,7 @@ from pathlib import Path
 
 FORBIDDEN_MARKERS = {"skip", "skipif", "xfail"}
 
+
 def check_file(path: Path) -> list[str]:
     violations = []
     tree = ast.parse(path.read_text())
@@ -33,6 +34,7 @@ def check_file(path: Path) -> list[str]:
                 )
     return violations
 
+
 def main() -> None:
     exactness_dir = Path("tests/exactness")
     if not exactness_dir.exists():
@@ -53,7 +55,10 @@ def main() -> None:
         )
         sys.exit(1)
 
-    print(f"Checked {sum(1 for _ in exactness_dir.rglob('test_*.py'))} exactness test files — all clean.")
+    print(
+        f"Checked {sum(1 for _ in exactness_dir.rglob('test_*.py'))} exactness test files — all clean."
+    )
+
 
 if __name__ == "__main__":
     main()

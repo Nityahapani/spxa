@@ -21,11 +21,11 @@ Covers:
 
 import os
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-import spxa
 from spxa import (
     BrownianMotion,
     CGMY,
@@ -39,7 +39,6 @@ from spxa import (
     VarianceGamma,
 )
 from spxa.vis import (
-    compute_iv_surface,
     dag_to_ascii,
     dag_to_dot,
     dag_to_mermaid,
@@ -78,7 +77,9 @@ def run_levy_inspection_demo(output_dir: str = "/tmp/spxa_vis_demo") -> None:
 
     # D. Generate dual-panel plot for Variance Gamma
     vg_plot_path = os.path.join(output_dir, "vg_levy_density.png")
-    fig_vg, _ = plot_levy_density(vg, x_range=(-1.5, 1.5), near_zero_range=0.08, save_path=vg_plot_path)
+    fig_vg, _ = plot_levy_density(
+        vg, x_range=(-1.5, 1.5), near_zero_range=0.08, save_path=vg_plot_path
+    )
     plt.close(fig_vg)
     print(f"Saved Variance Gamma density plot: {vg_plot_path}")
 

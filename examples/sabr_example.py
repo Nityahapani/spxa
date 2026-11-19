@@ -7,18 +7,18 @@ Run with: PYTHONPATH=. python examples/sabr_example.py
 import math
 import numpy as np
 
-from spxa import SABR, SABRModel, SABRProcess
+from spxa import SABRProcess
 
 print("=" * 72)
 print("spxa — SABR Stochastic Volatility Model Demo (Hagan et al. 2002)")
 print("=" * 72)
 
 # 1. Model Definition
-f0 = 100.0     # Initial forward price
-alpha = 0.25   # Initial volatility parameter
-beta = 0.50    # CEV elasticity exponent (square-root backbone)
-nu = 0.40      # Volatility of volatility
-rho = -0.30    # Forward-volatility correlation (negative skew)
+f0 = 100.0  # Initial forward price
+alpha = 0.25  # Initial volatility parameter
+beta = 0.50  # CEV elasticity exponent (square-root backbone)
+nu = 0.40  # Volatility of volatility
+rho = -0.30  # Forward-volatility correlation (negative skew)
 
 sabr = SABRProcess(
     alpha=alpha,
@@ -45,11 +45,11 @@ vols = sabr.implied_volatility(strikes, T=T)
 atm_vol = sabr.atm_volatility(T=T)
 
 print(f"\n── 2. Black Implied Volatility Smile at T = {T:.1f} yr ──")
-print(f"  At-the-Money Vol (analytical formula) : {atm_vol*100:.2f}%")
+print(f"  At-the-Money Vol (analytical formula) : {atm_vol * 100:.2f}%")
 print(f"  {'Strike K':>8} | {'Implied Vol':>12} | {'Moneyness (K/F0)':>18}")
 print("  " + "-" * 44)
 for k, v in zip(strikes, vols):
-    print(f"  {k:>8.1f} | {v*100:>11.2f}% | {k/f0:>18.2f}")
+    print(f"  {k:>8.1f} | {v * 100:>11.2f}% | {k / f0:>18.2f}")
 
 # 3. European Option Pricing & Black-76 Put-Call Parity
 rate = 0.05
@@ -57,8 +57,10 @@ df = math.exp(-rate * T)
 calls = sabr.call_price(strikes, T=T, r=rate)
 puts = sabr.put_price(strikes, T=T, r=rate)
 
-print(f"\n── 3. Black-76 European Options & Put-Call Parity (r = {rate*100:.1f}%) ──")
-print(f"  {'Strike K':>8} | {'Call Price':>10} | {'Put Price':>10} | {'Parity C - P':>12} | {'Expected':>10}")
+print(f"\n── 3. Black-76 European Options & Put-Call Parity (r = {rate * 100:.1f}%) ──")
+print(
+    f"  {'Strike K':>8} | {'Call Price':>10} | {'Put Price':>10} | {'Parity C - P':>12} | {'Expected':>10}"
+)
 print("  " + "-" * 60)
 for k, c, p in zip(strikes, calls, puts):
     parity_diff = c - p
@@ -92,9 +94,11 @@ mc_f_mean = float(np.mean(terminal_f))
 mc_a_mean = float(np.mean(terminal_a))
 mc_a_var = float(np.var(terminal_a))
 
-print(f"\n── 5. Vectorized Path Simulation (Log-Euler Method) ──")
+print("\n── 5. Vectorized Path Simulation (Log-Euler Method) ──")
 print(f"  Simulated Paths                  : {n_paths:,} paths across {n_steps} steps")
-print(f"  Terminal Forward Mean E[F_T]     : {mc_f_mean:.3f} (theoretical: {f0:.3f}, diff: {abs(mc_f_mean - f0):.4f})")
+print(
+    f"  Terminal Forward Mean E[F_T]     : {mc_f_mean:.3f} (theoretical: {f0:.3f}, diff: {abs(mc_f_mean - f0):.4f})"
+)
 print(f"  Terminal Volatility Mean E[α_T]  : {mc_a_mean:.4f} (theoretical: {vol_mean:.4f})")
 print(f"  Terminal Volatility Var Var(α_T) : {mc_a_var:.6f} (theoretical: {vol_var:.6f})")
 

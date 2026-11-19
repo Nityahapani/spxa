@@ -80,7 +80,9 @@ def main() -> None:
     # 5. Coupled Simulation
     n_paths = 30000
     n_steps = 100
-    print(f"\nSimulating {n_paths:,} coupled 3-factor paths ({n_steps} steps over T = {tau:.1f} yr)...")
+    print(
+        f"\nSimulating {n_paths:,} coupled 3-factor paths ({n_steps} steps over T = {tau:.1f} yr)..."
+    )
     r_paths, th_paths, z_paths = model.simulate_factors(
         n_steps=n_steps, time_horizon=tau, n_paths=n_paths, rng=np.random.default_rng(123)
     )
@@ -92,7 +94,9 @@ def main() -> None:
 
     print(f"  Empirical Mean Short Rate:             {emp_mean_r:.4%} (Theoretical: {mean_r:.4%})")
     print(f"  Empirical Variance Short Rate:         {emp_var_r:.6e} (Theoretical: {var_r:.6e})")
-    print(f"  Empirical Mean Central Tendency:       {emp_mean_th:.4%} (Theoretical: {mean_th:.4%})")
+    print(
+        f"  Empirical Mean Central Tendency:       {emp_mean_th:.4%} (Theoretical: {mean_th:.4%})"
+    )
     print(f"  Empirical Mean Variance Factor:        {emp_mean_z:.4f} (Theoretical: {mean_z:.4f})")
 
     print("\nDemonstration completed successfully.")

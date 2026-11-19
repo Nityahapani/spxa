@@ -7,7 +7,7 @@ Run with: PYTHONPATH=. python examples/gh_example.py
 import math
 import numpy as np
 
-from spxa import GH, GHProcess, GeneralizedHyperbolic, GeneralizedHyperbolicProcess
+from spxa import GeneralizedHyperbolicProcess
 
 print("=" * 72)
 print("spxa — Generalized Hyperbolic (GH) Lévy Process Demo (Barndorff-Nielsen 1977)")
@@ -15,10 +15,10 @@ print("=" * 72)
 
 # 1. Model Definition
 lambda_param = 1.0  # Hyperbolic process
-alpha = 2.5         # Tail decay / heaviness
-beta = -0.5         # Asymmetry (negative skewness)
-delta = 1.2         # Scale parameter
-mu = 0.05           # Drift / location parameter
+alpha = 2.5  # Tail decay / heaviness
+beta = -0.5  # Asymmetry (negative skewness)
+delta = 1.2  # Scale parameter
+mu = 0.05  # Drift / location parameter
 
 gh = GeneralizedHyperbolicProcess(
     lambda_param=lambda_param,
@@ -60,12 +60,16 @@ ivs = gh.implied_volatility(strikes, T=T, r=r, q=q, s0=s0)
 df_r = math.exp(-r * T)
 df_q = math.exp(-q * T)
 
-print(f"\n── 3. European Options & Put-Call Parity (S0={s0}, r={r*100:.1f}%, q={q*100:.1f}%) ──")
-print(f"  {'Strike K':>8} | {'Call Price':>10} | {'Put Price':>10} | {'Imp Vol':>10} | {'Parity Diff':>12}")
+print(
+    f"\n── 3. European Options & Put-Call Parity (S0={s0}, r={r * 100:.1f}%, q={q * 100:.1f}%) ──"
+)
+print(
+    f"  {'Strike K':>8} | {'Call Price':>10} | {'Put Price':>10} | {'Imp Vol':>10} | {'Parity Diff':>12}"
+)
 print("  " + "-" * 60)
 for k, c, p, iv in zip(strikes, calls, puts, ivs):
     parity_diff = abs((c - p) - (s0 * df_q - k * df_r))
-    iv_str = f"{iv*100:.2f}%" if math.isfinite(iv) else "N/A"
+    iv_str = f"{iv * 100:.2f}%" if math.isfinite(iv) else "N/A"
     print(f"  {k:>8.1f} | {c:>10.4f} | {p:>10.4f} | {iv_str:>10} | {parity_diff:>12.2e}")
 
 # 4. Simulation
@@ -78,9 +82,11 @@ terminal_x = paths[:, -1]
 mc_mean = float(np.mean(terminal_x))
 mc_var = float(np.var(terminal_x))
 
-print(f"\n── 4. Vectorized Path Simulation ──")
+print("\n── 4. Vectorized Path Simulation ──")
 print(f"  Simulated Paths     : {n_paths:,} paths across {n_steps} steps")
-print(f"  Empirical Mean      : {mc_mean:.4f} (theoretical: {cums[1]:.4f}, diff: {abs(mc_mean - cums[1]):.4f})")
+print(
+    f"  Empirical Mean      : {mc_mean:.4f} (theoretical: {cums[1]:.4f}, diff: {abs(mc_mean - cums[1]):.4f})"
+)
 print(f"  Empirical Variance  : {mc_var:.4f} (theoretical: {cums[2]:.4f})")
 
 print("\n" + "=" * 72)
