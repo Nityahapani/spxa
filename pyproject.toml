@@ -61,8 +61,8 @@ Changelog = "https://github.com/Nityahapani/spxa/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["spxa*"]
-exclude = ["audits*", "tests*", "benchmarks*", "scripts*", "docs*", "site*", "examples_output*"]
+include = ["spxa*", "audits*"]
+exclude = ["tests*", "benchmarks*", "scripts*", "docs*", "site*", "examples_output*"]
 
 [tool.ruff]
 target-version = "py310"
