@@ -1,7 +1,7 @@
 # spxa: Stochastic Process Algebra & Computational Graph Engine
 
 <p align="center">
-  <a href="https://github.com/Nityahapani/spxa/actions/workflows/ci.yml"><img src="https://img.shields.io/badge/CI-passing-brightgreen.svg?style=flat-square" alt="CI Status"></a>
+  <a href="https://github.com/Nityahapani/spxa/actions/workflows/ci.yml"><img src="https://github.com/Nityahapani/spxa/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
   <a href="https://pypi.org/project/spxa/"><img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg?style=flat-square" alt="Python Versions"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/code%20style-ruff-000000.svg?style=flat-square" alt="Ruff"></a>
