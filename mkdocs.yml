@@ -76,6 +76,7 @@ nav:
       - Finance models: tutorials/02_finance_models.ipynb
       - Physics applications: tutorials/03_physics_applications.ipynb
   - API reference: api.md
+  - Example gallery: gallery.md
   - Differentiable SDEs: diff.md
   - Portfolio & Risk: risk.md
   - Stochastic Calculus: calculus.md
