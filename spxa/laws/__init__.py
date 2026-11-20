@@ -24,7 +24,12 @@ Quantities and library
     :mod:`spxa.laws.quantities` evaluates characteristic functions, cumulants
     and exponential-moment strips for any composite.
     :mod:`spxa.laws.library` holds ready-made laws: ``AXIOMS``, ``ALGEBRA``,
-    ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS`` and ``PROPERTIES``.
+    ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS``, ``PROPERTIES`` and
+    ``SIMULATION``.
+Statistical expectations
+    For laws about random output, :mod:`spxa.laws.stats` provides calibrated
+    tests (empirical cf, mean, variance, independence) and
+    :func:`expect_not_rejected`.
 """
 
 from spxa.laws.expect import Discard, LawViolation, assume, expect, expect_close, implies
@@ -53,7 +58,8 @@ from spxa.laws.strategies import (
     tuples,
 )
 
-from spxa.laws import library, quantities
+from spxa.laws import library, quantities, stats
+from spxa.laws.stats import expect_not_rejected
 
 __all__ = [
     "Strategy",
@@ -78,6 +84,7 @@ __all__ = [
     "expect",
     "expect_close",
     "implies",
+    "expect_not_rejected",
     # processes
     "PRIMITIVES",
     "SUBORDINATORS",
@@ -90,4 +97,5 @@ __all__ = [
     # modules
     "library",
     "quantities",
+    "stats",
 ]
