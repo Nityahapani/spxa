@@ -2,6 +2,80 @@
 
 All notable changes to spxa are documented here. Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `discovery/` — process discovery, or inverse stochastic algebra (`spxa.discovery`). It searches
+  compositions of Lévy primitives (`+`, scaling, `@`) for the one that explains the data:
+  - **Inputs.** Return series and CSV files (`load_returns`, with prices or returns and dates),
+    summary statistics (`from_statistics`), or European option quotes (`OptionQuotes`).
+  - **Families and structures.** Eleven primitive families with closed-form cumulant exponents,
+    exact cumulants and exponential-moment strips. `Model` and `recognize(process)` convert to and
+    from zoo expressions, with exact cumulants for `@`.
+  - **Fitting.** A smoothed binned likelihood with COS bin probabilities, cumulant matching, and
+    vega-weighted option fits priced by COS (`cos_prices` reproduces the Fang–Oosterlee VG values).
+  - **Search and ranking.** A `Grammar` without duplicate laws, beam or exhaustive search, BIC/AIC
+    weights, goodness-of-fit p-values, CDF gaps, and flags for degenerate fits. `DiscoveryReport`
+    gives the headline "… matches your data within x%", a table and JSON.
+  - **Uncertainty.** Sandwich and GMM standard errors, Vuong tests, and bootstrap selection
+    frequencies, including the moving-block bootstrap.
+  - **Interfaces.** The `spxa-discover` command line, `examples/08_process_discovery.py`,
+    `docs/theory/discovery.md` and section 23 of the API reference.
+- `laws/` — property-based testing for stochastic algebra (`spxa.laws`):
+  - **Strategies.** Floats, integers, tuples, dictionaries and builds, with integrated (rose-tree)
+    shrinking. Process strategies cover every Lévy family, compositions, martingales and opt-in
+    α-stables.
+  - **Laws.** `@law`, `Law.check` (verified, falsified, error or unsatisfiable, with reproducible
+    seeds and shrunk counterexamples), `expect_close`, `expect`, `implies` and `assume`.
+  - **Statistical expectations.** `spxa.laws.stats` provides empirical-cf, mean, variance and
+    independence tests at a known false-alarm rate, and `expect_not_rejected`.
+  - **Library.** 46 laws in `AXIOMS`, `ALGEBRA`, `SUBORDINATION`, `TRIPLET`, `CUMULANTS`,
+    `PROPERTIES` and `SIMULATION`.
+  - **Running laws.** `Suite` and `SuiteReport` (text, Markdown, JSON), `law_tests` and
+    `assert_holds` for pytest, and the `spxa-laws` command line.
+  - **Documentation.** `examples/09_property_based_laws.py`, `docs/theory/laws.md` and section 24
+    of the API reference.
+- `Drift(mu)`, the deterministic Lévy process. Use `X + Drift(c)` for a constant drift; adding a
+  plain number to a process now raises `TypeError`.
+- `Process.sample_at(times, rng)`: independent draws of $X_t$ at given times. Direct samplers exist
+  for fifteen Lévy families and for their sums, multiples and time changes.
+- `spxa.sim.cf_sampling`: sampling by FFT inversion of a characteristic function, with refinement
+  until the cf has decayed and `CdfUnderResolvedWarning` when it cannot.
+- `Process._char_exponent`, with closed forms for Gamma, IG, VG, NIG, Meixner, tempered stable, NTS
+  and CGMY (including the poles $Y = 0, 1$).
+
+### Fixed
+
+Most of these were found by the law library while it was being written.
+
+- **Triplets and Lévy measures.**
+  - Drift corrections in `LevyTriplet.scale`, and in the Gamma, Poisson and Meixner triplets.
+  - The inverse Gaussian Lévy measure.
+  - The NTS triplet now carries the NTS measure.
+  - The α-stable triplet now matches its exponent: constants $c_\pm$ and truncation drift.
+  - Negative binomial and compound Poisson measures now work inside sums and scalings.
+  - Meixner density overflow.
+  - The jump exponent off the real axis returned NaN.
+- **Characteristic functions and cumulants.**
+  - The cf and cumulants of `X @ T`, and of composites containing it, raised.
+  - `char_exp_subordinated` took $\psi_X$ from the principal logarithm.
+  - The GH exponent wrapped by $2\pi$, which flipped the sign of $\varphi(u, t)$ at non-integer $t$.
+  - The Meixner cf collapsed to 0 past the overflow of $\cosh$.
+  - The Meixner fourth and higher cumulants.
+- **Property flags.**
+  - Self-similarity is flagged only for strictly self-similar processes.
+  - Martingales on integrable clocks, and sums whose means cancel, are now flagged as martingales.
+  - A subordinator run on a subordinator clock is now flagged as a subordinator.
+- **Simulation.**
+  - CGMY, Meixner and tempered stable no longer use fixed-grid cf inversion.
+  - Exact tempered stable draws by tilted stable rejection. This also makes the NTS clock exact,
+    and CGMY draws exact for $0 < Y < 1$.
+  - The α = 1 stable simulator now adds the $\frac{2}{\pi}\beta\sigma t\log t$ shift.
+  - `X @ T` is simulated exactly instead of by interpolating the parent path.
+  - GH increments use cf inversion with the continuous exponent.
+  - One `simulate(n_steps, n_paths, T, rng)` signature for every Lévy primitive (Kou, GH, NTS).
+
 ## [1.1.0] — 2026-11-19
 
 ### Added
