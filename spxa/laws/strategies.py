@@ -388,8 +388,8 @@ def builds(target: Callable[..., T], /, **kwargs: Strategy[Any]) -> Strategy[T]:
     """``target(**values)`` with each keyword drawn from its strategy.
 
     The tree is shrunk on the keyword values and rebuilt with ``target``.
-    A keyword combination that ``target`` rejects with ``ValueError`` is
-    skipped during shrinking.
+    Draws that ``target`` rejects with ``ValueError`` are redrawn. Shrinks
+    that it cannot build, whatever the exception, are skipped.
     """
     name = getattr(target, "__name__", repr(target))
     inner = fixed_dictionaries(kwargs)
@@ -414,7 +414,7 @@ def builds(target: Callable[..., T], /, **kwargs: Strategy[Any]) -> Strategy[T]:
             for c in tree.children():
                 try:
                     yield _build_tree(c)
-                except ValueError:
+                except Exception:  # a shrink the target cannot build is not simpler
                     continue
 
         return Tree(value, children)
