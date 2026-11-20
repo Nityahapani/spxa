@@ -212,6 +212,14 @@ the running library. All signatures are exact.
    - [Inference: Standard Errors, Vuong & Bootstrap](#inference-standard-errors-vuong-bootstrap)
    - [Option Prices](#option-prices)
    - [Command Line](#command-line)
+24. [Property-Based Laws (`spxa.laws`)](#property-based-laws-spxalaws)
+   - [Strategies](#strategies)
+   - [Process Strategies](#process-strategies)
+   - [Laws & Expectations](#laws-expectations)
+   - [Quantities](#quantities)
+   - [Statistical Expectations](#statistical-expectations)
+   - [Library](#library)
+   - [Suites, pytest & the Shell](#suites-pytest-the-shell)
 
 ---
 
@@ -5506,3 +5514,43 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
 ### Command Line
 - `spxa-discover returns FILE [--column C] [--kind auto|returns|prices] [--simple] [--dt DT]` and `spxa-discover options FILE --spot S [--rate R] [--dividend Q]`. The options file has the columns `strike`, `maturity`, `price` and optionally `type`.
 - Options shared by both modes: `--families BM,VG,...`, `--max-terms`, `--criterion`, `--beam-width`, `--exclude-degenerate`, `--seed`, `--top` and `--json`. `python -m spxa.discovery` runs the same command. `spxa.discovery.cli.read_option_quotes(path, spot, rate, dividend)` reads quote files.
+
+## Property-Based Laws (`spxa.laws`)
+
+Property-based testing for stochastic algebra: declare laws about processes, and spxa searches randomised processes and parameters for counterexamples, shrinking any it finds to a minimal one. The theory is in [Property-based laws](theory/laws.md).
+
+### Strategies
+- `Strategy[T]` has `generate(rng)` (a `Tree` with `value` and `children()`, simplest first), `example(seed=0)`, `map(f)`, `filter(pred)` and `flatmap(f)`. `Unsatisfiable` is raised when a filter cannot be met.
+- `floats(lo, hi, *, log=False, simplest=None)`, `integers(lo, hi, *, simplest=None)`, `just(value)`, `sampled_from(values)`, `one_of(*strategies)`, `tuples(*parts)`, `fixed_dictionaries(parts)` and `builds(target, **kwargs)`. Floats shrink to the shortest decimal nearest the target.
+
+### Process Strategies
+- `PRIMITIVES`: family name → zero-argument factory of a strategy for that zoo family. `SUBORDINATORS`: the names of the subordinator families.
+- `levy_processes(families=None, *, heavy_tails=False)`, `subordinators(families=None)` and `alpha_stables()`. α-stables are included only with `heavy_tails=True`.
+- `compositions(leaves=None, *, max_depth=2, operations=("+", "*", "-", "@"), clocks=None, scale_factors=None, leaf_probability=0.3)`: expression trees that shrink to their operands first. `scalars(lo=-2, hi=2)`: non-zero factors that shrink to 1.
+- `martingales(base=None)`: draws centred as $X_t - E[X_1]t$.
+
+### Laws & Expectations
+- `@law(name=None, *, description="", tags=(), **strategies)` or `Law(name, fn, strategies, description="", tags=())`. `fn` holds unless it returns `False` or raises.
+- `Law.check(n_examples=100, seed=0, *, max_discard_ratio=5.0, shrink=True, max_shrinks=500)` returns a `LawResult`, with `status` (`"verified"`, `"falsified"`, `"error"` or `"unsatisfiable"`), `ok`, `failed`, `counterexample`, `original`, `message`, `details`, `n_examples`, `n_discarded`, `seed`, `shrink_steps`, `to_dict()` and `raise_if_failed()` (which raises `LawFailure`, an `AssertionError`). `Law.holds_for(**args)` evaluates one example.
+- Inside a law: `expect_close(a, b, rtol=1e-9, atol=1e-12, what="", equal_nan=False)` requires $|a-b| \le \text{atol} + \text{rtol}\max(|a|,|b|)$. Also `expect(condition, message, **details)`, `implies(premise, conclusion, message="")` (the conclusion may be a callable) and `assume(condition, reason="")`. `LawViolation` and `Discard` are the underlying exceptions.
+
+### Quantities
+`spxa.laws.quantities` evaluates any composite: `cumulants(X, order=4, t=1.0)` (an array of $\kappa_1, \dots$), `mean`, `variance`, `char_func(X, u, t)`, `char_exponent(X, u)`, `laplace_exponent(X, z)`, `mgf(X, z, t)` and `exponential_moment_strip(X)`. The strip is intersected across sums, divided by scale factors and found by bisection for `@`.
+
+### Statistical Expectations
+`spxa.laws.stats` provides tests for laws about random output. Each returns a p-value:
+- `ecf_test(samples, char_func, frequencies)`, the empirical characteristic function;
+- `mean_test(samples, mean, variance)`;
+- `variance_test(samples, kappa2, kappa4)`;
+- `independence_test(a, b, cf_a, cf_b, pairs)`, the joint ECF against the product of the marginals.
+
+Frequencies combine by Bonferroni. `expect_not_rejected(p, level=LEVEL, what="")` fails the law below `LEVEL = 1e-6`.
+
+### Library
+`spxa.laws.library` holds 46 laws in seven tuples: `AXIOMS` (5), `ALGEBRA` (10), `SUBORDINATION` (7), `TRIPLET` (6), `CUMULANTS` (2), `PROPERTIES` (9) and `SIMULATION` (7). Every law carries tags, such as `"cf"`, `"moments"`, `"martingale"` or `"simulation"`.
+
+### Suites, pytest & the Shell
+- `Suite(name, *laws)`: laws and nested iterables of laws, with unique names. It has `select(*, names=None, tags=None, exclude_tags=())`, `tags`, and `check(n_examples=100, seed=0, *, progress=None, fail_fast=False, **check_kw)`, which returns a `SuiteReport`. `default_suite()` holds every library law.
+- `SuiteReport` has `ok`, `counts`, `failures`, `report[name]`, `summary()`, `str(report)`, `to_markdown()`, `to_dict()` and `raise_if_failed()` (which raises `SuiteFailure`).
+- `law_tests(*laws, n_examples=100, seed=0, **check_kw)` returns a pytest test function with one case per law. `assert_holds(law, n_examples=100, seed=0)` checks one law inside a test. Both honour `SPXA_LAW_EXAMPLES` and `SPXA_LAW_SEED` (`spxa.laws.testing.resolve_settings`).
+- `spxa-laws [--examples N] [--seed S] [--names a,b] [--tags t,u] [--exclude-tags v] [--format text|markdown|json] [-o FILE] [--fail-fast] [--no-shrink] [--quiet] [--list]`, also available as `python -m spxa.laws`. It exits with 0 when every law is verified, 1 otherwise and 2 on bad arguments.

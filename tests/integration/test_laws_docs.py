@@ -87,3 +87,18 @@ def test_variance_identity_for_the_ecf() -> None:
     var_im = np.sum(p * np.sin(u * x) ** 2) - np.sum(p * np.sin(u * x)) ** 2
     assert np.isclose(var_re, (1 + phi(2 * u).real) / 2 - phi(u).real ** 2)
     assert np.isclose(var_im, (1 - phi(2 * u).real) / 2 - phi(u).imag ** 2)
+
+
+def test_api_section_names_exist() -> None:
+    from spxa.laws import quantities, stats, testing
+
+    api = (DOC.parents[1] / "api.md").read_text(encoding="utf-8")
+    section = api.split("## Property-Based Laws (`spxa.laws`)", 2)[-1]
+    names = set(re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)\(", section))
+    names |= {"LawViolation", "Discard", "LawFailure", "SuiteFailure", "Unsatisfiable", "LEVEL"}
+    names -= {"str"}
+    modules = (L, quantities, stats, testing, L.Law, L.LawResult, L.Strategy, L.Suite)
+    modules += (L.SuiteReport, L.Tree)
+    missing = sorted(n for n in names if not any(hasattr(m, n) for m in modules))
+    assert not missing, missing
+    assert "46 laws in seven tuples" in section
