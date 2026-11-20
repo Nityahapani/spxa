@@ -104,12 +104,13 @@ def bootstrap(
     seed: int = 0,
 ) -> BootstrapResult:
     """Selection frequencies and parameter intervals for the leading structures of ``report``."""
-    if report.method != "likelihood" or report.summary.sample is None:
+    summary = report.summary
+    if report.method != "likelihood" or summary is None or summary.sample is None:
         raise ValueError("bootstrapping needs a report built from a return sample")
     if n_boot < 1 or top < 1:
         raise ValueError("n_boot and top must be positive")
-    x = report.summary.sample
-    dt = report.summary.dt
+    x = summary.sample
+    dt = summary.dt
     leaders: list[FitResult] = report.candidates[:top]
     rng = np.random.default_rng(seed)
     wins = np.zeros(len(leaders), dtype=int)

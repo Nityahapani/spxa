@@ -80,3 +80,26 @@ def test_warnings_are_printed() -> None:
     rep = DiscoveryReport([_fit(BM, -1.0, 0.1)], SUMMARY, "aic", "likelihood", 0.02, ["careful"])
     assert str(rep).endswith("warning: careful")
     assert "runner-up" not in rep.headline()
+
+
+def test_option_reports() -> None:
+    def opt(model: Model, sse: float) -> FitResult:
+        n = 27
+        return FitResult(
+            model=model,
+            method="options",
+            objective=sse,
+            n_obs=n,
+            loglik=-0.5 * n * np.log(sse / n),
+            extras={"iv_rmse": np.sqrt(sse / n), "iv_max_error": 0.004, "price_rel_rmse": 0.012},
+        )
+
+    fits = [opt(VG, 1e-5), opt(BM, 1e-3)]
+    rep = DiscoveryReport(fits, None, "bic", "options", 0.0)
+    head = rep.headline()
+    assert head.startswith("VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1) + Drift(mu=0)")
+    assert f"within {100 * np.sqrt(1e-5 / 27):.3g} vol points RMS" in head
+    assert "RMS relative price error 1.2%" in head
+    lines = rep.table().splitlines()
+    assert "IV RMSE" in lines[0] and len(lines) == 3
+    assert rep.weights()[0] > 0.99

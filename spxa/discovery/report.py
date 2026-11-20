@@ -30,6 +30,7 @@ weights
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 
@@ -42,7 +43,7 @@ class DiscoveryReport:
     """Ranked candidate structures and how well they explain the data."""
 
     candidates: list[FitResult]
-    summary: EmpiricalSummary
+    summary: Optional[EmpiricalSummary]
     criterion: str
     method: str
     tolerance: float
@@ -83,7 +84,14 @@ class DiscoveryReport:
         """
         b = self.best
         expr = b.model.render(digits=digits, weighted="subordinators")
-        if b.ks_distance is not None:
+        if self.method == "options":
+            text = (
+                f"{expr} matches your option prices within "
+                f"{100 * b.extras['iv_rmse']:.3g} vol points RMS (largest implied-volatility "
+                f"error {100 * b.extras['iv_max_error']:.3g}; RMS relative price error "
+                f"{100 * b.extras['price_rel_rmse']:.3g}%)"
+            )
+        elif b.ks_distance is not None:
             text = (
                 f"{expr} matches your data within {100 * b.ks_distance:.1f}% "
                 f"(largest gap between model and empirical CDFs; goodness-of-fit "
@@ -102,6 +110,18 @@ class DiscoveryReport:
     def table(self, top: int = 10, digits: int = 3) -> str:
         """Plain-text ranking of the first ``top`` candidates."""
         rows = []
+        if self.method == "options":
+            w = self.weights()
+            best = self.score(self.best)
+            name = self.criterion.upper()
+            header = f"{'#':>3}  {'Δ' + name:>8}  {'weight':>6}  {'IV RMSE':>8}  {'IV max':>7}  expression"
+            for i, r in enumerate(self.candidates[:top], 1):
+                rows.append(
+                    f"{i:>3}  {self.score(r) - best:8.2f}  {w[i - 1]:6.3f}  "
+                    f"{100 * r.extras['iv_rmse']:7.2f}%  {100 * r.extras['iv_max_error']:6.2f}%  "
+                    f"{r.model.render(digits, weighted='subordinators')}"
+                )
+            return "\n".join([header] + rows)
         if self.method == "cumulants":
             header = f"{'#':>3}  {'params':>6}  {'moment err':>10}  expression"
             for i, r in enumerate(self.candidates[:top], 1):
