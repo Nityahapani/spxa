@@ -38,6 +38,29 @@ class ExactnessError(SpxaError):
         )
 
 
+class TripletUnavailableError(ExactnessError):
+    """
+    Raised by ``.triplet`` on an exact process whose triplet is not implemented.
+
+    A subordinated Lévy process :math:`X_{T_t}` is a Lévy process, so its
+    characteristic function and cumulants are exact. Its Lévy measure,
+    however, needs the law of :math:`X_s` for every :math:`s`
+    (Sato 1999, Thm 30.1).
+    """
+
+    def __init__(self, reason: str) -> None:
+        SpxaError.__init__(
+            self,
+            "'triplet' is not available for this process, although it is exact "
+            "(char_func, cumulants and simulate are).\n"
+            f"Reason: {reason}",
+        )
+        self.method = "triplet"
+        self.required = "EXACT"
+        self.actual = "EXACT"
+        self.reason = reason
+
+
 class SpxaDegradationWarning(UserWarning):
     """
     Emitted when an operation degrades the ExactnessLevel of a process.

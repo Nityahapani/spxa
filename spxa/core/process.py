@@ -23,7 +23,7 @@ from typing import Any, Optional
 import numpy as np
 
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning
+from spxa.core.exceptions import ExactnessError, SpxaDegradationWarning, TripletUnavailableError
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind, narrate
@@ -141,9 +141,32 @@ class Process(ABC):
                 reason=self._degradation_reason(),
             )
         if self._exactness == ExactnessLevel.EXACT:
-            t = self._triplet()
-            return {n: t.cumulant(n) for n in range(1, order + 1)}
+            return self._exact_cumulants(order)
         return self._moment_propagation_cumulants(order)
+
+    def _exact_cumulants(self, order: int) -> dict[int, float]:
+        """Cumulants of an EXACT process; from the triplet unless overridden."""
+        t = self._triplet()
+        return {n: t.cumulant(n) for n in range(1, order + 1)}
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u)` with :math:`E[e^{iuX_t}] = e^{t\psi(u)}`, elementwise.
+
+        Complex ``u`` is allowed where the exponent converges. This is how
+        subordination evaluates the Laplace exponent of the clock. The
+        default uses the Lévy–Khintchine triplet. It never takes the
+        logarithm of the characteristic function, whose branch would be
+        ambiguous.
+        """
+        trip = self._triplet()
+        u = np.asarray(u, dtype=complex)
+        out = np.empty(u.shape, dtype=complex)
+        for i, ui in enumerate(u.flat):
+            out.flat[i] = (
+                1j * trip.b * ui - 0.5 * trip.sigma_sq * ui**2 + trip.nu.jump_exponent(complex(ui))
+            )
+        return out
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """
@@ -167,7 +190,9 @@ class Process(ABC):
                 reason=self._degradation_reason(),
             )
         if self._exactness == ExactnessLevel.EXACT:
-            return self._triplet().char_exp(u, t)
+            u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
+            result = np.exp(t * self._char_exponent(u_arr))
+            return result if result.shape != (1,) else result[0]
         raise ExactnessError(
             method="char_func",
             required="EXACT",
@@ -440,6 +465,20 @@ class _ScaledProcess(Process):
     def _triplet(self) -> LevyTriplet:
         return self._base._triplet().scale(self._scale)
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        try:
+            return super()._char_exponent(u)
+        except TripletUnavailableError:
+            # ψ_{cX}(u) = ψ_X(cu)
+            return self._base._char_exponent(self._scale * np.asarray(u, dtype=complex))
+
+    def _exact_cumulants(self, order: int) -> dict[int, float]:
+        try:
+            return super()._exact_cumulants(order)
+        except TripletUnavailableError:
+            base = self._base.cumulants(order)
+            return {n: self._scale**n * base[n] for n in range(1, order + 1)}
+
     def _properties(self) -> ProcessProperties:
         return self._props
 
@@ -478,13 +517,31 @@ class _ComposedProcess(Process):
     def _triplet(self) -> LevyTriplet:
         if self._operation == "+":
             return self._left._triplet() + self._right._triplet()
-        raise ExactnessError(
-            method="_triplet",
-            required="EXACT",
-            actual=self._exactness.name,
-            reason="Subordinated processes do not have a simple triplet addition rule; "
-            "use char_func() or simulate().",
+        raise TripletUnavailableError(
+            "the triplet of a subordinated process X(T) involves the law of X_s for "
+            "every s (Sato 1999, Thm 30.1) and is not implemented."
         )
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        u = np.asarray(u, dtype=complex)
+        if self._operation == "@":
+            # ψ_Z(u) = ψ_T(-i ψ_X(u)): E[e^{iuX_{T_t}}] = E[e^{T_t ψ_X(u)}], Re ψ_X ≤ 0
+            return self._right._char_exponent(-1j * self._left._char_exponent(u))
+        try:
+            return super()._char_exponent(u)
+        except TripletUnavailableError:
+            return self._left._char_exponent(u) + self._right._char_exponent(u)
+
+    def _exact_cumulants(self, order: int) -> dict[int, float]:
+        if self._operation == "@":
+            return _subordinated_cumulants(
+                self._left.cumulants(order), self._right.cumulants(order), order
+            )
+        try:
+            return super()._exact_cumulants(order)
+        except TripletUnavailableError:
+            left, right = self._left.cumulants(order), self._right.cumulants(order)
+            return {n: left[n] + right[n] for n in range(1, order + 1)}
 
     def _properties(self) -> ProcessProperties:
         return self._props
@@ -528,6 +585,33 @@ class _ComposedProcess(Process):
 
     def __repr__(self) -> str:
         return f"({self._left!r} {self._operation} {self._right!r})"
+
+
+def _subordinated_cumulants(
+    parent: dict[int, float], clock: dict[int, float], order: int
+) -> dict[int, float]:
+    r"""
+    Cumulants of :math:`X_{T_1}` from those of :math:`X_1` and :math:`T_1`.
+
+    The cumulant generating functions compose, :math:`K_Z = K_T\circ K_X`,
+    because :math:`E[e^{\theta X_{T}}] = E[e^{T K_X(\theta)}]`. With
+    :math:`K(\theta) = \sum_n \kappa_n\theta^n/n!` the coefficients of the
+    composed series give, for example,
+    :math:`\kappa_1^Z = \kappa_1^T\kappa_1^X` and
+    :math:`\kappa_2^Z = \kappa_1^T\kappa_2^X + \kappa_2^T(\kappa_1^X)^2`.
+    """
+    from math import factorial
+
+    a = np.zeros(order + 1)
+    for n in range(1, order + 1):
+        a[n] = parent[n] / factorial(n)
+    result = np.zeros(order + 1)
+    power = np.zeros(order + 1)
+    power[0] = 1.0
+    for m in range(1, order + 1):
+        power = np.convolve(power, a)[: order + 1]
+        result += clock[m] / factorial(m) * power
+    return {n: float(result[n] * factorial(n)) for n in range(1, order + 1)}
 
 
 def _make_scaled(base: Process, c: float) -> _ScaledProcess:

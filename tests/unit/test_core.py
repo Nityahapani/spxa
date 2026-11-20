@@ -219,3 +219,63 @@ class TestJumpExponentComplexFrequencies:
         nu = GammaProcess(a=2.0, b=1.0).triplet.nu
         assert np.isfinite(nu.jump_exponent(5j))
         assert np.isfinite(nu.jump_exponent(-0.5j))
+
+
+class TestSubordinatedProcesses:
+    """X @ T is a Lévy process: exact cf and cumulants, no triplet."""
+
+    def _vg_pair(self):  # type: ignore[no-untyped-def]
+        from spxa.zoo.levy import VarianceGamma
+
+        sigma, nu, theta = 0.2, 0.3, -0.1
+        Z = BrownianMotion(mu=theta, sigma=sigma) @ GammaProcess(a=1 / nu, b=1 / nu)
+        return Z, VarianceGamma(sigma, nu, theta)
+
+    def test_brownian_motion_in_gamma_time_is_variance_gamma(self):
+        Z, V = self._vg_pair()
+        u = np.array([-3.0, 0.5, 2.0, 10.0])
+        np.testing.assert_allclose(Z.char_func(u, 1.3), V.char_func(u, 1.3), rtol=1e-8)
+        kz, kv = Z.cumulants(4), V.cumulants(4)
+        for n in range(1, 5):
+            assert kz[n] == pytest.approx(kv[n], rel=1e-12)
+
+    def test_cumulant_composition_formulas(self):
+        from spxa.zoo.levy import InverseGaussianProcess
+
+        X, T = BrownianMotion(mu=0.3, sigma=0.5), InverseGaussianProcess(mu=1.5, lam=2.0)
+        kx, kt, kz = X.cumulants(3), T.cumulants(3), (X @ T).cumulants(3)
+        assert kz[1] == pytest.approx(kt[1] * kx[1], rel=1e-12)
+        assert kz[2] == pytest.approx(kt[1] * kx[2] + kt[2] * kx[1] ** 2, rel=1e-12)
+        k3 = kt[1] * kx[3] + 3 * kt[2] * kx[1] * kx[2] + kt[3] * kx[1] ** 3
+        assert kz[3] == pytest.approx(k3, rel=1e-12)
+
+    def test_large_drift_has_no_branch_problem(self):
+        # Im ψ_X(u) = μu = 20 >> π: a log of φ_X would pick the wrong branch
+        Z = BrownianMotion(mu=2.0, sigma=0.1) @ GammaProcess(a=2.0, b=2.0)
+        u = 10.0
+        psi_x = 1j * 2.0 * u - 0.5 * 0.01 * u**2
+        expected = (1 - psi_x / 2.0) ** (-2.0)
+        assert Z.char_func(u) == pytest.approx(expected, rel=1e-6)
+
+    def test_composites_of_subordinated_processes(self):
+        Z, V = self._vg_pair()
+        B = BrownianMotion(mu=0.05, sigma=0.1)
+        u = np.array([0.7, -2.0])
+        np.testing.assert_allclose((2.5 * Z).char_func(u), V.char_func(2.5 * u), rtol=1e-8)
+        np.testing.assert_allclose((Z + B).char_func(u), V.char_func(u) * B.char_func(u), rtol=1e-8)
+        assert (-Z).cumulants(3)[3] == pytest.approx(-V.cumulants(3)[3], rel=1e-12)
+        assert (Z + B).cumulants(2)[2] == pytest.approx(V.cumulants(2)[2] + 0.01, rel=1e-12)
+        # nested time changes: Z in Gamma time
+        W = Z @ GammaProcess(a=4.0, b=4.0)
+        assert W.cumulants(1)[1] == pytest.approx(Z.cumulants(1)[1], rel=1e-12)
+
+    def test_triplet_error_is_not_self_contradictory(self):
+        from spxa.core.exceptions import TripletUnavailableError
+
+        Z, _ = self._vg_pair()
+        with pytest.raises(TripletUnavailableError, match="although it is exact") as e:
+            _ = Z.triplet
+        assert (
+            "requires ExactnessLevel.EXACT, but this process has ExactnessLevel.EXACT"
+            not in str(e.value)
+        )
