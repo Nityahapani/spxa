@@ -18,7 +18,7 @@ from spxa.laws.library.properties import (
 )
 from spxa.laws.processes import compositions, martingales
 from spxa.laws.strategies import floats, just
-from spxa.zoo.levy import BrownianMotion, Drift, GammaProcess, VarianceGamma
+from spxa.zoo.levy import BrownianMotion, Drift, GammaProcess, TemperedStable, VarianceGamma
 
 FAST = {"subordinator_flag_is_sound": 8}
 
@@ -107,3 +107,16 @@ def test_drift_fallacy_shrinks_to_a_textbook_counterexample() -> None:
     assert cex is not None
     assert cex["c"] != 0.0 and len(repr(cex["c"])) <= 4  # a short decimal such as 0.1
     assert martingale(cex["X"]) and not martingale(cex["X"] + Drift(cex["c"]))
+
+
+def test_cancelling_means_leave_kappa1_exactly_zero() -> None:
+    # spxa-laws seed 4: the summed triplet's quadrature left kappa_1 = 1.9e-12.
+    X = TemperedStable(alpha=0.9, C=1.0, lam=5.5)
+    centred = X + Drift(mu=-X.cumulants(1)[1])
+    assert centred.cumulants(1)[1] == 0.0
+    pinned = Law(
+        "pinned",
+        martingale_flag_is_sound.fn,
+        {**martingale_flag_is_sound.strategies, "X": just(centred)},
+    )
+    assert pinned.check(n_examples=1).status == "verified"

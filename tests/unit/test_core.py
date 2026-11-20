@@ -391,3 +391,17 @@ class TestArithmeticWithConstants:
 
         Z = BrownianMotion(0.1, 0.2) + Drift(0.5)
         assert Z.cumulants(1)[1] == pytest.approx(0.6)
+
+
+def test_cumulants_of_sums_and_multiples_use_the_parts() -> None:
+    from spxa.zoo.levy import TemperedStable, VarianceGamma
+
+    X = VarianceGamma(sigma=0.2, nu=0.1, theta=-0.1)
+    Y = TemperedStable(alpha=0.6, C=1.0, lam=2.0)
+    kx, ky = X.cumulants(4), Y.cumulants(4)
+    assert (X + Y).cumulants(4) == {n: kx[n] + ky[n] for n in range(1, 5)}
+    assert (-2.5 * Y).cumulants(4) == {n: (-2.5) ** n * ky[n] for n in range(1, 5)}
+    # and they agree with the summed triplet's quadrature
+    t = (X + Y).triplet
+    for n in range(1, 5):
+        assert (X + Y).cumulants(4)[n] == pytest.approx(t.cumulant(n), rel=1e-7)

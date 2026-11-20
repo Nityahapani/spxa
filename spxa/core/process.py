@@ -548,11 +548,14 @@ class _ScaledProcess(Process):
             return self._base._char_exponent(self._scale * np.asarray(u, dtype=complex))
 
     def _exact_cumulants(self, order: int) -> dict[int, float]:
-        try:
-            return super()._exact_cumulants(order)
-        except TripletUnavailableError:
-            base = self._base.cumulants(order)
-            return {n: self._scale**n * base[n] for n in range(1, order + 1)}
+        r"""
+        :math:`\kappa_n(cX) = c^n\kappa_n(X)`.
+
+        The base's cumulants are often closed forms, while the scaled
+        triplet's are quadratures of the scaled measure.
+        """
+        base = self._base.cumulants(order)
+        return {n: self._scale**n * base[n] for n in range(1, order + 1)}
 
     def _properties(self) -> ProcessProperties:
         return self._props
@@ -620,11 +623,13 @@ class _ComposedProcess(Process):
             return _subordinated_cumulants(
                 self._left.cumulants(order), self._right.cumulants(order), order
             )
-        try:
-            return super()._exact_cumulants(order)
-        except TripletUnavailableError:
-            left, right = self._left.cumulants(order), self._right.cumulants(order)
-            return {n: left[n] + right[n] for n in range(1, order + 1)}
+        # Cumulants of independent summands add exactly. Summing the children's
+        # (often closed-form) cumulants avoids the quadrature in the summed
+        # triplet's b + int_{|x|>1} x nu, which left kappa_1 = 1.9e-12 for
+        # TemperedStable(0.9, 1, 5.5) + Drift(-E[X_1]), a sum whose means
+        # cancel exactly.
+        left, right = self._left.cumulants(order), self._right.cumulants(order)
+        return {n: left[n] + right[n] for n in range(1, order + 1)}
 
     def _properties(self) -> ProcessProperties:
         if self._refined_props is None:
