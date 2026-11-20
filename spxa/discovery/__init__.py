@@ -25,11 +25,13 @@ Fitting
     :func:`fit_structure` (smoothed binned likelihood or cumulants), :class:`BinnedData`.
 Inference
     :func:`parameter_uncertainty` (sandwich or GMM standard errors) and
-    :func:`vuong_test` for non-nested structures.
+    :func:`vuong_test` for non-nested structures, :func:`bootstrap` for
+    selection frequencies and parameter intervals.
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
 """
 
+from spxa.discovery.bootstrap import BootstrapResult, bootstrap
 from spxa.discovery.density import COSDistribution, model_distribution
 from spxa.discovery.empirical import (
     EmpiricalSummary,
@@ -127,6 +129,8 @@ __all__ = [
     "parameter_uncertainty",
     "VuongResult",
     "vuong_test",
+    "BootstrapResult",
+    "bootstrap",
     # search
     "Grammar",
     "canonical",
