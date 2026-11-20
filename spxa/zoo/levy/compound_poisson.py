@@ -476,6 +476,23 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
     def moment(self, n: int) -> float:
         return self.rate * self.jump_dist.moment(n)
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        r"""λ E[Y 1{a < |Y| ≤ b}] from the jump law's truncated means (exact for discrete laws)."""
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        upper = (
+            self.jump_dist.moment(1) if np.isinf(b) else self.jump_dist.truncation_mean(cutoff=b)
+        )
+        return float(self.rate * (upper - self.jump_dist.truncation_mean(cutoff=a)))
+
+    def jump_exponent(self, u: complex) -> complex:
+        """λ(φ_Y(u) − 1) − iuλ E[Y 1{|Y| ≤ 1}]."""
+        phi = complex(np.asarray(self.jump_dist.char_func(np.array([u]))).ravel()[0])
+        return complex(
+            self.rate * (phi - 1.0)
+            - 1j * u * self.rate * self.jump_dist.truncation_mean(cutoff=1.0)
+        )
+
     def is_finite_activity(self) -> bool:
         return True
 
