@@ -68,7 +68,8 @@ class BinnedData:
     The Gaussian factor never vanishes, so the smoothed law still identifies the
     raw one, and the contrast stays consistent. The bandwidth is
     :math:`\max(0.02\,\hat\sigma_{\Delta t}, 9(b-a)/(\pi N_{max}))`, a few
-    percent of a standard deviation in practice. The COS interval :math:`[a, b]`
+    percent of a standard deviation in practice. The expansion is truncated at
+    :math:`u = 6/h`, where the kernel factor is below :math:`1.6\times10^{-8}`. The COS interval :math:`[a, b]`
     is fixed per data set from the empirical cumulants, so the sine matrix
     is computed once and each model evaluation costs one characteristic-function
     call and one matrix product.
@@ -138,7 +139,9 @@ class BinnedData:
         inner = np.array(inner_list)
         edges = np.concatenate([[-np.inf], inner, [np.inf]])
         raw, _ = np.histogram(x, bins=edges)
-        n_terms = int(np.clip(np.ceil(9.0 * (b - a) / (np.pi * h)), 256, max_terms))
+        # the kernel factor e^{-h²u²/2} is below 1.6e-8 beyond u = 6/h, where the
+        # series is cut; the minimum bandwidth keeps that within max_terms
+        n_terms = int(np.clip(np.ceil(6.0 * (b - a) / (np.pi * h)), 256, max_terms))
         k = np.arange(1, n_terms)
         u = np.arange(n_terms) * np.pi / (b - a)
         sine = np.sin(np.outer(np.pi * (inner - a) / (b - a), k)) * ((b - a) / (k * np.pi))
