@@ -23,9 +23,15 @@ laws compare them directly, with truncation :math:`h(x) = \mathbb 1_{|x|\le1}`:
 The quadrature laws apply to measures with a density. Atomic measures
 (Poisson, negative binomial) discard the example via
 :func:`~spxa.laws.expect.assume`.
+The moment laws (``triplet_cumulants``, ``measure_moments``) also discard
+processes without a finite variance, such as α-stable ones. The jump-exponent
+reference integrates the tails :math:`|x| > 1` with QUADPACK's Fourier
+routine, so the slowly decaying stable density is handled accurately.
 """
 
 from __future__ import annotations
+
+from typing import Callable
 
 import numpy as np
 from scipy import integrate  # type: ignore[import-untyped]
@@ -75,6 +81,7 @@ def levy_khintchine(X: Process, u: float, t: float) -> None:
 @law(X=_P, tags=("triplet", "cumulants"))
 def triplet_cumulants(X: Process) -> None:
     """kappa_1 = b + int_{|x|>1} x nu, kappa_2 = sigma^2 + m_2, kappa_n = m_n"""
+    assume(X.properties.has_finite_variance, "heavy tails: cumulants diverge")
     tr = X.triplet
     expected = [
         tr.b + tr.nu.first_moment_between(1.0, np.inf),
@@ -88,6 +95,7 @@ def triplet_cumulants(X: Process) -> None:
 @law(X=_P, n=integers(2, 4, simplest=2), tags=("triplet", "measure"))
 def measure_moments(X: Process, n: int) -> None:
     """nu.moment(n) = int x^n k(x) dx"""
+    assume(X.properties.has_finite_variance, "heavy tails: moments diverge")
     nu = X.triplet.nu
     k = _density(nu)
     num = _quad(lambda x: x**n * k(x) if x != 0 else 0.0, -np.inf, np.inf)  # type: ignore[operator]
@@ -125,6 +133,42 @@ def _compensated(u: float, x: float) -> complex:
     return complex(np.expm1(1j * z) - (1j * z if abs(x) <= 1 else 0.0))
 
 
+def _oscillatory_tails(k: Callable[[float], float], u: float) -> tuple[float, float]:
+    r"""
+    :math:`\int_{|x|>1}(e^{iux}-1)k(x)\,dx`, split into real and imaginary parts.
+
+    Uses QUADPACK's Fourier-integral routine (QAWF) for :math:`\cos(ux)` and
+    :math:`\sin(ux)` weights, so slowly decaying densities such as the stable
+    :math:`|x|^{-1-\alpha}` still integrate to full accuracy.
+    """
+    pos = lambda y: k(y)  # noqa: E731
+    neg = lambda y: k(-y)  # noqa: E731
+    mass = (
+        integrate.quad(pos, 1.0, np.inf, limit=400)[0]
+        + integrate.quad(neg, 1.0, np.inf, limit=400)[0]
+    )
+    if u == 0:
+        return 0.0, 0.0
+    w = abs(u)
+    sgn = 1.0 if u > 0 else -1.0
+    cos_p = _fourier(pos, "cos", w)
+    cos_n = _fourier(neg, "cos", w)
+    sin_p = _fourier(pos, "sin", w)
+    sin_n = _fourier(neg, "sin", w)
+    return cos_p + cos_n - mass, sgn * (sin_p - sin_n)
+
+
+def _fourier(f: Callable[[float], float], weight: str, w: float) -> float:
+    r""":math:`\int_1^\infty f(y)\,\mathrm{trig}(wy)\,dy` via QAWF (substituting :math:`y = 1 + s`)."""
+    c, s_ = np.cos(w), np.sin(w)
+    a = integrate.quad(lambda t: f(1.0 + t), 0.0, np.inf, weight="cos", wvar=w, limlst=200)[0]
+    b = integrate.quad(lambda t: f(1.0 + t), 0.0, np.inf, weight="sin", wvar=w, limlst=200)[0]
+    # cos(w(1+t)) = cos w cos wt - sin w sin wt ; sin(w(1+t)) = sin w cos wt + cos w sin wt
+    if weight == "cos":
+        return float(c * a - s_ * b)
+    return float(s_ * a + c * b)
+
+
 @law(X=_P, u=frequencies(), tags=("triplet", "measure"))
 def jump_exponent(X: Process, u: float) -> None:
     """nu.jump_exponent(u) = quadrature of (e^{iux} - 1 - iux 1{|x|<=1}) k(x)"""
@@ -133,10 +177,11 @@ def jump_exponent(X: Process, u: float) -> None:
     parts = []
     for f in (lambda c: c.real, lambda c: c.imag):
         g = lambda x, f=f: f(_compensated(u, x)) * k(x)  # type: ignore[operator]  # noqa: E731
-        parts.append(_quad(g, -np.inf, 0.0) + _quad(g, 0.0, np.inf))
+        parts.append(_quad(g, -1.0, 0.0) + _quad(g, 0.0, 1.0))
+    re_tail, im_tail = _oscillatory_tails(k, u)  # type: ignore[arg-type]
     expect_close(
         nu.jump_exponent(complex(u)),
-        complex(parts[0], parts[1]),
+        complex(parts[0] + re_tail, parts[1] + im_tail),
         rtol=1e-6,
         atol=1e-9,
         what="J(u) vs quadrature",

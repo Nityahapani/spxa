@@ -9,8 +9,9 @@ from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.triplet import LevyTriplet
 from spxa.laws import Law
 from spxa.laws.library.triplet import TRIPLET, measure_moments, measure_tail, triplet_cumulants
+from spxa.laws.processes import alpha_stables
 from spxa.laws.strategies import just
-from spxa.zoo.levy import GammaProcess
+from spxa.zoo.levy import AlphaStable, GammaProcess
 
 
 @pytest.mark.parametrize("law_", TRIPLET, ids=lambda law_: law_.name)
@@ -51,3 +52,37 @@ def test_atomic_measures_are_discarded() -> None:
 
     r = _on(measure_tail, PoissonProcess(rate=1.0)).check(5)
     assert r.status == "unsatisfiable"
+
+
+@pytest.mark.parametrize("law_", TRIPLET, ids=lambda law_: law_.name)
+def test_heavy_tails_hold_or_are_discarded(law_: Law) -> None:
+    """Stable measures: the exponent laws hold, the moment laws do not apply."""
+    result = Law(law_.name, law_.fn, {**law_.strategies, "X": alpha_stables()}).check(
+        n_examples=12, seed=3
+    )
+    if law_.name in ("triplet_cumulants", "measure_moments"):
+        assert result.status == "unsatisfiable", str(result)
+    else:
+        assert result.ok, str(result)
+
+
+class _HalfStable(AlphaStable):
+    """The pre-fix stable triplet: half the measure constant, b = mu."""
+
+    def _triplet(self) -> LevyTriplet:
+        tr = super()._triplet()
+        nu = tr.nu
+        half = DensityLevyMeasure(
+            _density_fn=lambda x: 0.5 * nu.density(x),
+            _total_mass=np.inf,
+            _tail_fn=lambda x: 0.5 * nu.tail(x),
+            _moment_fns={},
+        )
+        return LevyTriplet(b=self.mu, sigma_sq=0.0, nu=half)
+
+
+def test_wrong_stable_triplet_is_caught_by_levy_khintchine() -> None:
+    from spxa.laws.library.triplet import levy_khintchine
+
+    result = _on(levy_khintchine, _HalfStable(1.5, 0.3, 0.5)).check(n_examples=10, seed=0)
+    assert result.status == "falsified"
