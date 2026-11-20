@@ -279,6 +279,14 @@ class FitResult:
         So these are relative errors when the statistic is large, and
         absolute errors when it is small. Unlike raw cumulant relative errors,
         they stay meaningful when a target such as the skewness is close to zero.
+
+        Read them next to :attr:`cumulant_z_scores`. With heavy tails, the
+        sample skewness and kurtosis are dominated by a handful of
+        observations. A likelihood fit then legitimately misses them by tens
+        of percent, while every cumulant still lies within one or two standard
+        errors of its estimate. For example, on 5000 weekly VG + Gamma returns
+        (population excess kurtosis about 94), fits with moment errors of
+        30-50% have all four cumulant z-scores below 1.
         """
         if self.target_cumulants is None or self.dt is None:
             return None

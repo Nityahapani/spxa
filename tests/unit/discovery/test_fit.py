@@ -180,3 +180,26 @@ def test_kernel_matrix_and_pointwise_loglik(vg_data) -> None:
     bare = BinnedData(**{**b.__dict__, "sample": None})
     with pytest.raises(ValueError, match="sample"):
         bare.kernel_matrix()
+
+
+def test_large_moment_errors_can_be_sampling_noise() -> None:
+    # Heavy tails: the sample skewness and kurtosis are dominated by a few
+    # points, so a correct likelihood fit misses them by tens of percent,
+    # while every cumulant stays within its standard error.
+    dt = 1 / 52
+    x = vg_increments(0.2, 0.25, -0.3, dt, 5000, 1) + 0.5 * gamma_increments(
+        1.0, 2.0, dt, 5000, 101
+    )
+    s = summarize(x, dt)
+    r = fit_structure(
+        with_location(leaf(VARIANCE_GAMMA) + leaf(GAMMA)),
+        s,
+        "likelihood",
+        binned=BinnedData.from_sample(x, dt),
+        n_starts=2,
+        rng=np.random.default_rng(1),
+    )
+    assert r.match_error is not None and r.match_error > 0.25
+    z = r.cumulant_z_scores
+    assert z is not None and np.max(np.abs(z)) < 1.5
+    assert r.g_pvalue is not None and r.g_pvalue > 0.1
