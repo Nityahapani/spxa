@@ -15,10 +15,30 @@ Laws
     :func:`law` (decorator) and :class:`Law`. Inside a law, use
     :func:`expect_close`, :func:`expect`, :func:`implies` and
     :func:`assume`. :meth:`Law.check` returns a :class:`LawResult`.
+Processes
+    :data:`PRIMITIVES` and :data:`SUBORDINATORS` (one strategy per zoo
+    family), :func:`levy_processes`, :func:`subordinators`,
+    :func:`alpha_stables`, :func:`martingales`, :func:`compositions` (expression
+    trees with ``+``, ``*``, ``-`` and ``@``) and :func:`scalars`.
+Quantities and library
+    :mod:`spxa.laws.quantities` evaluates characteristic functions, cumulants
+    and exponential-moment strips for any composite.
+    :mod:`spxa.laws.library` holds ready-made laws: ``AXIOMS``, ``ALGEBRA``,
+    ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS`` and ``PROPERTIES``.
 """
 
 from spxa.laws.expect import Discard, LawViolation, assume, expect, expect_close, implies
 from spxa.laws.law import Law, LawFailure, LawResult, law
+from spxa.laws.processes import (
+    PRIMITIVES,
+    SUBORDINATORS,
+    alpha_stables,
+    compositions,
+    levy_processes,
+    martingales,
+    scalars,
+    subordinators,
+)
 from spxa.laws.strategies import (
     Strategy,
     Tree,
@@ -32,6 +52,8 @@ from spxa.laws.strategies import (
     sampled_from,
     tuples,
 )
+
+from spxa.laws import library, quantities
 
 __all__ = [
     "Strategy",
@@ -56,4 +78,16 @@ __all__ = [
     "expect",
     "expect_close",
     "implies",
+    # processes
+    "PRIMITIVES",
+    "SUBORDINATORS",
+    "alpha_stables",
+    "compositions",
+    "levy_processes",
+    "martingales",
+    "scalars",
+    "subordinators",
+    # modules
+    "library",
+    "quantities",
 ]
