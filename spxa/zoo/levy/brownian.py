@@ -34,7 +34,13 @@ class _ZeroLevyMeasure(DensityLevyMeasure):
             _total_mass=0.0,
             _tail_fn=lambda x: 0.0,
             _moment_fns={n: (lambda: 0.0) for n in range(1, 9)},
+            _jump_exponent_fn=lambda u: 0j,
         )
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        return 0.0
 
 
 class BrownianMotion(Process):

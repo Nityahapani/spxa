@@ -67,3 +67,17 @@ def test_subordinated_cf_is_fast() -> None:
     start = time.perf_counter()
     Z.char_func(np.linspace(-500, 500, 4096), 0.25)
     assert time.perf_counter() - start < 1.0
+
+
+def test_zero_measure_needs_no_quadrature() -> None:
+    """Brownian motion and Drift carry nu = 0; their jump exponent is exactly 0."""
+    from spxa.zoo.levy import BrownianMotion, Drift
+
+    for X in (BrownianMotion(0.1, 0.3), Drift(0.4)):
+        nu = X.triplet.nu
+        assert nu.jump_exponent(1.0 + 2.0j) == 0j
+        assert nu.first_moment_between(1.0, np.inf) == 0.0
+    Z = (BrownianMotion(0.1, 0.3) @ GammaProcess(2.0, 2.0)) @ InverseGaussianProcess(1.0, 2.0)
+    start = time.perf_counter()
+    Z.char_func(np.linspace(-50, 50, 2**14))
+    assert time.perf_counter() - start < 1.0  # was about 30 s with a quadrature per point
