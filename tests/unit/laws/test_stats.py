@@ -57,11 +57,25 @@ def test_independence_test_detects_dependence() -> None:
     assert independence_test(a, b_dep, cf, cf, pairs) < LEVEL
 
 
-def test_degenerate_laws_are_compared_exactly() -> None:
+def test_degenerate_laws_tolerate_rounding_only() -> None:
     x = np.full(100, 0.25)
     assert mean_test(x, 0.25, 0.0) == 1.0
-    assert mean_test(x, 0.26, 0.0) == 0.0
-    assert ecf_test(x, lambda u: np.exp(0.25j * u), [1.0, 3.0]) == 1.0
+    assert mean_test(x, 0.25 * (1 + 1e-13), 0.0) > 0.1
+    assert mean_test(x, 0.26, 0.0) < LEVEL
+    assert ecf_test(x, lambda u: np.exp(0.25j * u), [1.0, 3.0]) > 0.1
+    assert ecf_test(x, lambda u: np.exp(0.26j * u), [1.0, 3.0]) < LEVEL
+    drift = np.cumsum(np.full((50, 3), 0.1 / 3), axis=1)[:, -1]  # rounding-level spread
+    assert variance_test(drift, 0.0, 0.0) > 0.1
+    assert variance_test(drift + np.linspace(0, 1e-3, 50), 0.0, 0.0) < LEVEL
+
+
+def test_tiny_variance_is_tested_on_its_own_scale() -> None:
+    """Counterexample from SIMULATION: s^2 of 0.0037 * BM was compared exactly."""
+    rng = np.random.default_rng(4)
+    s = 0.0037 * 0.9
+    x = rng.normal(0.0, s * np.sqrt(0.4), 4000)
+    assert variance_test(x, s**2 * 0.4, 0.0) > 1e-3
+    assert variance_test(1.2 * x, s**2 * 0.4, 0.0) < LEVEL
 
 
 def test_expect_not_rejected() -> None:

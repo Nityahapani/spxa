@@ -34,8 +34,12 @@ Tests
         increments means.
 
 Degenerate laws (zero variance, such as a pure drift) have no sampling
-noise. There, each test demands agreement to ``1e-9`` and returns a p-value
-of 1 or 0.
+noise. Each z-score therefore divides by the standard error plus
+:math:`10^{-10}` times the scale of the quantity tested (for a sample
+variance, the second moment). Rounding then never rejects, while a real
+discrepancy still gives a vanishing p-value. The floor is relative, so a law
+of tiny but positive variance (``0.004 * BM``) is tested on its own scale,
+not compared exactly.
 """
 
 from __future__ import annotations
@@ -57,18 +61,19 @@ __all__ = [
 ]
 
 LEVEL = 1e-6
-_DEGENERATE = 1e-14
+_FLOOR = 1e-10
 
 
 def _two_sided(z: float) -> float:
     return float(2.0 * _st.norm.sf(abs(z)))
 
 
-def _z_or_exact(diff: float, var: float) -> float:
-    """Two-sided p-value of ``diff`` with variance ``var``, exact when the variance vanishes."""
-    if var <= _DEGENERATE:
-        return 1.0 if abs(diff) <= 1e-9 else 0.0
-    return _two_sided(diff / np.sqrt(var))
+def _z(diff: float, var: float, scale: float) -> float:
+    """Two-sided p-value of ``diff`` with variance ``var`` and a rounding floor relative to ``scale``."""
+    sd = np.sqrt(max(var, 0.0)) + _FLOOR * scale
+    if sd == 0.0:
+        return 1.0 if diff == 0.0 else 0.0
+    return _two_sided(diff / sd)
 
 
 def _bonferroni(pvalues: Sequence[float]) -> float:
@@ -89,14 +94,16 @@ def ecf_test(
         m = complex(np.mean(np.exp(1j * u * x)))
         var_re = max((1.0 + p2.real) / 2.0 - p.real**2, 0.0) / n
         var_im = max((1.0 - p2.real) / 2.0 - p.imag**2, 0.0) / n
-        pvalues += [_z_or_exact(m.real - p.real, var_re), _z_or_exact(m.imag - p.imag, var_im)]
+        pvalues += [_z(m.real - p.real, var_re, 1.0), _z(m.imag - p.imag, var_im, 1.0)]
     return _bonferroni(pvalues)
 
 
 def mean_test(samples: np.ndarray, mean: float, variance: float) -> float:
     """p-value of the sample mean against ``mean``, given the true ``variance``."""
     x = np.asarray(samples, dtype=float).ravel()
-    return _z_or_exact(float(np.mean(x)) - mean, variance / x.size)
+    xbar = float(np.mean(x))
+    scale = max(abs(mean), abs(xbar), np.sqrt(max(variance, 0.0)))
+    return _z(xbar - mean, variance / x.size, scale)
 
 
 def variance_test(samples: np.ndarray, kappa2: float, kappa4: float) -> float:
@@ -104,7 +111,8 @@ def variance_test(samples: np.ndarray, kappa2: float, kappa4: float) -> float:
     x = np.asarray(samples, dtype=float).ravel()
     n = x.size
     s2 = float(np.var(x, ddof=1))
-    return _z_or_exact(s2 - kappa2, kappa4 / n + 2.0 * kappa2**2 / (n - 1))
+    scale = max(abs(kappa2), float(np.mean(x**2)))  # second moment: rounding scale of s^2
+    return _z(s2 - kappa2, kappa4 / n + 2.0 * kappa2**2 / (n - 1), scale)
 
 
 def independence_test(
@@ -125,7 +133,7 @@ def independence_test(
         m = complex(np.mean(np.exp(1j * (u * a + v * b))))
         var_re = max((1.0 + p2.real) / 2.0 - p.real**2, 0.0) / n
         var_im = max((1.0 - p2.real) / 2.0 - p.imag**2, 0.0) / n
-        pvalues += [_z_or_exact(m.real - p.real, var_re), _z_or_exact(m.imag - p.imag, var_im)]
+        pvalues += [_z(m.real - p.real, var_re, 1.0), _z(m.imag - p.imag, var_im, 1.0)]
     return _bonferroni(pvalues)
 
 
