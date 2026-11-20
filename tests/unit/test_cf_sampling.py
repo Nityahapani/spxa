@@ -98,3 +98,26 @@ def test_lattice_law_is_reported_not_inverted() -> None:
     X = PoissonProcess(2.0)  # integer valued: |phi| is periodic and never decays
     with pytest.raises(CharacteristicFunctionNotDecayed):
         cf_grid_cdf(lambda u: X.char_func(u), 2.0, np.sqrt(2.0), max_points=2**15, fail_above=1e-4)
+
+
+def test_under_resolved_grid_warns() -> None:
+    """A Meixner law at t = 1e-5 has a bulk of width ~1e-6 and tails of width ~0.1."""
+    import warnings
+
+    from spxa.sim.cf_sampling import CdfUnderResolvedWarning
+    from spxa.zoo.levy import MeixnerProcess
+
+    X = MeixnerProcess(0.3, -0.5, 1.0, 0.0)
+    k = X.cumulants(2)
+    with pytest.warns(CdfUnderResolvedWarning):
+        cf_grid_cdf(
+            lambda u: X.char_func(u, 1e-5), k[1] * 1e-5, np.sqrt(k[2] * 1e-5), tail_decay=8.8
+        )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        cf_grid_cdf(lambda u: X.char_func(u, 0.1), k[1] * 0.1, np.sqrt(k[2] * 0.1), tail_decay=8.8)
+
+
+def test_non_finite_cf_is_an_error() -> None:
+    with pytest.raises(ValueError, match="not finite"):
+        cf_grid_cdf(lambda u: np.full(np.shape(u), np.nan + 0j), 0.0, 1.0)

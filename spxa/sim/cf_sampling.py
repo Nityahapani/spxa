@@ -22,7 +22,16 @@ Density
         = \frac{\Delta u}{2\pi}(-1)^k\,\mathrm{FFT}\big[\varphi(u_j)e^{-iu_jx_0}\big]_k,
 
     which is exact up to aliasing (mass outside the window) and truncation
-    (frequencies beyond :math:`u_{\max}`). The CDF integrates this density
+    (frequencies beyond :math:`u_{\max}`).
+
+Short horizons
+    A jump law at a short horizon :math:`t` has two scales: a bulk whose width
+    shrinks with :math:`t` (like :math:`t` for Meixner, or :math:`t^{1/Y}`),
+    and tails that do not. Covering both can need more than ``max_points``.
+    In that case the cf has not decayed at :math:`u_{\max}`, and a
+    :class:`CdfUnderResolvedWarning` is issued unless ``fail_above`` raises.
+    Families with an exact short-time sampler (tempered stable, and CGMY
+    with :math:`0 < Y < 1`) do not use this module there. The CDF integrates this density
     with the trapezoidal rule at the grid points, so interpolated quantiles
     carry no half-cell shift. Monotonicity is enforced only afterwards,
     because ripples near a kink cancel in the integral.
@@ -30,11 +39,21 @@ Density
 
 from __future__ import annotations
 
+import warnings
 from typing import Callable, Optional
 
 import numpy as np
 
-__all__ = ["CharacteristicFunctionNotDecayed", "cf_grid_cdf", "sample_from_cf"]
+__all__ = [
+    "CdfUnderResolvedWarning",
+    "CharacteristicFunctionNotDecayed",
+    "cf_grid_cdf",
+    "sample_from_cf",
+]
+
+
+class CdfUnderResolvedWarning(RuntimeWarning):
+    """The grid hit ``max_points`` before the cf decayed: the density is under-resolved."""
 
 
 class CharacteristicFunctionNotDecayed(ValueError):
@@ -77,12 +96,21 @@ def cf_grid_cdf(
         du = 2 * np.pi / (n * dx)
         u = (np.arange(n) - n / 2) * du
         edge = abs(complex(np.atleast_1d(char_func(u[:1]))[0]))
+        if not np.isfinite(edge):
+            raise ValueError(f"char_func is not finite at u = {u[0]:.4g}")
         if edge <= cf_tol:
             break
         if n >= max_points:
             if fail_above is not None and edge > fail_above:
                 raise CharacteristicFunctionNotDecayed(
                     f"|phi(u_max)| = {edge:.3g} at {n} points: no density to invert"
+                )
+            if edge > 1e-4:
+                warnings.warn(
+                    f"|phi(u_max)| = {edge:.3g} at {n} grid points: the density is"
+                    " under-resolved (a short horizon of a jump law?)",
+                    CdfUnderResolvedWarning,
+                    stacklevel=3,
                 )
             break
         n *= 2
