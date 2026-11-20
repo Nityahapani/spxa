@@ -29,6 +29,11 @@ Inference
     selection frequencies and parameter intervals.
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
+Option prices
+    :func:`cos_prices` prices European options with a fitted model as the
+    risk-neutral driver (made a martingale by :func:`martingale_correction`).
+    :class:`OptionQuotes`, :func:`fit_options` and :func:`discover_from_options`
+    search for the structures that best reproduce quoted prices.
 """
 
 from spxa.discovery.bootstrap import BootstrapResult, bootstrap
@@ -61,6 +66,8 @@ from spxa.discovery.families import (
     get_family,
 )
 from spxa.discovery.fit import BinnedData, FitResult, fit_structure, with_location
+from spxa.discovery.options import OptionQuotes, discover_from_options, fit_options, model_prices
+from spxa.discovery.pricing import cos_prices, martingale_correction
 from spxa.discovery.inference import (
     ParameterUncertainty,
     VuongResult,
@@ -138,4 +145,11 @@ __all__ = [
     "parse_atoms",
     "discover",
     "DiscoveryReport",
+    # option prices
+    "cos_prices",
+    "martingale_correction",
+    "OptionQuotes",
+    "model_prices",
+    "fit_options",
+    "discover_from_options",
 ]
