@@ -69,7 +69,13 @@ def test_two_term_search_and_maturity_warning() -> None:
     q = _quotes(Model(leaf(VARIANCE_GAMMA) + -leaf(GAMMA), [(0.15, 0.3, -0.1), (3.0, 30.0)]))
     rep = discover_from_options(q, grammar=grammar_from_names(["BM", "VG", "Gamma"], max_terms=2))
     assert rep.best.structure_key == "VG + -Gamma"
-    assert rep.best.extras["iv_rmse"] < 5e-4
+    assert rep.best.extras["iv_rmse"] < 5e-4 and not rep.best.degenerate
+    screened = discover_from_options(
+        q, grammar=grammar_from_names(["BM", "VG", "Gamma"], max_terms=2), exclude_degenerate=True
+    )
+    assert screened.best.structure_key == "VG + -Gamma"
+    assert not any(r.degenerate for r in screened.candidates)
+    assert all(r.degenerate for r in screened.excluded)
     # quotes no single Lévy law can produce: a steep short-dated smile, a flat
     # long-dated one
     a = _quotes(Model(leaf(VARIANCE_GAMMA), [(0.12, 0.8, -0.3)]))

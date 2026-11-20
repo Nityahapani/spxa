@@ -49,7 +49,7 @@ from spxa.discovery.expr import Model, Node
 from spxa.discovery.fit import FitResult, initial_params
 from spxa.discovery.grammar import Grammar, canonical
 from spxa.discovery.pricing import cos_prices
-from spxa.discovery.report import DiscoveryReport
+from spxa.discovery.report import DiscoveryReport, screen_degenerate
 from spxa.market.black import black_greeks
 from spxa.market.implied import implied_black_volatility
 
@@ -234,8 +234,14 @@ def discover_from_options(
     n_starts: int = 2,
     seed: int = 0,
     n_terms: int = 1024,
+    exclude_degenerate: bool = False,
 ) -> DiscoveryReport:
-    """Search ``grammar`` for the risk-neutral structures that best price ``quotes``."""
+    """Search ``grammar`` for the risk-neutral structures that best price ``quotes``.
+
+    ``exclude_degenerate`` works as in :func:`~spxa.discovery.search.discover`.
+    The vanishing-summand check matters especially here: several components
+    can fit a smile almost equally well.
+    """
     from spxa.discovery.search import _warm_start
 
     grammar = grammar or Grammar()
@@ -299,11 +305,13 @@ def discover_from_options(
                 f"at T = {worst:g} vs {100 * per[best_t]:.2f} at T = {best_t:g}): a Lévy model's "
                 "smile flattens like T^-1/2, which these quotes do not follow"
             )
+    ranked, excluded, screen_notes = screen_degenerate(ranked, exclude_degenerate, score, criterion)
     return DiscoveryReport(
         candidates=ranked,
         summary=None,
         criterion=criterion,
         method="options",
         tolerance=0.0,
-        warnings=notes,
+        warnings=notes + screen_notes,
+        excluded=excluded,
     )
