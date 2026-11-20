@@ -190,10 +190,18 @@ class Process(ABC):
         :math:`\Delta T`, the increments of :math:`X_{T}` are
         :math:`X_{\Delta T}`.
 
-        The default groups equal times, so integer-valued clocks are cheap, and
-        calls :meth:`simulate` once per distinct time. Families whose law at
-        time :math:`t` has a direct sampler override it and set
-        ``_vector_sampler``.
+        Families whose law at time :math:`t` has a direct sampler override this
+        method and set ``_vector_sampler``. The default works for any Lévy
+        process:
+
+        - With at most 64 distinct times (integer-valued clocks), it calls
+          :meth:`simulate` once per distinct time, which is exact.
+        - Otherwise it uses independent increments over dyadic lengths. With
+          :math:`h = \max_k t_k / 2^{20}` and :math:`t_k \approx q_kh`, it uses
+          :math:`X_{q_kh} = \sum_j b_{kj}X^{(j)}_{2^jh}`, where :math:`b_{kj}` are
+          the binary digits of :math:`q_k`. That is 21 batched :meth:`simulate`
+          calls in all. Times are resolved to :math:`h`, a relative
+          :math:`10^{-6}` of the largest time.
         """
         rng = rng or np.random.default_rng()
         t = np.asarray(times, dtype=float)
@@ -202,10 +210,19 @@ class Process(ABC):
         out = np.zeros(t.shape)
         values, inverse = np.unique(t, return_inverse=True)
         inverse = inverse.reshape(t.shape)
-        for idx, v in enumerate(values):
-            if v > 0:
-                mask = inverse == idx
-                out[mask] = self.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+        if len(values) <= 64:
+            for idx, v in enumerate(values):
+                if v > 0:
+                    mask = inverse == idx
+                    out[mask] = self.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+            return out
+        levels = 20
+        h = float(values[-1]) / 2**levels
+        q = np.floor(t / h + 1e-9).astype(np.int64)
+        for j in range(levels + 1):
+            mask = ((q >> j) & 1) == 1
+            if mask.any():
+                out[mask] += self.simulate(1, int(mask.sum()), h * 2**j, rng)[:, 1]
         return out
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
@@ -685,22 +702,23 @@ class _ComposedProcess(Process):
 
         :math:`Z` is a Lévy process, so each increment over :math:`\Delta t` is
         an independent copy of :math:`X_{\Delta T}` with
-        :math:`\Delta T \sim T_{\Delta t}`. Four exact routes, in order:
+        :math:`\Delta T \sim T_{\Delta t}`. Four routes, in order:
 
         0. Parents with a vectorised :meth:`sample_at` (Brownian motion,
            Gamma, VG, NIG, compound Poisson and others, and their sums,
            multiples and time changes). Draw :math:`\Delta T` from the clock,
            then :math:`X_{\Delta T}` directly.
-        1. Clocks with few distinct increments (Poisson and negative binomial
-           clocks take integer values). Draw :math:`\Delta T`, then draw
-           :math:`X` at each distinct value in one batch.
+        1. Clocks with at most 64 distinct increments (Poisson and negative
+           binomial clocks take integer values). Draw :math:`\Delta T`, then
+           draw :math:`X` at each distinct value in one batch.
         2. :math:`Z` with a finite variance. Invert
            :math:`\varphi_Z(u, \Delta t) = e^{\Delta t\,\psi_T(-i\psi_X(u))}` with
            :mod:`spxa.sim.cf_sampling`. The window covers the exponential
            tails given by the exponential-moment strip of :math:`Z`.
-        3. Otherwise (heavy-tailed parents, or laws with atoms or on a
-           lattice, whose cf does not decay), draw :math:`X_{\Delta T}` one
-           increment at a time, given the clock draws.
+        3. Otherwise (heavy-tailed parents, or laws whose cf decays too
+           slowly to invert, which includes atoms and lattices), use the
+           parent's :meth:`Process.sample_at` at the clock draws. Its dyadic
+           decomposition resolves times to :math:`10^{-6}` of the largest.
 
         Linear interpolation of a parent path at the random times is not
         used: it shrinks the variance of the Gaussian part and smears jumps.
@@ -711,14 +729,8 @@ class _ComposedProcess(Process):
         if self._left._vector_sampler:
             incr = self._left.sample_at(clock_incr, rng)
             return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
-        values, inverse = np.unique(clock_incr, return_inverse=True)
-        inverse = inverse.reshape(clock_incr.shape)
-        if len(values) <= min(256, clock_incr.size // 4):
-            incr = np.zeros(clock_incr.shape)
-            for idx, v in enumerate(values):
-                mask = inverse == idx
-                if v > 0:
-                    incr[mask] = self._left.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+        if len(np.unique(clock_incr)) <= 64:
+            incr = self._left.sample_at(clock_incr, rng)  # exact: one batch per clock value
             return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
 
         k = self.cumulants(2)
@@ -749,11 +761,7 @@ class _ComposedProcess(Process):
             except CharacteristicFunctionNotDecayed:
                 incr = None  # atoms or a lattice: draw increment by increment
         if incr is None:
-            incr = np.zeros(clock_incr.shape)
-            for idx in np.ndindex(clock_incr.shape):
-                v = float(clock_incr[idx])
-                if v > 0:
-                    incr[idx] = self._left.simulate(1, 1, v, rng)[0, 1]
+            incr = self._left.sample_at(clock_incr, rng)
         return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
 
     def __repr__(self) -> str:
