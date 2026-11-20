@@ -45,6 +45,7 @@ from typing import Optional, Union, Tuple, Dict
 import numpy as np
 from scipy import integrate, optimize  # type: ignore[import-untyped]
 from scipy.special import kv as bessel_kv  # type: ignore[import-untyped]
+from scipy.special import kve as bessel_kve  # type: ignore[import-untyped]
 
 from spxa.core.exactness import ExactnessLevel
 from spxa.core.levy_measure import DensityLevyMeasure
@@ -335,21 +336,28 @@ class GeneralizedHyperbolicProcess(Process):
             \psi(u) = i \mu u + \lambda \ln\left(\frac{\gamma}{\zeta(u)}\right) + \ln K_\lambda(\delta \zeta(u)) - \ln K_\lambda(\delta \gamma)
 
         where :math:`\zeta(u) = \sqrt{\alpha^2 - (\beta + i u)^2}`.
+
+        The Bessel term is evaluated as
+        :math:`\ln\frac{\mathrm{kve}(\delta\zeta)}{\mathrm{kve}(\delta\gamma)} - \delta(\zeta - \gamma)`,
+        with :math:`\mathrm{kve}(z) = e^zK_\lambda(z)`. The principal log of
+        :math:`K_\lambda(\delta\zeta)` itself wraps by :math:`2\pi` once
+        :math:`\delta\,\operatorname{Im}\zeta` passes :math:`\pi`, which
+        happens when :math:`\delta|\beta|` is of order one or more. That
+        flipped the sign of :math:`\varphi(u, t)` for non-integer :math:`t`.
+        The scaled function stays within a small angle of the real axis
+        (:math:`\operatorname{Re}\zeta > 0`), so its principal log is the
+        continuous one. It also does not underflow at large :math:`|u|`.
         """
         u_arr = np.asarray(u, dtype=complex)
         zeta = np.sqrt(self._alpha**2 - (self._beta + 1j * u_arr) ** 2)
 
-        # Log ratio of modified Bessel functions
         dg = self._delta * self._gamma
-        k_base = float(bessel_kv(self._lambda, dg))
-
-        # Vectorized Bessel kv over complex argument
-        # Scipy kv accepts complex arguments
-        k_zeta = bessel_kv(self._lambda, self._delta * zeta)
+        k_base = float(bessel_kve(self._lambda, dg))
+        k_zeta = bessel_kve(self._lambda, self._delta * zeta)
 
         term1 = 1j * self._mu * u_arr
         term2 = self._lambda * np.log(self._gamma / zeta)
-        term3 = np.log(k_zeta / k_base)
+        term3 = np.log(k_zeta / k_base) - self._delta * (zeta - self._gamma)
 
         psi = term1 + term2 + term3
         return psi if psi.ndim > 0 else psi.item()
