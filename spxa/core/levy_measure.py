@@ -102,6 +102,31 @@ class LevyMeasure(abc.ABC):
         r"""Return True iff ν(ℝ \ {0}) < ∞ (compound Poisson case)."""
         return np.isfinite(self.total_mass())
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        r"""
+        Return :math:`\int_{a < |x| \le b} x \, \nu(dx)` for :math:`0 < a < b \le \infty`.
+
+        This is the quantity the truncation function :math:`x\mathbb 1_{|x| \le 1}`
+        brings into the drift. With :math:`a = 1, b = \infty` it is the large-jump
+        mean in :math:`\kappa_1 = b + \int_{|x|>1} x\,\nu(dx)`. Under scaling the
+        drift picks up an integral over :math:`1 < |x| \le 1/|c|` or over
+        :math:`1/|c| < |x| \le 1`.
+
+        The default integrates the density. Measures without a density
+        (point masses, discrete jump laws) or with a closed form override it.
+        """
+        from scipy import integrate  # type: ignore[import-untyped]
+
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+
+        def integrand(x: float) -> float:
+            return x * float(self.density(np.array([x]))[0])
+
+        pos, _ = integrate.quad(integrand, a, b, limit=200)
+        neg, _ = integrate.quad(integrand, -b, -a, limit=200)
+        return float(pos + neg)
+
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         """Add two Lévy measures. Used when adding independent Lévy processes."""
         return CompoundLevyMeasure([self, other])
@@ -133,6 +158,9 @@ class CompoundLevyMeasure(LevyMeasure):
 
     def moment(self, n: int) -> float:
         return sum(c.moment(n) for c in self.components)
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        return float(sum(c.first_moment_between(a, b) for c in self.components))
 
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         if isinstance(other, CompoundLevyMeasure):
@@ -220,3 +248,8 @@ class ScaledLevyMeasure(LevyMeasure):
 
     def moment(self, n: int) -> float:
         return (self.scale**n) * self.base.moment(n)
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        # ∫_{a<|x|≤b} x ν_Z(dx) = ∫_{a<|cy|≤b} cy ν_X(dy)
+        c = abs(self.scale)
+        return float(self.scale * self.base.first_moment_between(a / c, b / c))
