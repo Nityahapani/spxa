@@ -166,3 +166,17 @@ def test_moment_errors_survive_a_zero_skewness_target() -> None:
     s = from_statistics(mean=0.0, variance=1.0, skewness=0.0, excess_kurtosis=0.0)
     r = fit_structure(leaf(NIG_FAMILY), s, method="cumulants")
     assert r.match_error is not None and r.match_error < 0.05
+
+
+def test_kernel_matrix_and_pointwise_loglik(vg_data) -> None:
+    b = BinnedData.from_sample(vg_data.sample, vg_data.dt)
+    K = b.kernel_matrix()
+    assert K.shape == (b.n, len(b.counts))
+    np.testing.assert_allclose(K.sum(axis=1), 1.0, atol=1e-12)
+    np.testing.assert_allclose(K.sum(axis=0), b.counts, rtol=1e-12)
+    res = fit_structure(leaf(VARIANCE_GAMMA), vg_data, binned=b, n_starts=1)
+    ell = b.pointwise_loglik(res.model)
+    assert ell.sum() == pytest.approx(res.loglik, rel=1e-12)
+    bare = BinnedData(**{**b.__dict__, "sample": None})
+    with pytest.raises(ValueError, match="sample"):
+        bare.kernel_matrix()

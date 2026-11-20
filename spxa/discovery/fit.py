@@ -94,6 +94,7 @@ class BinnedData:
     u: np.ndarray = field(repr=False)
     sine: np.ndarray = field(repr=False)
     kernel_covariance: np.ndarray = field(repr=False)
+    sample: Optional[np.ndarray] = field(default=None, repr=False)
 
     @property
     def n(self) -> int:
@@ -162,7 +163,24 @@ class BinnedData:
             u=u,
             sine=sine,
             kernel_covariance=kernel_cov,
+            sample=x,
         )
+
+    def kernel_matrix(self) -> np.ndarray:
+        r"""Per-observation kernel weights :math:`K_{ij}`, an ``(n, n_bins)`` array.
+
+        Row :math:`i` holds :math:`\Phi((e_{j+1}-x_i)/h) - \Phi((e_j-x_i)/h)` and
+        sums to one; the smoothed counts are its column sums. It is recomputed on
+        each call rather than stored.
+        """
+        if self.sample is None:
+            raise ValueError("these bins were built without keeping the sample")
+        z = (self.edges[None, :] - self.sample[:, None]) / self.bandwidth
+        return np.diff(stats.norm.cdf(z), axis=1)
+
+    def pointwise_loglik(self, model: Model) -> np.ndarray:
+        r"""Contributions :math:`\ell_i = \sum_j K_{ij}\log\tilde p_j` of each observation."""
+        return self.kernel_matrix() @ np.log(self.probabilities(model))
 
     def gof_statistic(self, probabilities: np.ndarray, n_params: int) -> tuple[float, float, int]:
         r"""Wald-type goodness-of-fit test for the smoothed counts.
