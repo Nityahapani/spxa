@@ -23,6 +23,9 @@ Data
     :func:`summarize` and :func:`from_statistics` build an :class:`EmpiricalSummary`.
 Fitting
     :func:`fit_structure` (smoothed binned likelihood or cumulants), :class:`BinnedData`.
+Inference
+    :func:`parameter_uncertainty` (sandwich or GMM standard errors) and
+    :func:`vuong_test` for non-nested structures.
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
 """
@@ -56,6 +59,12 @@ from spxa.discovery.families import (
     get_family,
 )
 from spxa.discovery.fit import BinnedData, FitResult, fit_structure, with_location
+from spxa.discovery.inference import (
+    ParameterUncertainty,
+    VuongResult,
+    parameter_uncertainty,
+    vuong_test,
+)
 from spxa.discovery.io import ReturnSeries, infer_dt, load_returns
 from spxa.discovery.grammar import Grammar, canonical, grammar_from_names, parse_atoms
 from spxa.discovery.recognize import NotRecognizedError, recognize
@@ -113,6 +122,11 @@ __all__ = [
     "FitResult",
     "fit_structure",
     "with_location",
+    # inference
+    "ParameterUncertainty",
+    "parameter_uncertainty",
+    "VuongResult",
+    "vuong_test",
     # search
     "Grammar",
     "canonical",
