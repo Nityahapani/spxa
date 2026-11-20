@@ -41,7 +41,7 @@ Z = X + 0.5 * Y            # exact triplet arithmetic
 
 print(Z.exactness)          # ExactnessLevel.EXACT
 print(Z.triplet.sigma_sq)   # 0.0
-print(float(Z.triplet.b))   # 0.04072233534646699
+print(float(Z.triplet.b))   # 0.14542109130283806
 print(Z.exactness == spxa.ExactnessLevel.EXACT)  # True
 ```
 
