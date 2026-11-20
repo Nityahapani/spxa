@@ -203,7 +203,8 @@ class ProcessProperties:
             has_finite_mean=parent.has_finite_mean and subordinator.has_finite_mean,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=False,
+            # a non-decreasing process run on a non-decreasing clock is non-decreasing
+            is_subordinator=parent.is_subordinator,
             hurst_index=None,
             notes=notes,
         )

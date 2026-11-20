@@ -279,3 +279,20 @@ class TestSubordinatedProcesses:
             "requires ExactnessLevel.EXACT, but this process has ExactnessLevel.EXACT"
             not in str(e.value)
         )
+
+
+class TestSubordinatorsCompose:
+    def test_subordinator_in_subordinator_time_is_a_subordinator(self):
+        from spxa.zoo.levy import InverseGaussianProcess
+
+        T, S = GammaProcess(a=1.0, b=1.0), InverseGaussianProcess(mu=1.0, lam=2.0)
+        assert (T @ S).properties.is_subordinator is True
+        assert (BrownianMotion(mu=0.0, sigma=1.0) @ T).properties.is_subordinator is False
+
+    def test_subordination_associates(self):
+        X = BrownianMotion(mu=0.1, sigma=0.4)
+        T, S = GammaProcess(a=2.0, b=2.0), GammaProcess(a=3.0, b=1.5)
+        u = np.array([0.5, -1.7, 3.0])
+        np.testing.assert_allclose(
+            ((X @ T) @ S).char_func(u), (X @ (T @ S)).char_func(u), rtol=1e-8
+        )
