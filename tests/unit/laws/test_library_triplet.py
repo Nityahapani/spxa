@@ -8,10 +8,18 @@ import pytest
 from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.triplet import LevyTriplet
 from spxa.laws import Law
-from spxa.laws.library.triplet import TRIPLET, measure_moments, measure_tail, triplet_cumulants
+from spxa.laws.library.triplet import (
+    TRIPLET,
+    _density,
+    _one_sided_tail,
+    jump_exponent,
+    measure_moments,
+    measure_tail,
+    triplet_cumulants,
+)
 from spxa.laws.processes import alpha_stables
 from spxa.laws.strategies import just
-from spxa.zoo.levy import AlphaStable, GammaProcess
+from spxa.zoo.levy import NIG, AlphaStable, GammaProcess, MertonJumpDiffusion
 
 
 @pytest.mark.parametrize("law_", TRIPLET, ids=lambda law_: law_.name)
@@ -86,3 +94,25 @@ def test_wrong_stable_triplet_is_caught_by_levy_khintchine() -> None:
 
     result = _on(levy_khintchine, _HalfStable(1.5, 0.3, 0.5)).check(n_examples=10, seed=0)
     assert result.status == "falsified"
+
+
+def test_small_frequency_tail_has_no_cancellation() -> None:
+    # int_1^inf (cos wy - 1) k(y) dy for NIG(7, 0, 1, 0) at w = 0.009 is
+    # -6.2129754441252e-09 (mpmath, 30 digits). The QAWF-from-1 form gave -3.4e-09.
+    k = _density(NIG(alpha=7.0, beta=0.0, delta=1.0, mu=0.0).triplet.nu)
+    re, _ = _one_sided_tail(lambda y: k(y), 0.009)
+    assert re == pytest.approx(-6.2129754441252e-09, rel=1e-9)
+
+
+@pytest.mark.parametrize(
+    "X, u",
+    [
+        (NIG(alpha=7.0, beta=0.0, delta=1.0, mu=0.0), -0.009),  # seed 3
+        (MertonJumpDiffusion(drift=0.0, sigma=0.2, rate=1.0, jump_mean=0.2, jump_std=0.14), 0.06),
+    ],
+)
+def test_jump_exponent_at_small_frequencies(X, u: float) -> None:
+    pinned = Law(
+        "pinned", jump_exponent.fn, {**jump_exponent.strategies, "X": just(X), "u": just(u)}
+    )
+    assert pinned.check(n_examples=1).status == "verified"

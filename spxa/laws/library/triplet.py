@@ -133,40 +133,61 @@ def _compensated(u: float, x: float) -> complex:
     return complex(np.expm1(1j * z) - (1j * z if abs(x) <= 1 else 0.0))
 
 
+def _fourier_from(f: Callable[[float], float], start: float, w: float) -> tuple[float, float]:
+    r""":math:`\int_{start}^\infty f(y)\cos(wy)\,dy` and the same with sin, via QAWF."""
+    c, s_ = np.cos(w * start), np.sin(w * start)
+    a = integrate.quad(lambda t: f(start + t), 0.0, np.inf, weight="cos", wvar=w, limlst=200)[0]
+    b = integrate.quad(lambda t: f(start + t), 0.0, np.inf, weight="sin", wvar=w, limlst=200)[0]
+    # cos(w(L+t)) = cos wL cos wt - sin wL sin wt ; sin(w(L+t)) = sin wL cos wt + cos wL sin wt
+    return float(c * a - s_ * b), float(s_ * a + c * b)
+
+
+def _one_sided_tail(f: Callable[[float], float], w: float) -> tuple[float, float]:
+    r"""
+    :math:`\int_1^\infty (\cos wy - 1) f(y)\,dy` and :math:`\int_1^\infty f(y)\sin wy\,dy`, for w > 0.
+
+    Up to the first half-period :math:`L = \pi/w` the integrand is
+    :math:`\cos wy - 1 = -2\sin^2(wy/2)`, integrated directly. Writing it as
+    :math:`\int f\cos - \int f` cancels catastrophically when :math:`wy` is
+    small across the bulk of :math:`f`. Beyond :math:`L` QAWF is used,
+    and the subtraction loses digits only relative to the small far mass.
+    The previous QAWF-from-1 form, whose first cycle is :math:`[1, 1 + 2\pi/w]`,
+    gave a relative error of 4e-4 in :math:`J(-0.009)` for
+    NIG(7, 0, 1, 0).
+    """
+    big = max(1.0, np.pi / w)
+    # Geometric panels [1, 2, 4, ..., L]: a single Gauss-Kronrod panel over
+    # [1, L] misses a density concentrated near 1 (e^{-7y} for NIG(7, ...))
+    # and still reports a small error.
+    edges = np.unique(np.concatenate([2.0 ** np.arange(0, np.log2(big) + 1), [big]]))
+    edges = edges[edges <= big]
+    near_c = near_s = 0.0
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        near_c += integrate.quad(
+            lambda y: -2.0 * np.sin(0.5 * w * y) ** 2 * f(y), lo, hi, limit=200
+        )[0]
+        near_s += integrate.quad(lambda y: np.sin(w * y) * f(y), lo, hi, limit=200)[0]
+    far_c, far_s = _fourier_from(f, big, w)
+    far_mass = integrate.quad(f, big, np.inf, limit=400)[0]
+    return near_c + far_c - far_mass, near_s + far_s
+
+
 def _oscillatory_tails(k: Callable[[float], float], u: float) -> tuple[float, float]:
     r"""
     :math:`\int_{|x|>1}(e^{iux}-1)k(x)\,dx`, split into real and imaginary parts.
 
     Uses QUADPACK's Fourier-integral routine (QAWF) for :math:`\cos(ux)` and
     :math:`\sin(ux)` weights, so slowly decaying densities such as the stable
-    :math:`|x|^{-1-\alpha}` still integrate to full accuracy.
+    :math:`|x|^{-1-\alpha}` still integrate to full accuracy. Small
+    :math:`|u|` is handled without cancellation (see :func:`_one_sided_tail`).
     """
-    pos = lambda y: k(y)  # noqa: E731
-    neg = lambda y: k(-y)  # noqa: E731
-    mass = (
-        integrate.quad(pos, 1.0, np.inf, limit=400)[0]
-        + integrate.quad(neg, 1.0, np.inf, limit=400)[0]
-    )
     if u == 0:
         return 0.0, 0.0
     w = abs(u)
     sgn = 1.0 if u > 0 else -1.0
-    cos_p = _fourier(pos, "cos", w)
-    cos_n = _fourier(neg, "cos", w)
-    sin_p = _fourier(pos, "sin", w)
-    sin_n = _fourier(neg, "sin", w)
-    return cos_p + cos_n - mass, sgn * (sin_p - sin_n)
-
-
-def _fourier(f: Callable[[float], float], weight: str, w: float) -> float:
-    r""":math:`\int_1^\infty f(y)\,\mathrm{trig}(wy)\,dy` via QAWF (substituting :math:`y = 1 + s`)."""
-    c, s_ = np.cos(w), np.sin(w)
-    a = integrate.quad(lambda t: f(1.0 + t), 0.0, np.inf, weight="cos", wvar=w, limlst=200)[0]
-    b = integrate.quad(lambda t: f(1.0 + t), 0.0, np.inf, weight="sin", wvar=w, limlst=200)[0]
-    # cos(w(1+t)) = cos w cos wt - sin w sin wt ; sin(w(1+t)) = sin w cos wt + cos w sin wt
-    if weight == "cos":
-        return float(c * a - s_ * b)
-    return float(s_ * a + c * b)
+    cos_p, sin_p = _one_sided_tail(lambda y: k(y), w)
+    cos_n, sin_n = _one_sided_tail(lambda y: k(-y), w)
+    return cos_p + cos_n, sgn * (sin_p - sin_n)
 
 
 @law(X=_P, u=frequencies(), tags=("triplet", "measure"))
