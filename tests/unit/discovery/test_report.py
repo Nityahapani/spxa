@@ -165,3 +165,16 @@ def test_to_dict_is_valid_json() -> None:
     stats = DiscoveryReport([_fit(VG, None)], SUMMARY, "bic", "cumulants", 0.02)
     c = json.loads(json.dumps(stats.to_dict(), allow_nan=False))["candidates"][0]
     assert c["weight"] is None and c["bic"] is None and c["moment_error"] is not None
+
+
+def test_percentages_are_capped() -> None:
+    from spxa.discovery.report import _pct
+
+    assert _pct(0.1234) == "12.34%" and _pct(99.99) == "9999.00%"
+    assert _pct(1e80) == ">9999%" and _pct(float("inf")) == ">9999%"
+    absurd = Model(Leaf(BROWNIAN) + Leaf(DRIFT), [(1e-6,), (0.0,)])
+    rep = DiscoveryReport([_fit(absurd, None)], SUMMARY, "bic", "cumulants", 0.02)
+    row = rep.table().splitlines()[1]
+    assert "100.00%" in row  # the variance is entirely missed
+    big = _fit(Model(Leaf(BROWNIAN) + Leaf(DRIFT), [(30.0,), (0.0,)]), -1e6, 0.5)
+    assert ">9999%" in DiscoveryReport([big], SUMMARY, "bic", "likelihood", 0.02).table()

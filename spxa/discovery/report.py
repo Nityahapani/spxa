@@ -176,7 +176,7 @@ class DiscoveryReport:
             header = f"{'#':>3}  {'params':>6}  {'moment err':>10}  expression"
             for i, r in enumerate(self.candidates[:top], 1):
                 rows.append(
-                    f"{i:>3}  {r.n_params:>6}  {100 * _err(r):9.2f}%  "
+                    f"{i:>3}  {r.n_params:>6}  {_pct(_err(r)):>10}  "
                     f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
         else:
@@ -190,7 +190,7 @@ class DiscoveryReport:
             for i, r in enumerate(self.candidates[:top], 1):
                 rows.append(
                     f"{i:>3}  {self.score(r) - best:8.2f}  {w[i - 1]:6.3f}  {r.g_pvalue or 0:6.3f}  "
-                    f"{100 * (r.ks_distance or 0):7.2f}%  {100 * _err(r):9.2f}%  "
+                    f"{100 * (r.ks_distance or 0):7.2f}%  {_pct(_err(r)):>10}  "
                     f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
         return "\n".join([header] + rows)
@@ -254,6 +254,13 @@ class DiscoveryReport:
         if self.warnings:
             lines += [""] + [f"warning: {w}" for w in self.warnings]
         return "\n".join(lines)
+
+
+def _pct(v: float) -> str:
+    """A fraction as a percentage, with absurd values collapsed to ``>9999%``."""
+    if not np.isfinite(v) or v > 99.99:
+        return ">9999%"
+    return f"{100 * v:.2f}%"
 
 
 def _flag(r: FitResult) -> str:
