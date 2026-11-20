@@ -51,3 +51,28 @@ def test_laplace_exponent_and_mgf() -> None:
     zz = np.array([0.5, -1.0])
     k = -np.log(1 - (-0.1) * 0.3 * zz - 0.04 * 0.3 * zz**2 / 2) / 0.3
     np.testing.assert_allclose(laplace_exponent(V, zz), k, rtol=1e-7)
+
+
+def test_exponential_moment_strips() -> None:
+    from spxa.laws.quantities import exponential_moment_strip as strip
+    from spxa.zoo.levy import AlphaStable, InverseGaussianProcess, NegativeBinomialProcess
+
+    inf = float("inf")
+    assert strip(BrownianMotion(0.1, 0.3)) == (-inf, inf)
+    assert strip(GammaProcess(a=2.0, b=3.0)) == (-inf, 3.0)
+    assert strip(InverseGaussianProcess(mu=2.0, lam=4.0)) == (-inf, 0.5)
+    assert strip(NegativeBinomialProcess(r=1.0, p=0.5))[1] == pytest.approx(np.log(2))
+    V = VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1)
+    lo, hi = strip(V)
+    for z in (lo, hi):  # roots of 1 - θνz - σ²νz²/2
+        assert 1 - (-0.1) * 0.3 * z - 0.04 * 0.3 * z**2 / 2 == pytest.approx(0, abs=1e-12)
+    assert strip(-2.0 * V) == pytest.approx((-hi / 2, -lo / 2))
+    assert strip(V + GammaProcess(a=1.0, b=4.0)) == (lo, 4.0)
+    assert strip(AlphaStable(1.5, 0.0, 1.0, 0.0)) == (0.0, 0.0)
+    # BM(0.1, 0.3) in Gamma(2, 3) time: 0.1 z + 0.045 z^2 < 3
+    zl, zh = strip(BrownianMotion(0.1, 0.3) @ GammaProcess(a=2.0, b=3.0))
+    np.testing.assert_allclose(sorted(np.roots([0.045, 0.1, -3.0])), [zl, zh], rtol=1e-10)
+    from spxa.zoo.levy import NormalTemperedStable
+
+    with pytest.raises(NotImplementedError):
+        strip(NormalTemperedStable(alpha=0.5, lambd=1.0, delta=1.0, theta=0.0, sigma=0.2))
