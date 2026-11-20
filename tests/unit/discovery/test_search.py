@@ -206,3 +206,26 @@ def test_exclude_degenerate(vg_sample: np.ndarray) -> None:
     assert all(r.degenerate for r in screened.excluded)
     assert len(screened.candidates) + len(screened.excluded) == len(kept.candidates)
     assert screened.best.structure_key == kept.admissible()[0].structure_key
+
+
+def test_report_uncertainty_and_comparison(small_report: DiscoveryReport) -> None:
+    from spxa.discovery.inference import parameter_uncertainty, vuong_test
+
+    r = small_report
+    assert r.binned is not None
+    u = r.uncertainty()
+    direct = parameter_uncertainty(r.best, r.summary, r.binned)  # type: ignore[arg-type]
+    np.testing.assert_allclose(u.standard_errors, direct.standard_errors, rtol=1e-12)
+    assert u.method == "sandwich" and np.all(np.isfinite(u.standard_errors))
+    bm = next(c for c in r.candidates if c.structure_key == "BM + Drift")
+    v = r.compare(0, bm)
+    assert v.preferred == "first" and v.z > 3
+    assert v == vuong_test(r.best, bm, r.binned)
+    stats_only = discover(
+        from_statistics(0.1, 0.0008, -0.9, 6.0, dt=DT, n=2000),
+        grammar=grammar_from_names(["BM", "VG"], max_terms=1),
+        n_starts=1,
+    )
+    assert stats_only.binned is None
+    with pytest.raises(ValueError, match="Vuong"):
+        stats_only.compare()

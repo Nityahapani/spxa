@@ -262,4 +262,5 @@ def discover(
         tolerance=tolerance,
         warnings=report_warnings + notes,
         excluded=excluded,
+        binned=binned,
     )

@@ -30,12 +30,15 @@ weights
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Callable, Literal, Optional
 
 import numpy as np
 
 from spxa.discovery.empirical import EmpiricalSummary
-from spxa.discovery.fit import FitResult
+from spxa.discovery.fit import BinnedData, FitResult
+
+if TYPE_CHECKING:
+    from spxa.discovery.inference import ParameterUncertainty, VuongResult
 
 
 @dataclass
@@ -49,6 +52,7 @@ class DiscoveryReport:
     tolerance: float
     warnings: list[str] = field(default_factory=list)
     excluded: list[FitResult] = field(default_factory=list)
+    binned: Optional[BinnedData] = None
 
     @property
     def best(self) -> FitResult:
@@ -107,6 +111,35 @@ class DiscoveryReport:
             gap = self.score(self.candidates[1]) - self.score(b)
             text += f"; {self.criterion.upper()} lead over the runner-up {gap:.1f}"
         return text
+
+    def _pick(self, which: int | FitResult) -> FitResult:
+        return self.candidates[which] if isinstance(which, int) else which
+
+    def uncertainty(self, which: int | FitResult = 0) -> ParameterUncertainty:
+        """Standard errors of a candidate's parameters (default: the best).
+
+        Uses :func:`~spxa.discovery.inference.parameter_uncertainty` on the
+        bins the search shared, so the result matches the fit exactly.
+        """
+        from spxa.discovery.inference import parameter_uncertainty
+
+        if self.summary is None:
+            raise ValueError("standard errors need a return sample or summary statistics")
+        return parameter_uncertainty(self._pick(which), self.summary, self.binned)
+
+    def compare(
+        self,
+        first: int | FitResult = 0,
+        second: int | FitResult = 1,
+        correction: Literal["none", "aic", "bic"] = "bic",
+        level: float = 0.05,
+    ) -> VuongResult:
+        """Vuong test of two candidates on the search's bins (likelihood reports only)."""
+        from spxa.discovery.inference import vuong_test
+
+        if self.method != "likelihood" or self.binned is None:
+            raise ValueError("the Vuong test needs a likelihood report built from a return sample")
+        return vuong_test(self._pick(first), self._pick(second), self.binned, correction, level)
 
     def admissible(self) -> list[FitResult]:
         """Candidates that are not :attr:`~spxa.discovery.fit.FitResult.degenerate`, in rank order."""
