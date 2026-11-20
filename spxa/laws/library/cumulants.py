@@ -43,12 +43,19 @@ from spxa.laws.strategies import floats
 _X = compositions(max_depth=1, operations=("+", "*", "-", "@"))
 
 
-def cauchy_cumulants(X: Process, order: int, radius: float, n_points: int = 32) -> np.ndarray:
+def cauchy_cumulants(X: Process, order: int, radius: float, n_points: int = 128) -> np.ndarray:
     r"""
     :math:`\kappa_1, \dots, \kappa_{order}` from :math:`K` on the circle :math:`|z| = r`.
 
     ``radius`` must lie inside the exponential-moment strip, and well
-    inside it for accuracy.
+    inside it for accuracy. The trapezoid rule aliases the coefficient
+    :math:`c_{n+N}r^{N}` onto :math:`c_n`, an error of order
+    :math:`\max_{|z|=R}|K(z)|\,(r/R)^N` for :math:`K` analytic on
+    :math:`|z| < R`. A compound clock exponentiates the parent's exponent,
+    so :math:`\max|K|` can be :math:`10^5` or more. With :math:`r = R/2`
+    and 32 points this gave errors of :math:`10^{-6}`, e.g. for
+    ``CGMY(1, 2.5, 2, 1.5) @ PoissonProcess(1, jump_size=2)``. With 128
+    points it is negligible.
     """
     theta = 2 * np.pi * np.arange(n_points) / n_points
     z = radius * np.exp(1j * theta)

@@ -8,7 +8,13 @@ import pytest
 from spxa.laws import Law
 from spxa.laws.library.cumulants import CUMULANTS, cauchy_cumulants, cumulants_from_cf
 from spxa.laws.strategies import just
-from spxa.zoo.levy import BrownianMotion, GammaProcess, VarianceGamma
+from spxa.zoo.levy import (
+    CGMY,
+    BrownianMotion,
+    GammaProcess,
+    PoissonProcess,
+    VarianceGamma,
+)
 
 
 @pytest.mark.parametrize("law_", CUMULANTS, ids=lambda law_: law_.name)
@@ -32,6 +38,19 @@ def test_cauchy_cumulants_of_closed_forms() -> None:
     np.testing.assert_allclose(
         cauchy_cumulants(Z, 4, radius=1.0), list(Z.cumulants(4).values()), rtol=1e-7
     )
+
+
+def test_cauchy_cumulants_resolve_a_compound_clock() -> None:
+    # A Poisson clock exponentiates K_X: |K_Z| ~ 1e5 near the branch point at
+    # z = M = 2, so 32 trapezoid points left a 1.6e-6 error in kappa_1 (seed 2).
+    Z = CGMY(C=1.0, G=2.5, M=2.0, Y=1.5) @ PoissonProcess(rate=1.0, jump_size=2.0)
+    # kappa_1 = 2 C Gamma(-1/2) (sqrt(M) - sqrt(G)), by mpmath to 30 digits
+    assert cauchy_cumulants(Z, 1, radius=1.0)[0] == pytest.approx(1.1834693342718554, rel=1e-10)
+    np.testing.assert_allclose(
+        cauchy_cumulants(Z, 4, radius=1.0), list(Z.cumulants(4).values()), rtol=1e-9
+    )
+    pinned = Law("pinned", cumulants_from_cf.fn, {**cumulants_from_cf.strategies, "X": just(Z)})
+    assert pinned.check(n_examples=1).status == "verified"
 
 
 class _OffGamma(GammaProcess):
