@@ -34,7 +34,11 @@ from typing import Callable, Optional
 
 import numpy as np
 
-__all__ = ["cf_grid_cdf", "sample_from_cf"]
+__all__ = ["CharacteristicFunctionNotDecayed", "cf_grid_cdf", "sample_from_cf"]
+
+
+class CharacteristicFunctionNotDecayed(ValueError):
+    """The cf stays large at the finest grid: the law has atoms or lives on a lattice."""
 
 
 def cf_grid_cdf(
@@ -48,14 +52,19 @@ def cf_grid_cdf(
     n_points: int = 2**14,
     max_points: int = 2**20,
     cf_tol: float = 1e-10,
+    fail_above: Optional[float] = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Return ``(x, cdf)`` on a grid fine enough that the cf has decayed.
+    r"""Return ``(x, cdf)`` on a grid fine enough that the cf has decayed.
 
     ``tail_decay`` is the slowest exponential rate of the tails (for CGMY,
     ``min(G, M)``). When it is given, the window also covers ``36 / tail_decay``,
     the distance over which an exponential tail drops by :math:`e^{-36}`.
     ``lower`` is a known lower end of the support (0 for subordinators). The
-    window then starts there, so no draw falls below it.
+    window then starts there, so no draw falls below it. If ``fail_above``
+    is set and :math:`|\varphi(u_{\max})|` still exceeds it at ``max_points``,
+    :class:`CharacteristicFunctionNotDecayed` is raised. Laws with atoms
+    (a compound-Poisson clock) or on a lattice (integer-valued parents)
+    have no density to invert.
     """
     if not (np.isfinite(mean) and np.isfinite(std) and std > 0):
         raise ValueError(f"need a finite mean and a positive std, got {mean}, {std}")
@@ -67,7 +76,14 @@ def cf_grid_cdf(
         dx = 2 * half / n
         du = 2 * np.pi / (n * dx)
         u = (np.arange(n) - n / 2) * du
-        if abs(complex(np.atleast_1d(char_func(u[:1]))[0])) <= cf_tol or n >= max_points:
+        edge = abs(complex(np.atleast_1d(char_func(u[:1]))[0]))
+        if edge <= cf_tol:
+            break
+        if n >= max_points:
+            if fail_above is not None and edge > fail_above:
+                raise CharacteristicFunctionNotDecayed(
+                    f"|phi(u_max)| = {edge:.3g} at {n} points: no density to invert"
+                )
             break
         n *= 2
     x0 = mean - half if lower is None else max(mean - half, lower)

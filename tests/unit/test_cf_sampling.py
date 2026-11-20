@@ -89,3 +89,12 @@ def test_lower_support_bound_is_respected() -> None:
     X = TemperedStable(0.31, 0.67, 8.2)
     paths = X.simulate(50, 2_000, T=1.0, rng=np.random.default_rng(1))
     assert np.all(np.diff(paths, axis=1) >= 0.0)
+
+
+def test_lattice_law_is_reported_not_inverted() -> None:
+    from spxa.sim.cf_sampling import CharacteristicFunctionNotDecayed
+    from spxa.zoo.levy import PoissonProcess
+
+    X = PoissonProcess(2.0)  # integer valued: |phi| is periodic and never decays
+    with pytest.raises(CharacteristicFunctionNotDecayed):
+        cf_grid_cdf(lambda u: X.char_func(u), 2.0, np.sqrt(2.0), max_points=2**15, fail_above=1e-4)

@@ -178,6 +178,36 @@ class Process(ABC):
             )
         return out
 
+    #: True when :meth:`sample_at` draws all times in one vectorised call.
+    _vector_sampler: bool = False
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        r"""
+        Independent draws of :math:`X_t`, one for each entry of ``times``.
+
+        Draw ``k`` is :math:`X_{t_k}` for a fresh copy of the process. This is
+        what a random time change needs: given clock increments
+        :math:`\Delta T`, the increments of :math:`X_{T}` are
+        :math:`X_{\Delta T}`.
+
+        The default groups equal times, so integer-valued clocks are cheap, and
+        calls :meth:`simulate` once per distinct time. Families whose law at
+        time :math:`t` has a direct sampler override it and set
+        ``_vector_sampler``.
+        """
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        if np.any(t < 0):
+            raise ValueError("times must be non-negative")
+        out = np.zeros(t.shape)
+        values, inverse = np.unique(t, return_inverse=True)
+        inverse = inverse.reshape(t.shape)
+        for idx, v in enumerate(values):
+            if v > 0:
+                mask = inverse == idx
+                out[mask] = self.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+        return out
+
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         """
         Evaluate the characteristic function E[e^{iuX_t}] at frequency u.
@@ -520,6 +550,13 @@ class _ScaledProcess(Process):
         paths = self._base.simulate(n_steps, n_paths, T, rng)
         return self._scale * paths
 
+    @property  # type: ignore[override]
+    def _vector_sampler(self) -> bool:  # noqa: D401
+        return self._base._vector_sampler
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        return self._scale * self._base.sample_at(times, rng)
+
     def __repr__(self) -> str:
         return f"{self._scale} * {self._base!r}"
 
@@ -623,30 +660,101 @@ class _ComposedProcess(Process):
                 n_steps, n_paths, T, rng
             )
         if self._operation == "@":
-            # Subordination: Z_t = X_{T_t}
-            # Simulate the subordinator to get random time changes,
-            # then simulate the parent process at those random times.
-            # Uses a path-by-path approach: for each path, simulate the
-            # subordinator time grid, then interpolate the parent process.
-            rng = rng or np.random.default_rng()
-
-            # Simulate subordinator paths on a fine grid
-            sub_paths = self._right.simulate(n_steps, n_paths, T, rng)
-            # sub_paths[:, k] = T_k (random time at step k)
-
-            # For each path, simulate parent at fine resolution and interpolate
-            # We simulate the parent on a finer grid covering [0, max(T_T)]
-            max_time = float(sub_paths[:, -1].max()) * 1.5 + 1e-6
-            fine_steps = max(n_steps * 4, 500)
-            parent_paths = self._left.simulate(fine_steps, n_paths, max_time, rng)
-            fine_grid = np.linspace(0, max_time, fine_steps + 1)
-
-            paths = np.zeros((n_paths, n_steps + 1))
-            for i in range(n_paths):
-                paths[i] = np.interp(sub_paths[i], fine_grid, parent_paths[i])
-
-            return paths
+            return self._simulate_subordinated(n_steps, n_paths, T, rng or np.random.default_rng())
         raise NotImplementedError(f"Simulation not implemented for operation '{self._operation}'.")
+
+    @property  # type: ignore[override]
+    def _vector_sampler(self) -> bool:  # noqa: D401
+        return self._left._vector_sampler and self._right._vector_sampler
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        r"""Draws of :math:`Z_t`: ``X + Y`` adds independent draws, ``X @ T`` draws :math:`X_{T_t}`."""
+        rng = rng or np.random.default_rng()
+        if self._operation == "+":
+            return self._left.sample_at(times, rng) + self._right.sample_at(times, rng)
+        if self._operation == "@":
+            clock = np.maximum(self._right.sample_at(times, rng), 0.0)
+            return self._left.sample_at(clock, rng)
+        return super().sample_at(times, rng)
+
+    def _simulate_subordinated(
+        self, n_steps: int, n_paths: int, T: float, rng: np.random.Generator
+    ) -> np.ndarray:
+        r"""
+        Paths of :math:`Z_t = X_{T_t}` on an even grid.
+
+        :math:`Z` is a Lévy process, so each increment over :math:`\Delta t` is
+        an independent copy of :math:`X_{\Delta T}` with
+        :math:`\Delta T \sim T_{\Delta t}`. Four exact routes, in order:
+
+        0. Parents with a vectorised :meth:`sample_at` (Brownian motion,
+           Gamma, VG, NIG, compound Poisson and others, and their sums,
+           multiples and time changes). Draw :math:`\Delta T` from the clock,
+           then :math:`X_{\Delta T}` directly.
+        1. Clocks with few distinct increments (Poisson and negative binomial
+           clocks take integer values). Draw :math:`\Delta T`, then draw
+           :math:`X` at each distinct value in one batch.
+        2. :math:`Z` with a finite variance. Invert
+           :math:`\varphi_Z(u, \Delta t) = e^{\Delta t\,\psi_T(-i\psi_X(u))}` with
+           :mod:`spxa.sim.cf_sampling`. The window covers the exponential
+           tails given by the exponential-moment strip of :math:`Z`.
+        3. Otherwise (heavy-tailed parents, or laws with atoms or on a
+           lattice, whose cf does not decay), draw :math:`X_{\Delta T}` one
+           increment at a time, given the clock draws.
+
+        Linear interpolation of a parent path at the random times is not
+        used: it shrinks the variance of the Gaussian part and smears jumps.
+        """
+        dt = T / n_steps
+        clock_paths = self._right.simulate(n_steps, n_paths, T, rng)
+        clock_incr = np.maximum(np.diff(clock_paths, axis=1), 0.0)
+        if self._left._vector_sampler:
+            incr = self._left.sample_at(clock_incr, rng)
+            return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
+        values, inverse = np.unique(clock_incr, return_inverse=True)
+        inverse = inverse.reshape(clock_incr.shape)
+        if len(values) <= min(256, clock_incr.size // 4):
+            incr = np.zeros(clock_incr.shape)
+            for idx, v in enumerate(values):
+                mask = inverse == idx
+                if v > 0:
+                    incr[mask] = self._left.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+            return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
+
+        k = self.cumulants(2)
+        incr = None
+        if np.isfinite(k[1]) and np.isfinite(k[2]) and k[2] > 0:
+            from spxa.sim.cf_sampling import CharacteristicFunctionNotDecayed, sample_from_cf
+
+            decay = None
+            try:
+                from spxa.laws.quantities import exponential_moment_strip
+
+                lo, hi = exponential_moment_strip(self)
+                rate = min(-lo, hi)
+                decay = float(rate) if np.isfinite(rate) and rate > 0 else None
+            except Exception:  # noqa: BLE001  (the window then rests on the variance)
+                decay = None
+            try:
+                incr = sample_from_cf(
+                    lambda u: self.char_func(u, dt),
+                    mean=k[1] * dt,
+                    std=float(np.sqrt(k[2] * dt)),
+                    size=(n_paths, n_steps),
+                    rng=rng,
+                    tail_decay=decay,
+                    max_points=2**18,
+                    fail_above=1e-4,
+                )
+            except CharacteristicFunctionNotDecayed:
+                incr = None  # atoms or a lattice: draw increment by increment
+        if incr is None:
+            incr = np.zeros(clock_incr.shape)
+            for idx in np.ndindex(clock_incr.shape):
+                v = float(clock_incr[idx])
+                if v > 0:
+                    incr[idx] = self._left.simulate(1, 1, v, rng)[0, 1]
+        return np.concatenate([np.zeros((n_paths, 1)), np.cumsum(incr, axis=1)], axis=1)
 
     def __repr__(self) -> str:
         return f"({self._left!r} {self._operation} {self._right!r})"

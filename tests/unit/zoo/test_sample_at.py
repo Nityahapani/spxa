@@ -81,3 +81,14 @@ def test_mixed_times_in_one_call() -> None:
     x = X.sample_at(times, np.random.default_rng(3))
     assert np.var(x[times == 1.0]) == pytest.approx(1.0, rel=0.03)
     assert np.var(x[times == 4.0]) == pytest.approx(4.0, rel=0.03)
+
+
+def test_default_sample_at_groups_equal_times() -> None:
+    """Families without a direct sampler fall back to one simulate call per distinct time."""
+    from spxa.zoo.levy import TemperedStable
+
+    X = TemperedStable(0.5, 1.0, 2.0)
+    assert not X._vector_sampler
+    x = X.sample_at(np.repeat([0.0, 0.5, 1.0], 20_000), np.random.default_rng(4))
+    assert np.all(x[:20_000] == 0.0)
+    assert np.mean(x[40_000:]) == pytest.approx(X.cumulants(1)[1], rel=0.03)
