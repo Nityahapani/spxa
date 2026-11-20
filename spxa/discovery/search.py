@@ -36,7 +36,7 @@ from spxa.discovery.families import DRIFT
 from spxa.discovery.fit import BinnedData, FitResult, fit_structure, initial_params, with_location
 from spxa.discovery.grammar import Grammar, canonical
 from spxa.discovery.io import ReturnSeries, load_returns
-from spxa.discovery.report import DiscoveryReport, _err
+from spxa.discovery.report import DiscoveryReport, _err, screen_degenerate
 
 Criterion = Literal["bic", "aic"]
 
@@ -117,6 +117,7 @@ def discover(
     extension_starts: int = 2,
     seed: int = 0,
     tolerance: float = 0.02,
+    exclude_degenerate: bool = False,
 ) -> DiscoveryReport:
     """Search for the compositions of primitives that best explain ``data``.
 
@@ -152,6 +153,11 @@ def discover(
     tolerance :
         Moment error (:attr:`~spxa.discovery.fit.FitResult.match_error`)
         within which a structure "matches" the data.
+    exclude_degenerate :
+        Move degenerate fits (:meth:`~spxa.discovery.fit.FitResult.degeneracies`)
+        out of the ranking into :attr:`DiscoveryReport.excluded`. By default
+        they stay in the ranking: the table marks them with ``!``, and a
+        warning appears when one of them leads.
     """
     summary = _as_summary(data, dt)
     grammar = grammar or Grammar()
@@ -242,11 +248,18 @@ def discover(
                 "summary statistics identify at most three shape parameters, so these are equally "
                 "valid explanations, ranked here by simplicity; a return sample would discriminate them"
             )
+    ranked, excluded, notes = screen_degenerate(
+        ranked,
+        exclude_degenerate,
+        None if method == "cumulants" else lambda r: float(rank_key(r)[0]),
+        criterion,
+    )
     return DiscoveryReport(
         candidates=ranked,
         summary=summary,
         criterion=criterion,
         method=method,
         tolerance=tolerance,
-        warnings=report_warnings,
+        warnings=report_warnings + notes,
+        excluded=excluded,
     )

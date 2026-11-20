@@ -75,7 +75,11 @@ def test_likelihood_report(small_report: DiscoveryReport) -> None:
     assert "matches your data within" in r.headline()
     assert "largest gap between model and empirical CDFs" in r.headline()
     lines = r.table(top=5).splitlines()
-    assert len(lines) == 6 and "ΔBIC" in lines[0]
+    assert "ΔBIC" in lines[0] and len(lines) == 6 + any(c.degenerate for c in r.candidates[:5])
+    # nested supersets of VG that collapse to it are flagged, not hidden
+    assert not r.best.degenerate
+    bm_vg = next(c for c in r.candidates if c.structure_key == "BM + VG + Drift")
+    assert bm_vg.degenerate and any("BM carries" in d for d in bm_vg.degeneracies())
     assert str(r).startswith(r.headline())
 
 
@@ -190,3 +194,15 @@ def test_discover_reads_files_and_return_series(tmp_path, vg_sample: np.ndarray)
     s = summarize(vg_sample, dt=DT)
     with pytest.raises(ValueError, match="conflicts"):
         discover(s, dt=1.0, grammar=g)
+
+
+def test_exclude_degenerate(vg_sample: np.ndarray) -> None:
+    g = grammar_from_names(["BM", "VG"], max_terms=2)
+    kept = discover(vg_sample, dt=1 / 52, grammar=g, n_starts=1, extension_starts=1)
+    screened = discover(
+        vg_sample, dt=1 / 52, grammar=g, n_starts=1, extension_starts=1, exclude_degenerate=True
+    )
+    assert not any(r.degenerate for r in screened.candidates)
+    assert all(r.degenerate for r in screened.excluded)
+    assert len(screened.candidates) + len(screened.excluded) == len(kept.candidates)
+    assert screened.best.structure_key == kept.admissible()[0].structure_key

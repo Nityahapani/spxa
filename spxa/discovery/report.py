@@ -30,7 +30,7 @@ weights
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 
@@ -48,6 +48,7 @@ class DiscoveryReport:
     method: str
     tolerance: float
     warnings: list[str] = field(default_factory=list)
+    excluded: list[FitResult] = field(default_factory=list)
 
     @property
     def best(self) -> FitResult:
@@ -107,8 +108,24 @@ class DiscoveryReport:
             text += f"; {self.criterion.upper()} lead over the runner-up {gap:.1f}"
         return text
 
+    def admissible(self) -> list[FitResult]:
+        """Candidates that are not :attr:`~spxa.discovery.fit.FitResult.degenerate`, in rank order."""
+        return [r for r in self.candidates if not r.degenerate]
+
     def table(self, top: int = 10, digits: int = 3) -> str:
-        """Plain-text ranking of the first ``top`` candidates."""
+        """Plain-text ranking of the first ``top`` candidates.
+
+        Rows marked ``!`` are degenerate fits (see
+        :meth:`~spxa.discovery.fit.FitResult.degeneracies`).
+        """
+        text = self._table(top, digits)
+        if any(r.degenerate for r in self.candidates[:top]):
+            text += (
+                "\n  ! degenerate fit: a limiting case of its structure (FitResult.degeneracies())"
+            )
+        return text
+
+    def _table(self, top: int, digits: int) -> str:
         rows = []
         if self.method == "options":
             w = self.weights()
@@ -119,7 +136,7 @@ class DiscoveryReport:
                 rows.append(
                     f"{i:>3}  {self.score(r) - best:8.2f}  {w[i - 1]:6.3f}  "
                     f"{100 * r.extras['iv_rmse']:7.2f}%  {100 * r.extras['iv_max_error']:6.2f}%  "
-                    f"{r.model.render(digits, weighted='subordinators')}"
+                    f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
             return "\n".join([header] + rows)
         if self.method == "cumulants":
@@ -127,7 +144,7 @@ class DiscoveryReport:
             for i, r in enumerate(self.candidates[:top], 1):
                 rows.append(
                     f"{i:>3}  {r.n_params:>6}  {100 * _err(r):9.2f}%  "
-                    f"{r.model.render(digits, weighted='subordinators')}"
+                    f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
         else:
             w = self.weights()
@@ -141,7 +158,7 @@ class DiscoveryReport:
                 rows.append(
                     f"{i:>3}  {self.score(r) - best:8.2f}  {w[i - 1]:6.3f}  {r.g_pvalue or 0:6.3f}  "
                     f"{100 * (r.ks_distance or 0):7.2f}%  {100 * _err(r):9.2f}%  "
-                    f"{r.model.render(digits, weighted='subordinators')}"
+                    f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
         return "\n".join([header] + rows)
 
@@ -150,6 +167,48 @@ class DiscoveryReport:
         if self.warnings:
             lines += [""] + [f"warning: {w}" for w in self.warnings]
         return "\n".join(lines)
+
+
+def _flag(r: FitResult) -> str:
+    return "! " if r.degenerate else ""
+
+
+def screen_degenerate(
+    ranked: list[FitResult],
+    exclude: bool,
+    score: Optional[Callable[[FitResult], float]] = None,
+    criterion: str = "bic",
+) -> tuple[list[FitResult], list[FitResult], list[str]]:
+    """Split ranked fits into kept and excluded degenerate ones, with report notes.
+
+    When ``exclude`` is false, nothing is removed. If the leading fit is
+    degenerate, a note names the reasons and the best admissible
+    alternative. When every fit is degenerate, all are kept.
+    """
+    bad = [r for r in ranked if r.degenerate]
+    good = [r for r in ranked if not r.degenerate]
+    notes: list[str] = []
+    if exclude and bad and good:
+        notes.append(
+            f"{len(bad)} degenerate fit{'s' if len(bad) > 1 else ''} excluded from the ranking "
+            "(see DiscoveryReport.excluded)"
+        )
+        return good, bad, notes
+    if bad and not good:
+        notes.append("every fitted structure is degenerate; the ranking shows them anyway")
+    elif ranked and ranked[0].degenerate:
+        alt = good[0]
+        gap = (
+            f" ({criterion.upper()} {score(alt) - score(ranked[0]):+.1f})"
+            if score is not None
+            else ""
+        )
+        notes.append(
+            f"the leading structure {ranked[0].structure_key} is a limiting case "
+            f"({'; '.join(ranked[0].degeneracies())}); the best non-degenerate structure is "
+            f"{alt.structure_key}{gap}"
+        )
+    return ranked, [], notes
 
 
 def _err(r: FitResult) -> float:

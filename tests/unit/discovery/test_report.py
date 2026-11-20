@@ -103,3 +103,38 @@ def test_option_reports() -> None:
     lines = rep.table().splitlines()
     assert "IV RMSE" in lines[0] and len(lines) == 3
     assert rep.weights()[0] > 0.99
+
+
+def test_degenerate_fits_are_marked_and_screened() -> None:
+    from spxa.discovery.families import NIG_FAMILY
+    from spxa.discovery.report import screen_degenerate
+
+    edge = Model(Leaf(NIG_FAMILY) + Leaf(DRIFT), [(8.97e5, 8.97e5 - 1.0, 0.01), (0.0,)])
+    fits = [_fit(edge, 110.0, 0.01), _fit(VG, 100.0, 0.02), _fit(BM, 50.0, 0.05)]
+    assert [f.degenerate for f in fits] == [True, False, False]
+
+    rep = DiscoveryReport(fits, SUMMARY, "bic", "likelihood", 0.02)
+    lines = rep.table().splitlines()
+    assert "! NIG(" in lines[1] and "! " not in lines[2]
+    assert lines[-1].strip().startswith("! degenerate fit")
+    assert [f.structure_key for f in rep.admissible()] == [
+        fits[1].structure_key,
+        fits[2].structure_key,
+    ]
+    assert (
+        "! degenerate" not in DiscoveryReport(fits[1:], SUMMARY, "bic", "likelihood", 0.02).table()
+    )
+
+    def score(r: FitResult) -> float:
+        assert r.bic is not None
+        return float(r.bic)
+
+    kept, out, notes = screen_degenerate(fits, False, score, "bic")
+    assert kept == fits and out == [] and len(notes) == 1
+    assert "is a limiting case (NIG.alpha at a boundary" in notes[0]
+    assert f"BIC {score(fits[1]) - score(fits[0]):+.1f}" in notes[0]
+    kept, out, notes = screen_degenerate(fits, True, score)
+    assert kept == fits[1:] and out == fits[:1] and "1 degenerate fit excluded" in notes[0]
+    kept, out, notes = screen_degenerate(fits[:1], True)
+    assert kept == fits[:1] and out == [] and "every fitted structure" in notes[0]
+    assert screen_degenerate(fits[1:], True) == (fits[1:], [], [])
