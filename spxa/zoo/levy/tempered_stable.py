@@ -45,6 +45,73 @@ from spxa.core.triplet import LevyTriplet
 from spxa.sim.cf_sampling import sample_from_cf
 from spxa.story.narrator import CompositionNode, NodeKind
 
+#: Above this many pieces per draw, simulation falls back to cf inversion,
+#: which is accurate at long horizons.
+_MAX_PIECES = 64
+
+
+def sample_positive_stable(alpha: float, scale: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    r"""
+    Draws of :math:`S` with :math:`E e^{-sS} = e^{-\text{scale}\cdot s^\alpha}`, :math:`0 < \alpha < 1`.
+
+    Kanter's representation (Kanter 1975; Zolotarev 1986, Thm 2.6.1): with
+    :math:`U \sim \mathrm{U}(0, \pi)` and :math:`E \sim \mathrm{Exp}(1)`,
+
+    .. math::
+        S_1 = \Big(\frac{A(U)}{E}\Big)^{(1-\alpha)/\alpha},\qquad
+        A(u) = \Big(\frac{\sin\alpha u}{\sin u}\Big)^{1/(1-\alpha)}
+               \frac{\sin((1-\alpha)u)}{\sin\alpha u},
+
+    and :math:`S = \text{scale}^{1/\alpha}S_1`.
+    """
+    scale = np.asarray(scale, dtype=float)
+    u = rng.uniform(0.0, np.pi, size=scale.shape)
+    e = rng.standard_exponential(size=scale.shape)
+    a = (np.sin(alpha * u) / np.sin(u)) ** (1.0 / (1.0 - alpha)) * (
+        np.sin((1.0 - alpha) * u) / np.sin(alpha * u)
+    )
+    return scale ** (1.0 / alpha) * (a / e) ** ((1.0 - alpha) / alpha)
+
+
+def sample_tempered_stable(
+    alpha: float, C: float, lam: float, times: np.ndarray, rng: np.random.Generator
+) -> np.ndarray:
+    r"""
+    Exact draws of the tempered stable subordinator at the given times.
+
+    Let :math:`c = -C\Gamma(-\alpha) > 0`. The untempered stable subordinator
+    at time :math:`t` has :math:`E e^{-sS_t} = e^{-tcs^\alpha}`. Tilting its
+    law by :math:`e^{-\lambda x}` gives :math:`X_t`, because
+
+    .. math::
+        \frac{E[e^{-sS_t}e^{-\lambda S_t}]}{E e^{-\lambda S_t}}
+        = e^{tc[\lambda^\alpha - (\lambda + s)^\alpha]} = E e^{-sX_t}.
+
+    So a draw of :math:`S_t` accepted with probability :math:`e^{-\lambda S_t}`
+    is exact. The acceptance rate is :math:`e^{-tc\lambda^\alpha}`, so
+    :math:`X_t` is drawn as a sum of :math:`m = \lceil tc\lambda^\alpha\rceil`
+    independent pieces over :math:`t/m`. Each piece is accepted with
+    probability at least :math:`e^{-1}` (Kawai & Masuda 2011, Baeumer &
+    Meerschaert 2010).
+    """
+    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+    t = np.asarray(times, dtype=float)
+    flat = t.ravel()
+    c = -C * float(gamma_fn(-alpha))
+    rate = c * lam**alpha
+    pieces = np.maximum(np.ceil(flat * rate), 1).astype(np.int64)
+    owner = np.repeat(np.arange(flat.size), pieces)
+    tau = (flat / pieces)[owner]
+    draws = np.zeros(tau.size)
+    pending = np.flatnonzero(tau > 0)
+    while pending.size:
+        s = sample_positive_stable(alpha, c * tau[pending], rng)
+        accept = rng.uniform(size=pending.size) <= np.exp(-lam * s)
+        draws[pending[accept]] = s[accept]
+        pending = pending[~accept]
+    return np.bincount(owner, weights=draws, minlength=flat.size).reshape(t.shape)
+
 
 def _ts_levy_measure(alpha: float, C: float, lam: float) -> DensityLevyMeasure:
     """
@@ -283,15 +350,15 @@ class TemperedStable(Process):
         T: float = 1.0,
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
-        """
-        Simulation by FFT inversion of the characteristic function.
+        r"""
+        Exact simulation by tilted stable rejection.
 
-        For each increment of length Δt, the distribution is
-        TemperedStable(α, C·Δt, λ): the intensity scales linearly with Δt.
-        The CDF is recovered from the characteristic function on a grid
-        covering the exponential tail, rate λ (see :mod:`spxa.sim.cf_sampling`),
-        then inverted at uniform variates. Accurate up to the grid
-        discretisation.
+        Each increment of length Δt is drawn exactly by
+        :func:`sample_tempered_stable`. When that needs more than 64 pieces
+        per increment (:math:`\Delta t\,c\lambda^\alpha > 64`, long steps), the
+        increment comes instead from FFT inversion of the characteristic
+        function (:mod:`spxa.sim.cf_sampling`). That inversion is accurate at
+        long horizons but cannot resolve the narrow bulk at short ones.
 
         Parameters
         ----------
@@ -305,11 +372,18 @@ class TemperedStable(Process):
 
         References
         ----------
-        Gil-Pelaez, J. (1951). Note on the inversion theorem.
-        *Biometrika*, 38, 481–482.
+        Kawai, R. & Masuda, H. (2011). On simulation of tempered stable
+        random variates. *J. Comput. Appl. Math.*, 235(8), 2873–2887.
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
+        if not self._needs_inversion(dt):
+            increments = sample_tempered_stable(
+                self.alpha, self.C, self.lam, np.full((n_paths, n_steps), dt), rng
+            )
+            paths = np.zeros((n_paths, n_steps + 1))
+            paths[:, 1:] = np.cumsum(increments, axis=1)
+            return paths
         k = self.cumulants(2)
         increments = sample_from_cf(
             lambda u: self.char_func(u, dt),
@@ -323,6 +397,28 @@ class TemperedStable(Process):
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths
+
+    def _needs_inversion(self, t: float) -> bool:
+        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+        return bool(t * -self.C * float(gamma_fn(-self.alpha)) * self.lam**self.alpha > _MAX_PIECES)
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent exact draws of X_t, one for each entry of ``times``."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        if np.any(t < 0):
+            raise ValueError("times must be non-negative")
+        long = np.vectorize(self._needs_inversion, otypes=[bool])(t) if t.size else t.astype(bool)
+        out = np.zeros(t.shape)
+        if (~long).any():
+            out[~long] = sample_tempered_stable(self.alpha, self.C, self.lam, t[~long], rng)
+        for v in np.unique(t[long]):
+            mask = t == v
+            out[mask] = self.simulate(1, int(mask.sum()), float(v), rng)[:, 1]
+        return out
 
     def __repr__(self) -> str:
         return f"TemperedStable(alpha={self.alpha}, C={self.C}, lam={self.lam})"
