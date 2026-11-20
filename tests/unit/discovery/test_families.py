@@ -15,6 +15,9 @@ MEMBERS = {
     "BM": (0.25,),
     "Gamma": (2.5, 4.0),
     "IG": (0.8, 1.7),
+    "VG": (0.2, 0.35, -0.15),
+    "NIG": (6.0, -2.0, 0.3),
+    "Meixner": (0.4, -0.7, 1.3),
 }
 
 
@@ -44,7 +47,7 @@ def test_closed_form_cumulants_match_the_cumulant_exponent(name: str) -> None:
     assert np.all(np.abs(exact - numeric) <= 1e-8 * scale + 1e-12), (exact, numeric)
 
 
-ZOO_ORDER = {"VG": 4}
+ZOO_ORDER = {"Meixner": 6, "VG": 4}
 
 
 @pytest.mark.parametrize("name", sorted(MEMBERS))
@@ -100,7 +103,7 @@ def test_typical_member_has_the_requested_spread(name: str) -> None:
             assert np.sqrt(k[1]) == pytest.approx(s, rel=1e-9)
 
 
-@pytest.mark.parametrize("name", ["Gamma", "IG"])
+@pytest.mark.parametrize("name", ["Gamma", "IG", "VG", "NIG", "Meixner"])
 def test_strip_edges(name: str) -> None:
     fam = get_family(name)
     p = MEMBERS[name]
@@ -118,9 +121,25 @@ def test_subordinator_flags_and_domains() -> None:
     assert subs == {"Gamma", "IG"}
     for name, bad in [
         ("BM", (-1.0,)),
+        ("NIG", (1.0, 1.0, 1.0)),
+        ("Meixner", (1.0, 3.2, 1.0)),
+        ("VG", (0.1, 0.2)),
     ]:
         with pytest.raises(ValueError):
             get_family(name).cumulants(bad, 2)
     with pytest.raises(KeyError):
         get_family("Heston")
-    assert get_family("Gamma").format(MEMBERS["Gamma"], digits=3) == "GammaProcess(a=2.5, b=4)"
+    assert (
+        get_family("VG").format(MEMBERS["VG"], digits=3)
+        == "VarianceGamma(sigma=0.2, nu=0.35, theta=-0.15)"
+    )
+
+
+def test_variance_gamma_is_a_difference_of_gammas() -> None:
+    # VG(σ, ν, θ) = Γ(1/ν, M) - Γ(1/ν, G) in law
+    p = MEMBERS["VG"]
+    vg, gam = get_family("VG"), get_family("Gamma")
+    lo, hi = vg.strip(p)
+    up = gam.cumulants((1 / p[1], hi), 7)
+    down = gam.cumulants((1 / p[1], -lo), 7) * (-1.0) ** np.arange(1, 8)
+    np.testing.assert_allclose(vg.cumulants(p, 7), up + down, rtol=1e-12)
