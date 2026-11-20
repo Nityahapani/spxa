@@ -157,6 +157,6 @@ The tests simulate exact increments and check:
 - Madan, D., Carr, P. & Chang, E. (1998). The variance gamma process and option pricing. *European Finance Review* 2.
 - Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. *J. Financial Economics* 3.
 - Sato, K. (1999). *Lévy Processes and Infinitely Divisible Distributions*. Cambridge.
-- Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Comm. Statist. Stochastic Models* 14.
+- Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Communications in Statistics. Stochastic Models* 14(1–2), 335–349.
 - Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. *Econometrica* 57.
 - White, H. (1982). Maximum likelihood estimation of misspecified models. *Econometrica* 50.
