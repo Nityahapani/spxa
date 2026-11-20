@@ -14,6 +14,9 @@ module-level tuple:
   forms against its Lévy–Khintchine triplet and measure.
 - :mod:`~spxa.laws.library.cumulants` (``CUMULANTS``): cumulants
   recovered from the characteristic function; convexity of the CGF.
+- :mod:`~spxa.laws.library.properties` (``PROPERTIES``): property flags
+  (martingale, subordinator, moments, self-similarity) against the
+  quantities they claim, and their closure under the operators.
 """
 
 from __future__ import annotations
@@ -21,7 +24,8 @@ from __future__ import annotations
 from spxa.laws.library.algebra import ALGEBRA
 from spxa.laws.library.axioms import AXIOMS
 from spxa.laws.library.cumulants import CUMULANTS
+from spxa.laws.library.properties import PROPERTIES
 from spxa.laws.library.subordination import SUBORDINATION
 from spxa.laws.library.triplet import TRIPLET
 
-__all__ = ["ALGEBRA", "AXIOMS", "CUMULANTS", "SUBORDINATION", "TRIPLET"]
+__all__ = ["ALGEBRA", "AXIOMS", "CUMULANTS", "PROPERTIES", "SUBORDINATION", "TRIPLET"]
