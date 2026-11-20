@@ -118,7 +118,7 @@ class Grammar:
         return out + list(self.subordinated)
 
     def structures(self, max_terms: int | None = None) -> Iterator[Node]:
-        """Every admissible sum of 1..max_terms atoms, each multiset once."""
+        """Every admissible sum of 1..max_terms atoms, each multiset once, in canonical form."""
         atoms = self.atoms()
         top = self.max_terms if max_terms is None else max_terms
         for k in range(1, top + 1):
@@ -126,7 +126,7 @@ class Grammar:
                 if len(set(combo)) < len(combo):
                     continue  # repeated atom: not identifiable
                 nodes = [atoms[i] for i in combo]
-                yield nodes[0] if k == 1 else Sum(nodes)
+                yield nodes[0] if k == 1 else canonical(Sum(nodes))
 
     def extensions(self, structure: Node) -> Iterator[Node]:
         """Structures with one more atom than ``structure`` (for beam search)."""

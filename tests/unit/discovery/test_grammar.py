@@ -67,3 +67,11 @@ def test_parsing_and_validation() -> None:
     g = grammar_from_names(["BM", "Gamma"], subordinated=True)
     assert g.return_families == (BROWNIAN,) and g.subordinator_families == (GAMMA,)
     assert len(g.subordinated) == len(default_subordinated_atoms())
+
+
+def test_structures_are_canonical() -> None:
+    g = grammar_from_names(["BM", "VG", "Gamma"], max_terms=3)
+    for s in g.structures():
+        assert s.key() == canonical(s).key()
+    keys = {s.key() for s in g.structures(max_terms=2)}
+    assert "VG + -Gamma" in keys and "-Gamma + VG" not in keys
