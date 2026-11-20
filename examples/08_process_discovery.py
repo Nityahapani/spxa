@@ -2,7 +2,7 @@
 Example 08: Process discovery, from returns or option prices to a composition.
 
 Demonstrates:
-1. Writing a CSV of weekly returns drawn from VG + 0.5 * Gamma, then
+1. Writing a CSV of weekly returns drawn from VG + 0.3 * Gamma, then
    recovering a composition from the file alone with ``discover``.
 2. Reading the report: the headline sentence, the ranked table with
    BIC weights, goodness-of-fit p-values and CDF gaps, and the flags for
@@ -50,8 +50,16 @@ DT = 1 / 52
 
 
 def simulate_returns(n: int, seed: int = 11) -> np.ndarray:
-    """Weekly increments of VG(0.2, 0.25, -0.3) + 0.5 * Gamma(1, 2)."""
-    truth = VarianceGamma(sigma=0.2, nu=0.25, theta=-0.3) + 0.5 * GammaProcess(a=1.0, b=2.0)
+    """Weekly increments of VG(0.2, 0.25, -0.3) + 0.3 * Gamma(20, 20).
+
+    The Gamma part is high-activity (a = 20 per year), so it shapes the body
+    of the distribution and the binned likelihood can see it. A low-activity
+    Gamma, such as a = 1, acts mostly through a few large jumps in the
+    merged tail bins. The search then usually prefers plain VG on a few
+    thousand returns: the data do not have enough information, and the
+    bootstrap frequencies show it.
+    """
+    truth = VarianceGamma(sigma=0.2, nu=0.25, theta=-0.3) + 0.3 * GammaProcess(a=20.0, b=20.0)
     path = truth.simulate(n_steps=n, n_paths=1, T=n * DT, rng=np.random.default_rng(seed))
     return np.diff(np.asarray(path).reshape(-1))
 
@@ -71,7 +79,7 @@ def main(quick: bool = False) -> None:
         csv_path = Path(tmp) / "returns.csv"
         csv_path.write_text("return\n" + "\n".join(f"{v:.17g}" for v in x) + "\n")
         report = discover(str(csv_path), dt=DT, grammar=grammar, n_starts=2)
-    print("truth: VarianceGamma(sigma=0.2, nu=0.25, theta=-0.3) + 0.5 * GammaProcess(a=1, b=2)")
+    print("truth: VarianceGamma(sigma=0.2, nu=0.25, theta=-0.3) + 0.3 * GammaProcess(a=20, b=20)")
     print(report)
 
     section("2. Uncertainty for the winner and a Vuong test against the runner-up")
