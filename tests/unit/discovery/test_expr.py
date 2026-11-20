@@ -118,8 +118,19 @@ def test_rendering() -> None:
         "VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1) - GammaProcess(a=2, b=4) + Drift(mu=0.01)"
     )
     assert m.render(3, weighted=True) == (
-        "0.2 * VarianceGamma(sigma=1, nu=0.3, theta=-0.5) - (0.25 * GammaProcess(a=2, b=1)) + Drift(mu=0.01)"
+        "0.2 * VarianceGamma(sigma=1, nu=0.3, theta=-0.5) - 0.25 * GammaProcess(a=2, b=1) + Drift(mu=0.01)"
     )
+    assert m.render(3, weighted="subordinators") == (
+        "VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1) - 0.25 * GammaProcess(a=2, b=1) + Drift(mu=0.01)"
+    )
+    # a structural scale folds into the weight; unscaled leaves are unchanged
+    half = Model(leaf(BROWNIAN) + 0.5 * leaf(GAMMA), [(0.2,), (2.0, 4.0)])
+    assert half.render(3) == "BrownianMotion(sigma=0.2) + 0.5 * GammaProcess(a=2, b=4)"
+    assert half.render(3, weighted="subordinators") == (
+        "BrownianMotion(sigma=0.2) + 0.125 * GammaProcess(a=2, b=1)"
+    )
+    unit = Model(-leaf(GAMMA), [(2.0, 1.0)])
+    assert unit.render(3, weighted=True) == "-GammaProcess(a=2, b=1)"
     sub = Model(leaf(BROWNIAN) @ leaf(GAMMA), [(0.3,), (2.0, 2.0)])
     assert str(sub) == "(BrownianMotion(sigma=0.3)) @ (GammaProcess(a=2, b=2))"
     assert repr(sub).startswith("Model((BrownianMotion")

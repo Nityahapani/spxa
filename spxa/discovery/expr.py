@@ -20,7 +20,7 @@ with the ordinary operators ``+``, ``*`` and ``@``.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Literal, Sequence, Union
 
 import numpy as np
 from scipy.optimize import brentq
@@ -28,6 +28,8 @@ from scipy.optimize import brentq
 from spxa.core.process import Process
 from spxa.discovery.families import Family
 from spxa.discovery.series import CGFSeries
+
+Weighting = Union[bool, Literal["subordinators"]]
 
 ParamList = tuple[tuple[float, ...], ...]
 
@@ -60,7 +62,7 @@ class Node(ABC):
     def _process(self, params: list[tuple[float, ...]]) -> Process: ...
 
     @abstractmethod
-    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: bool) -> str: ...
+    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: Weighting) -> str: ...
 
     @property
     def n_params(self) -> int:
@@ -123,13 +125,31 @@ class Leaf(Node):
     def _process(self, params: list[tuple[float, ...]]) -> Process:
         return self.family.to_process(params.pop(0))
 
-    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: bool) -> str:
+    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: Weighting) -> str:
+        return self._render_scaled(params, digits, weighted, 1.0)
+
+    def _weights(self, weighted: Weighting) -> bool:
+        if self.family.name == "Drift" or not weighted:
+            return False
+        return weighted is True or self.family.is_subordinator
+
+    def _render_scaled(
+        self, params: list[tuple[float, ...]], digits: int, weighted: Weighting, factor: float
+    ) -> str:
+        """Render ``factor * leaf``, folding the factor into the weight when weighting."""
         p = params.pop(0)
-        if weighted and self.family.name not in ("Drift",):
+        if self._weights(weighted):
             c, unit = self.family.unit_scale(p)
+            c *= factor
             if not np.isclose(c, 1.0, rtol=10.0 ** (-digits)):
+                if np.isclose(c, -1.0, rtol=10.0 ** (-digits)):
+                    return f"-{self.family.format(unit, digits)}"
                 return f"{c:.{digits}g} * {self.family.format(unit, digits)}"
-        return self.family.format(p, digits)
+            return self.family.format(unit, digits)
+        text = self.family.format(p, digits)
+        if factor == 1.0:
+            return text
+        return f"-{text}" if factor == -1.0 else f"{factor:.{digits}g} * {text}"
 
 
 class Scale(Node):
@@ -168,10 +188,10 @@ class Scale(Node):
         proc = self.child._process(params)
         return -proc if self.c == -1.0 else self.c * proc
 
-    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: bool) -> str:
-        inner = self.child._render(params, digits, weighted)
-        if not isinstance(self.child, Leaf) or " * " in inner:
-            inner = f"({inner})"
+    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: Weighting) -> str:
+        if isinstance(self.child, Leaf):
+            return self.child._render_scaled(params, digits, weighted, self.c)
+        inner = f"({self.child._render(params, digits, weighted)})"
         return f"-{inner}" if self.c == -1.0 else f"{self.c:.{digits}g} * {inner}"
 
 
@@ -212,7 +232,7 @@ class Sum(Node):
             total = total + child._process(params)
         return total
 
-    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: bool) -> str:
+    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: Weighting) -> str:
         parts = [child._render(params, digits, weighted) for child in self.children]
         out = parts[0]
         for part in parts[1:]:
@@ -282,7 +302,7 @@ class Subordinate(Node):
         clock = self.clock._process(params)
         return base @ clock
 
-    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: bool) -> str:
+    def _render(self, params: list[tuple[float, ...]], digits: int, weighted: Weighting) -> str:
         base = self.base._render(params, digits, weighted)
         clock = self.clock._render(params, digits, weighted)
         return f"({base}) @ ({clock})"
@@ -371,12 +391,16 @@ class Model:
         """The equivalent spxa process, built with ``+``, ``*`` and ``@``."""
         return self.structure._process(list(self.params))
 
-    def render(self, digits: int = 4, weighted: bool = False) -> str:
+    def render(self, digits: int = 4, weighted: Weighting = False) -> str:
         """Human-readable expression.
 
         With ``weighted=True`` every non-drift primitive ``P`` is written as
         ``c * P_unit``, a multiple of the family's unit-scale member (for example
-        ``0.3 * GammaProcess(a=2, b=1)``).
+        ``0.3 * GammaProcess(a=2, b=1)``). A structural scale on a leaf is folded
+        into that weight. ``weighted="subordinators"`` weights only the
+        subordinator families (Gamma, inverse Gaussian) and leaves the
+        return families in their natural parameters, giving output such as
+        ``VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1) + 0.04 * GammaProcess(a=4, b=1)``.
         """
         return self.structure._render(list(self.params), digits, weighted)
 
