@@ -169,22 +169,24 @@ class TestSubordination:
         assert abs(complex(cf) - 1.0) == pytest.approx(0.0, abs=1e-6)
 
     def test_char_exp_subordinated_matches_vg(self) -> None:
-        """BM@Gamma char func magnitude matches VG closed-form (loose tolerance for numerical method)."""
-        sigma, nu, theta = 0.2, 0.5, 0.0
+        """BM(θ, σ) @ Gamma(1/ν, 1/ν) is VG(σ, ν, θ), as a complex value, at any u."""
+        sigma, nu, theta = 0.2, 0.5, -0.3
         bm = BrownianMotion(mu=theta, sigma=sigma)
         g = GammaProcess(a=1.0 / nu, b=1.0 / nu)
         vg = VarianceGamma(sigma=sigma, nu=nu, theta=theta)
-
-        # Test at small u where numerical char_exp via log-composition is stable
-        u_vals = np.array([0.2, 0.5, 1.0])
-        cf_sub = char_exp_subordinated(bm, g, u=u_vals, t=1.0)
-        cf_vg = vg.char_func_exact(u=u_vals, t=1.0)
-
+        u_vals = np.array([0.2, 0.5, 1.0, 15.0, 40.0])
+        cf_sub = char_exp_subordinated(bm, g, u=u_vals, t=1.7)
         np.testing.assert_allclose(
-            np.abs(cf_sub),
-            np.abs(cf_vg),
-            rtol=0.15,
-            err_msg="BM@Gamma char func should approximately match VG",
+            cf_sub, vg.char_func_exact(u=u_vals, t=1.7), rtol=1e-7, atol=1e-10
+        )
+
+    def test_char_exp_subordinated_beyond_the_principal_branch(self) -> None:
+        """|Im ψ_X(u)| = 20 > π: a log of φ_X would land on the wrong branch."""
+        bm, g = BrownianMotion(mu=2.0, sigma=0.1), GammaProcess(a=2.0, b=2.0)
+        u = np.array([1.0, 10.0])
+        psi = 1j * 2.0 * u - 0.5 * 0.01 * u**2
+        np.testing.assert_allclose(
+            char_exp_subordinated(bm, g, u=u), (1 - psi / 2.0) ** (-2.0), rtol=1e-6
         )
 
 
