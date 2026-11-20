@@ -436,14 +436,19 @@ class KouJumpDiffusion(Process):
     def simulate(
         self,
         n_steps: int = 100,
+        n_paths: int = 1,
+        T: Optional[float] = None,
+        rng: Optional[np.random.Generator] = None,
+        *,
         dt: Optional[float] = None,
         time_horizon: Optional[float] = None,
-        n_paths: int = 1,
-        rng: Optional[np.random.Generator] = None,
-        T: Optional[float] = None,
     ) -> np.ndarray:
         r"""
         Simulate exact sample paths of the Kou jump-diffusion process.
+
+        The positional order ``(n_steps, n_paths, T, rng)`` is the one shared by
+        every :class:`~spxa.core.process.Process`, so sums and time changes can
+        call it. ``dt`` and ``time_horizon`` are keyword-only alternatives.
         """
         horizon = T if T is not None else time_horizon
         return sample_kou(

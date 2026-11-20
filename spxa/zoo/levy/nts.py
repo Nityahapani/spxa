@@ -266,15 +266,28 @@ class NormalTemperedStableProcess(Process):
 
     def simulate(
         self,
-        t_grid: Optional[np.ndarray] = None,
+        n_steps: Optional[int | np.ndarray] = None,
         n_paths: int = 1,
-        rng: Optional[np.random.Generator] = None,
-        n_steps: Optional[int] = None,
         T: float = 1.0,
+        rng: Optional[np.random.Generator] = None,
+        *,
+        t_grid: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         r"""
-        Vectorized simulation of NTS paths via subordinator discretization.
+        Simulate NTS paths: :math:`X = \theta\,\Delta T + \sigma\sqrt{\Delta T}\,Z` per step.
+
+        The subordinator increments :math:`\Delta T` are drawn from
+        TemperedStable(α, δΔt, λ), the law of the NTS clock, by cf inversion
+        (:mod:`spxa.sim.cf_sampling`). Previously they came from a Gamma
+        matched only to the first two moments.
+
+        The positional order ``(n_steps, n_paths, T, rng)`` is the one shared by
+        every :class:`~spxa.core.process.Process`. Pass a time grid as
+        ``t_grid=``. For backward compatibility, an array in first position is
+        also read as a grid.
         """
+        if isinstance(n_steps, np.ndarray) and t_grid is None:
+            t_grid, n_steps = n_steps, None
         if t_grid is None:
             steps = n_steps if n_steps is not None else 100
             t_grid = np.linspace(0.0, T, steps + 1)
@@ -291,18 +304,16 @@ class NormalTemperedStableProcess(Process):
         n_steps = len(t_grid)
         paths = np.zeros((n_paths, n_steps), dtype=np.float64)
 
-        mean_dt_sub = self.subordinator_cumulant(1)
-        var_dt_sub = self.subordinator_cumulant(2)
+        from spxa.zoo.levy.tempered_stable import TemperedStable
+
+        clock = TemperedStable(self.alpha, self.delta, self.lambd)
 
         for i in range(1, n_steps):
             dt = t_grid[i] - t_grid[i - 1]
             if dt <= 0:
                 raise ValueError("t_grid must be strictly increasing")
 
-            # Gamma moment-matched subordinator increments
-            shape = ((mean_dt_sub * dt) ** 2) / (var_dt_sub * dt)
-            scale = (var_dt_sub * dt) / (mean_dt_sub * dt)
-            delta_T = rng.gamma(shape=shape, scale=scale, size=n_paths)
+            delta_T = clock.simulate(1, n_paths, T=float(dt), rng=rng)[:, 1]
 
             # Normal draw given delta_T
             z = rng.standard_normal(size=n_paths)
