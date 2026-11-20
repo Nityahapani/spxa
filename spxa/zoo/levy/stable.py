@@ -321,6 +321,20 @@ class AlphaStable(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: t^(1/alpha)*S + mu*t (alpha != 1) or t*S + (2/pi)*beta*sigma*t*log(t) + mu*t (alpha = 1), S the mu = 0 law at time 1."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        flat = t.ravel()
+        base = AlphaStable(self.alpha, self.beta, self.sigma, 0.0)
+        s = base.simulate(1, max(flat.size, 1), 1.0, rng)[: flat.size, 1].reshape(t.shape)
+        if abs(self.alpha - 1.0) > 1e-12:
+            return t ** (1.0 / self.alpha) * s + self.mu * t
+        logt = np.where(t > 0, np.log(np.where(t > 0, t, 1.0)), 0.0)
+        return t * s + (2.0 / np.pi) * self.beta * self.sigma * t * logt + self.mu * t
+
     def simulate(
         self,
         n_steps: int,

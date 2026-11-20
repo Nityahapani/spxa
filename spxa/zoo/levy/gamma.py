@@ -200,6 +200,17 @@ class GammaProcess(Process):
         u = np.asarray(u, dtype=complex)
         return -self.a * np.log(1.0 - 1j * u / self.b)
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: Gamma(shape a*t, rate b)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        out = np.zeros(t.shape)
+        pos = t > 0
+        out[pos] = rng.gamma(self.a * t[pos], 1.0 / self.b)
+        return out
+
     def simulate(
         self,
         n_steps: int,

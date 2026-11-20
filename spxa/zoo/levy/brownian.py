@@ -118,6 +118,14 @@ class BrownianMotion(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: mu*t + sigma*sqrt(t)*Z."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        return self.mu * t + self.sigma * np.sqrt(t) * rng.standard_normal(t.shape)
+
     def simulate(
         self,
         n_steps: int,

@@ -253,6 +253,17 @@ class NIG(Process):
             self._gamma - np.sqrt(self.alpha**2 - (self.beta + 1j * u) ** 2)
         )
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: mu*t + beta*S + sqrt(S)*Z with S ~ IG(mean delta*t/gamma, shape (delta*t)^2)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        s = np.zeros(t.shape)
+        pos = t > 0
+        s[pos] = rng.wald(self.delta * t[pos] / self._gamma, (self.delta * t[pos]) ** 2)
+        return self.mu * t + self.beta * s + np.sqrt(s) * rng.standard_normal(t.shape)
+
     def simulate(
         self,
         n_steps: int,

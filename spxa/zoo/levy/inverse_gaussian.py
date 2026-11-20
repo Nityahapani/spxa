@@ -252,6 +252,17 @@ class InverseGaussianProcess(Process):
         u = np.asarray(u, dtype=complex)
         return (self.lam / self.mu) * (1.0 - np.sqrt(1.0 - 2j * self.mu**2 * u / self.lam))
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: IG(mean mu*t, shape lam*t^2)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        out = np.zeros(t.shape)
+        pos = t > 0
+        out[pos] = rng.wald(self.mu * t[pos], self.lam * t[pos] ** 2)
+        return out
+
     def simulate(
         self,
         n_steps: int,

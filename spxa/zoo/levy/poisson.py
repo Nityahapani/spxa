@@ -139,6 +139,14 @@ class PoissonProcess(Process):
         """κ_n(X_t) = λ·c^n for all n ≥ 1. All cumulants of a Poisson distribution are equal to the mean."""
         return {n: self.rate * (self.jump_size**n) for n in range(1, order + 1)}
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: jump_size * Poisson(rate*t)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        return self.jump_size * rng.poisson(self.rate * t).astype(float)
+
     def simulate(
         self,
         n_steps: int,

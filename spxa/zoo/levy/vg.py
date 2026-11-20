@@ -243,6 +243,17 @@ class VarianceGamma(Process):
         base = 1.0 - 1j * u * self.theta * self.nu + 0.5 * self.sigma**2 * self.nu * u**2
         return -np.log(base) / self.nu
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: theta*G + sigma*sqrt(G)*Z with G ~ Gamma(t/nu, scale nu)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        g = np.zeros(t.shape)
+        pos = t > 0
+        g[pos] = rng.gamma(t[pos] / self.nu, self.nu)
+        return self.theta * g + self.sigma * np.sqrt(g) * rng.standard_normal(t.shape)
+
     def simulate(
         self,
         n_steps: int,

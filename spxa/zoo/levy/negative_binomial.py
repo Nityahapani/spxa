@@ -283,6 +283,18 @@ class NegativeBinomialProcess(Process):
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: NegBin(r*t, p), mean r t p/(1-p)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        out = np.zeros(t.shape)
+        pos = t > 0
+        # numpy counts failures with success probability p_np; mean r t p / (1 - p) needs p_np = 1 - p
+        out[pos] = rng.negative_binomial(self.r * t[pos], 1.0 - self.p)
+        return out
+
     def simulate(
         self,
         n_steps: int,

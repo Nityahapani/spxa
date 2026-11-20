@@ -91,6 +91,14 @@ class Drift(Process):
         result = self.mu * lam_arr
         return result if result.shape != (1,) else result[0]
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: mu*t."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        return self.mu * t
+
     def simulate(
         self,
         n_steps: int,

@@ -41,7 +41,7 @@ from __future__ import annotations
 import abc
 import math
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Callable, Optional
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -497,6 +497,17 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
         return True
 
 
+def _compound_sums(counts: np.ndarray, draw: Callable[[int], np.ndarray]) -> np.ndarray:
+    """Sum ``counts[k]`` jumps for each k, drawing all jumps in one call."""
+    counts = np.asarray(counts, dtype=np.int64)
+    total = int(counts.sum())
+    if total == 0:
+        return np.zeros(counts.shape)
+    owner = np.repeat(np.arange(counts.size), counts.ravel())
+    sums = np.bincount(owner, weights=draw(total), minlength=counts.size)
+    return sums.reshape(counts.shape)
+
+
 class CompoundPoisson(Process):
     r"""
     Compound Poisson process with arrival rate λ and jump distribution F_Y.
@@ -645,6 +656,17 @@ class CompoundPoisson(Process):
     def cumulants(self, order: int) -> dict[int, float]:
         """Return exact cumulants κ_1, ..., κ_{order} for X_1."""
         return {n: self.cumulant_exact(n, t=1.0) for n in range(1, order + 1)}
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: a Poisson(rate*t) number of jumps from jump_dist."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        counts = rng.poisson(self.rate * t)
+        return _compound_sums(
+            counts, lambda n: np.asarray(self.jump_dist.sample(rng, n), dtype=float)
+        )
 
     def simulate(
         self,
