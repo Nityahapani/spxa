@@ -63,6 +63,9 @@ Most of these were found by the law library while it was being written.
   - The GH exponent wrapped by $2\pi$, which flipped the sign of $\varphi(u, t)$ at non-integer $t$.
   - The Meixner cf collapsed to 0 past the overflow of $\cosh$.
   - The Meixner fourth and higher cumulants.
+  - Cumulants of `X + Y` and `c * X` come from the parts' cumulants instead of the summed triplet's
+    quadrature, so means that cancel give exactly $\kappa_1 = 0$.
+  - Poisson and compound Poisson Laplace exponents overflow to $+\infty$ instead of NaN.
 - **Property flags.**
   - Self-similarity is flagged only for strictly self-similar processes.
   - Martingales on integrable clocks, and sums whose means cancel, are now flagged as martingales.
