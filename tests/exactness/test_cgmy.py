@@ -121,15 +121,18 @@ def test_cgmy_finite_variance_when_y_lt_2() -> None:
 
 
 @pytest.mark.exactness
-def test_cgmy_cumulant_singular_cases_raise() -> None:
+def test_cgmy_cumulant_singular_cases() -> None:
     """
-    The closed form κ_n = C Γ(n-Y)(M^{Y-n} + (-1)^n G^{Y-n}) is singular when
-    n - Y is a non-positive integer (Y = 1, n = 1), and moments of order
-    n ≥ Y are infinite without exponential tempering (G = 0 or M = 0).
+    The closed form κ_n = C Γ(n-Y)(M^{Y-n} + (-1)^n G^{Y-n}) is singular at
+    Y = 1, n = 1, but the mean exists, because exponential tempering makes
+    every moment finite. It is the limit C log(G/M), which is 0 for G = M.
+    Moments of order n ≥ Y are infinite without tempering (G = 0 or M = 0).
     Carr et al. (2002), equation (2).
     """
-    with pytest.raises(ValueError, match="does not exist"):
-        CGMY(C=1.0, G=5.0, M=5.0, Y=1.0).cumulant_exact(1)
+    assert CGMY(C=1.0, G=5.0, M=5.0, Y=1.0).cumulant_exact(1) == 0.0
+    assert CGMY(C=2.0, G=5.0, M=8.0, Y=1.0).cumulant_exact(1) == pytest.approx(
+        2.0 * np.log(5.0 / 8.0), rel=1e-14
+    )
     with pytest.raises(ValueError, match="does not exist"):
         CGMY(C=1.0, G=0.0, M=5.0, Y=0.5).cumulant_exact(1)
 

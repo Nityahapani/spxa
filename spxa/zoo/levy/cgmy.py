@@ -6,7 +6,10 @@ compound Poisson (Y < 0), and α-stable (C+=C-, G=M=0) as special cases.
 Controls tail heaviness, jump activity, and asymmetry independently.
 
 Lévy density (Carr et al. 2002, equation 1):
-  k(x) = C · exp(-G·x)/x^{1+Y} 𝟙_{x>0} + C · exp(-M·|x|)/|x|^{1+Y} 𝟙_{x<0}
+  k(x) = C · exp(-M·x)/x^{1+Y} 𝟙_{x>0} + C · exp(-G·|x|)/|x|^{1+Y} 𝟙_{x<0}
+
+(M tempers upward jumps and G downward ones, as in the code and the
+characteristic exponent below.)
 
 Parameter constraints:
   C > 0, G ≥ 0, M ≥ 0, Y < 2.
@@ -75,7 +78,7 @@ def _cgmy_levy_measure(C: float, G: float, M: float, Y: float) -> DensityLevyMea
         return result
 
     def moment_1() -> float:
-        return C * gamma_fn(1 - Y) * (M ** (Y - 1) - G ** (Y - 1))
+        return _cgmy_kappa1(C, G, M, Y)
 
     def moment_2() -> float:
         return C * gamma_fn(2 - Y) * (M ** (Y - 2) + G ** (Y - 2))
@@ -101,20 +104,60 @@ def _cgmy_levy_measure(C: float, G: float, M: float, Y: float) -> DensityLevyMea
     )
 
 
+#: Within this distance of Y = 0 or Y = 1 the limits are used. Near the
+#: poles of Γ(-Y) the closed form cancels catastrophically: the relative
+#: error is about 1e-16/|Y - k|, and the limit is off by O(|Y - k|).
+_POLE_WIDTH = 1e-8
+
+
 def _cgmy_exponent(C: float, G: float, M: float, Y: float, u: np.ndarray) -> np.ndarray:
     r"""
     :math:`\Phi(u) = C\Gamma(-Y)\big((M-iu)^Y - M^Y + (G+iu)^Y - G^Y\big)`.
 
     Carr et al. (2002), eq. (5); :math:`\varphi_t(u) = e^{t\Phi(u)}`. It
     extends analytically to :math:`u = -iz` with :math:`-G < z < M`.
+
+    At :math:`Y = k \in \{0, 1\}`, :math:`\Gamma(-Y)` has a pole with residue
+    :math:`(-1)^k/k!` and the bracket vanishes. The limit is
+    :math:`-C\frac{(-1)^k}{k!}\,\partial_Y[\cdot]_{Y=k}`:
+
+    .. math::
+        \Phi_{Y=0}(u) = -C\big(\log(1 - iu/M) + \log(1 + iu/G)\big)
+
+        \Phi_{Y=1}(u) = C\big((M-iu)\log(M-iu) - M\log M
+            + (G+iu)\log(G+iu) - G\log G\big)
+
+    :math:`Y = 0` is the variance gamma case.
     """
     from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
 
     u = np.asarray(u, dtype=complex)
+    if abs(Y) < _POLE_WIDTH:
+        return np.asarray(-C * (np.log(1 - 1j * u / M) + np.log(1 + 1j * u / G)), dtype=complex)
+    if abs(Y - 1) < _POLE_WIDTH:
+        a, b = M - 1j * u, G + 1j * u
+        return np.asarray(
+            C * (a * np.log(a) - M * np.log(M) + b * np.log(b) - G * np.log(G)), dtype=complex
+        )
     return np.asarray(
         C * float(gamma_fn(-Y)) * ((M - 1j * u) ** Y - M**Y + (G + 1j * u) ** Y - G**Y),
         dtype=complex,
     )
+
+
+def _cgmy_kappa1(C: float, G: float, M: float, Y: float) -> float:
+    r"""
+    :math:`\kappa_1 = C\Gamma(1-Y)(M^{Y-1} - G^{Y-1})`, or :math:`C\log(G/M)` at :math:`Y = 1`.
+
+    At :math:`Y = 1` the pole of :math:`\Gamma(1-Y)` (residue :math:`-1`)
+    meets a zero of the bracket. The limit is :math:`-C\,\partial_Y
+    (M^{Y-1} - G^{Y-1})|_{Y=1}`.
+    """
+    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+    if abs(Y - 1) < _POLE_WIDTH:
+        return float(C * np.log(G / M))
+    return float(C * gamma_fn(1 - Y) * (M ** (Y - 1) - G ** (Y - 1)))
 
 
 def _cgmy_drift(C: float, G: float, M: float, Y: float) -> float:
@@ -129,16 +172,14 @@ def _cgmy_drift(C: float, G: float, M: float, Y: float) -> float:
     to avoid the cancellation.
     """
     from scipy import integrate  # type: ignore[import-untyped]
-    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
 
-    if Y < 1:
+    if Y < 1 - _POLE_WIDTH:
         b_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 0.0, 1.0, limit=200)
         b_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 0.0, 1.0, limit=200)
         return float(b_pos - b_neg)
     big_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 1.0, np.inf, limit=200)
     big_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 1.0, np.inf, limit=200)
-    kappa1 = C * float(gamma_fn(1 - Y)) * (M ** (Y - 1) - G ** (Y - 1))
-    return float(kappa1 - (big_pos - big_neg))
+    return float(_cgmy_kappa1(C, G, M, Y) - (big_pos - big_neg))
 
 
 class CGMY(Process):
@@ -233,8 +274,8 @@ class CGMY(Process):
 
         κ_n(X_t) = t · C · Γ(n-Y) · (M^{Y-n} + (-1)^n · G^{Y-n})
 
-        Valid whenever G, M > 0 and n - Y is not a non-positive integer
-        (exponential tempering makes every moment finite).
+        Valid whenever G, M > 0 (exponential tempering makes every moment
+        finite). At Y = 1 the first cumulant is the limit C log(G/M).
         Carr et al. (2002), equation (2).
 
         Parameters
@@ -247,6 +288,8 @@ class CGMY(Process):
         from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
 
         untempered = min(self.G, self.M) == 0.0
+        if n == 1 and not untempered:
+            return t * _cgmy_kappa1(self.C, self.G, self.M, self.Y)
         if (untempered and n >= self.Y) or (n - self.Y <= 0 and float(n - self.Y).is_integer()):
             raise ValueError(
                 f"Cumulant of order {n} does not exist (or the closed form is singular) "

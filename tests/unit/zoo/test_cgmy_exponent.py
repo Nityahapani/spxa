@@ -44,3 +44,36 @@ def test_laplace_exponent_inside_the_strip() -> None:
         k = 1j * tr.b * (-1j * z) + tr.nu.jump_exponent(-1j * z)
         assert abs(k.imag) < 1e-12
         assert np.isfinite(k.real)
+
+
+@pytest.mark.parametrize("k", [0.0, 1.0])
+def test_poles_of_gamma_use_the_limits(k: float) -> None:
+    X = CGMY(C=1.0, G=5.0, M=8.0, Y=k)
+    phi = X.char_func(U)
+    assert np.all(np.isfinite(phi))
+    cum = X.cumulants(4)
+    assert sorted(cum) == [1, 2, 3, 4] and all(np.isfinite(v) for v in cum.values())
+    np.testing.assert_allclose(X.triplet.char_exp(U), phi, rtol=1e-12, atol=1e-15)
+    assert X.triplet.cumulant(1) == pytest.approx(cum[1], rel=1e-10)
+    # continuity: the closed form a small distance away differs by O(distance)
+    for d in (1e-3, 1e-5):
+        near = CGMY(C=1.0, G=5.0, M=8.0, Y=k + d)
+        assert np.max(np.abs(near.char_func(U) / phi - 1)) < 50 * d
+        assert abs(near.cumulants(1)[1] - cum[1]) < 5 * d
+
+
+def test_y_one_first_cumulant_is_c_log_g_over_m() -> None:
+    assert CGMY(C=1.5, G=5.0, M=8.0, Y=1.0).cumulants(1)[1] == pytest.approx(1.5 * np.log(5 / 8))
+
+
+def test_y_zero_is_variance_gamma() -> None:
+    from spxa.zoo.levy import VarianceGamma
+
+    sigma, nu, theta = 0.2, 0.3, -0.1
+    root = np.sqrt(theta**2 * nu**2 / 4 + sigma**2 * nu / 2)
+    G, M = 1 / (root - theta * nu / 2), 1 / (root + theta * nu / 2)
+    np.testing.assert_allclose(
+        CGMY(C=1 / nu, G=G, M=M, Y=0.0).char_func(U),
+        VarianceGamma(sigma, nu, theta).char_func(U),
+        rtol=1e-13,
+    )
