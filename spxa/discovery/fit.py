@@ -586,7 +586,10 @@ def fit_structure(
     for start in starts:
         if obj(start) >= _PENALTY:
             continue
-        res = optimize.minimize(obj, start, method="L-BFGS-B", options={"maxiter": maxiter})
+        with warnings.catch_warnings():
+            # finite differences straddling the penalty wall produce inf - inf
+            warnings.simplefilter("ignore", RuntimeWarning)
+            res = optimize.minimize(obj, start, method="L-BFGS-B", options={"maxiter": maxiter})
         if best is None or res.fun < best.fun:
             best = res
     if best is None:

@@ -190,7 +190,10 @@ def fit_options(
     for s in starts:
         if np.sum(resid(s) ** 2) >= _PENALTY:
             continue
-        res = optimize.least_squares(resid, s, method="trf", max_nfev=maxiter, x_scale="jac")
+        with warnings.catch_warnings():
+            # finite differences straddling the penalty wall produce inf - inf
+            warnings.simplefilter("ignore", RuntimeWarning)
+            res = optimize.least_squares(resid, s, method="trf", max_nfev=maxiter, x_scale="jac")
         if best is None or res.cost < best.cost:
             best = res
     if best is None:
