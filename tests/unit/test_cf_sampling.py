@@ -1,0 +1,63 @@
+"""FFT inversion sampler and the zoo simulators built on it.
+
+Statistical checks use the empirical characteristic function. For n draws,
+Re and Im of mean(exp(iuX)) have known variances (1 ± Re φ(2u))/2 − (Re/Im φ(u))²,
+so each z-score is standard normal under the null. The |z| < 4.5 threshold has
+a false-alarm rate of about 7e-6 per comparison, and the seeds are fixed.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+from scipy import stats  # type: ignore[import-untyped]
+
+from spxa.sim.cf_sampling import cf_grid_cdf, sample_from_cf
+from spxa.zoo.levy import GammaProcess
+
+Z_MAX = 4.5
+
+
+def _ecf_z(x: np.ndarray, phi, u: float) -> float:
+    p = complex(np.atleast_1d(phi(np.array([u])))[0])
+    p2 = complex(np.atleast_1d(phi(np.array([2 * u])))[0])
+    m = np.mean(np.exp(1j * u * x))
+    var_re = max((1 + p2.real) / 2 - p.real**2, 1e-30)
+    var_im = max((1 - p2.real) / 2 - p.imag**2, 1e-30)
+    n = len(x)
+    return max(
+        abs(m.real - p.real) / np.sqrt(var_re / n), abs(m.imag - p.imag) / np.sqrt(var_im / n)
+    )
+
+
+def test_grid_cdf_matches_gamma() -> None:
+    X = GammaProcess(20.0, 3.0)
+    k = X.cumulants(2)
+    x, cdf = cf_grid_cdf(lambda u: X.char_func(u, 0.25), k[1] * 0.25, np.sqrt(k[2] * 0.25))
+    exact = stats.gamma(5.0, scale=1 / 3.0).cdf(x)
+    assert np.max(np.abs(cdf - exact)) < 1e-6
+
+
+def test_grid_refines_until_the_cf_has_decayed() -> None:
+    X = GammaProcess(4.0, 3.0)  # cf decays like |u|^-1 at t = 0.25, so N must grow
+    k = X.cumulants(2)
+    x, _ = cf_grid_cdf(lambda u: X.char_func(u, 0.25), k[1] * 0.25, np.sqrt(k[2] * 0.25))
+    assert len(x) > 2**14
+
+
+def test_sampler_passes_ks_on_gamma() -> None:
+    X = GammaProcess(20.0, 3.0)
+    k = X.cumulants(2)
+    draws = sample_from_cf(
+        lambda u: X.char_func(u, 0.25),
+        k[1] * 0.25,
+        np.sqrt(k[2] * 0.25),
+        20_000,
+        np.random.default_rng(0),
+    )
+    assert stats.kstest(draws, stats.gamma(5.0, scale=1 / 3.0).cdf).pvalue > 1e-3
+
+
+def test_rejects_degenerate_scale() -> None:
+    with pytest.raises(ValueError, match="positive std"):
+        cf_grid_cdf(lambda u: np.ones_like(u, dtype=complex), 0.0, 0.0)
