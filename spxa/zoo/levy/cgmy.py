@@ -86,12 +86,59 @@ def _cgmy_levy_measure(C: float, G: float, M: float, Y: float) -> DensityLevyMea
     def moment_4() -> float:
         return C * gamma_fn(4 - Y) * (M ** (Y - 4) + G ** (Y - 4))
 
+    b = _cgmy_drift(C, G, M, Y)
+
+    def jump_exponent(u: complex) -> complex:
+        # ψ(u) = ibu + J(u) must equal the closed-form exponent Φ(u)
+        return complex(_cgmy_exponent(C, G, M, Y, np.array([u]))[0] - 1j * u * b)
+
     return DensityLevyMeasure(
         _density_fn=density,
         _total_mass=total_mass(),
         _tail_fn=tail,
         _moment_fns={1: moment_1, 2: moment_2, 3: moment_3, 4: moment_4},
+        _jump_exponent_fn=jump_exponent,
     )
+
+
+def _cgmy_exponent(C: float, G: float, M: float, Y: float, u: np.ndarray) -> np.ndarray:
+    r"""
+    :math:`\Phi(u) = C\Gamma(-Y)\big((M-iu)^Y - M^Y + (G+iu)^Y - G^Y\big)`.
+
+    Carr et al. (2002), eq. (5); :math:`\varphi_t(u) = e^{t\Phi(u)}`. It
+    extends analytically to :math:`u = -iz` with :math:`-G < z < M`.
+    """
+    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+    u = np.asarray(u, dtype=complex)
+    return np.asarray(
+        C * float(gamma_fn(-Y)) * ((M - 1j * u) ** Y - M**Y + (G + 1j * u) ** Y - G**Y),
+        dtype=complex,
+    )
+
+
+def _cgmy_drift(C: float, G: float, M: float, Y: float) -> float:
+    r"""
+    Drift :math:`b` of the triplet for the truncation :math:`\mathbb 1_{|x|\le1}`.
+
+    The closed-form exponent :math:`\Phi` is :math:`\int(e^{iux}-1)\,\nu(dx)`
+    for :math:`Y < 1` and :math:`\int(e^{iux}-1-iux)\,\nu(dx)` for
+    :math:`1 < Y < 2`. In both cases :math:`b = \kappa_1 - \int_{|x|>1}x\,\nu(dx)`
+    with :math:`\kappa_1 = C\Gamma(1-Y)(M^{Y-1} - G^{Y-1})`. For :math:`Y < 1`
+    this equals :math:`\int_{|x|\le1}x\,\nu(dx)`, which is integrated directly
+    to avoid the cancellation.
+    """
+    from scipy import integrate  # type: ignore[import-untyped]
+    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+    if Y < 1:
+        b_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 0.0, 1.0, limit=200)
+        b_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 0.0, 1.0, limit=200)
+        return float(b_pos - b_neg)
+    big_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 1.0, np.inf, limit=200)
+    big_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 1.0, np.inf, limit=200)
+    kappa1 = C * float(gamma_fn(1 - Y)) * (M ** (Y - 1) - G ** (Y - 1))
+    return float(kappa1 - (big_pos - big_neg))
 
 
 class CGMY(Process):
@@ -165,24 +212,8 @@ class CGMY(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy import integrate  # type: ignore[import-untyped]
-
         nu = _cgmy_levy_measure(self.C, self.G, self.M, self.Y)
-
-        C, G, M, Y = self.C, self.G, self.M, self.Y
-        if Y < 1:
-            # finite variation: the characteristic exponent has no drift, so
-            # b = ∫_{|x|≤1} x ν(dx) for the truncation 𝟙_{|x|≤1}
-            b_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 0.0, 1.0, limit=200)
-            b_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 0.0, 1.0, limit=200)
-            b_drift = b_pos - b_neg
-        else:
-            # E[X_1] = b + ∫_{|x|>1} x ν(dx)
-            big_pos, _ = integrate.quad(lambda x: C * np.exp(-M * x) / x**Y, 1.0, np.inf, limit=200)
-            big_neg, _ = integrate.quad(lambda x: C * np.exp(-G * x) / x**Y, 1.0, np.inf, limit=200)
-            b_drift = self.cumulant_exact(1) - (big_pos - big_neg)
-
-        return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
+        return LevyTriplet(b=_cgmy_drift(self.C, self.G, self.M, self.Y), sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -253,19 +284,8 @@ class CGMY(Process):
         t :
             Time.
         """
-        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
-
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        exponent = (
-            self.C
-            * float(gamma_fn(-self.Y))
-            * (
-                (self.M - 1j * u_arr) ** self.Y
-                - self.M**self.Y
-                + (self.G + 1j * u_arr) ** self.Y
-                - self.G**self.Y
-            )
-        )
+        exponent = _cgmy_exponent(self.C, self.G, self.M, self.Y, u_arr)
         result = np.exp(t * exponent)
         return result if result.shape != (1,) else result[0]
 

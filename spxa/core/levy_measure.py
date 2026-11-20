@@ -225,12 +225,16 @@ class DensityLevyMeasure(LevyMeasure):
         Callable mapping x > 0 to ν((x, ∞)). If None, computed numerically.
     _moment_fns :
         Optional dict mapping moment order n to an exact formula for ∫ xⁿ ν(dx).
+    _jump_exponent_fn :
+        Optional closed form of :meth:`LevyMeasure.jump_exponent`. Without
+        it the exponent is computed by quadrature.
     """
 
     _density_fn: Callable[[np.ndarray], np.ndarray]
     _total_mass: float
     _tail_fn: Callable[[float], float] | None = None
     _moment_fns: dict[int, Callable[[], float]] = field(default_factory=dict)
+    _jump_exponent_fn: Callable[[complex], complex] | None = None
 
     def density(self, x: ArrayLike) -> np.ndarray:
         return self._density_fn(np.asarray(x, dtype=float))
@@ -250,6 +254,11 @@ class DensityLevyMeasure(LevyMeasure):
         if n in self._moment_fns:
             return self._moment_fns[n]()
         return super().moment(n)
+
+    def jump_exponent(self, u: complex) -> complex:
+        if self._jump_exponent_fn is not None:
+            return complex(self._jump_exponent_fn(complex(u)))
+        return super().jump_exponent(u)
 
 
 @dataclass
