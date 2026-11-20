@@ -29,6 +29,16 @@ from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind, narrate
 
 
+def _reject_constant(other: object, op: str) -> None:
+    """Raise a helpful TypeError when a plain number meets a process under ``op``."""
+    if isinstance(other, (int, float, complex, np.number)) and not isinstance(other, bool):
+        raise TypeError(
+            f"cannot combine a process and the number {other!r} with '{op}': a "
+            "constant is ambiguous (a shift by c, or a drift c*t). For the drift, "
+            f"use spxa.zoo.levy.Drift({other!r}) as the operand."
+        )
+
+
 class Process(ABC):
     """
     Abstract base class for all stochastic processes in spxa.
@@ -285,7 +295,14 @@ class Process(ABC):
         (b_X+b_Y, σ²_X+σ²_Y, ν_X+ν_Y).
 
         Otherwise degrades to the minimum ExactnessLevel with a warning.
+
+        Adding a plain number raises :class:`TypeError`: ``X + c`` could mean
+        the shift :math:`X_t + c` (not a Lévy process) or the drift
+        :math:`X_t + ct`. Write the drift as ``X + Drift(c)``.
         """
+        if not isinstance(other, Process):
+            _reject_constant(other, "+")
+            return NotImplemented
         new_exactness = ExactnessLevel.combine(self._exactness, other._exactness)
 
         if new_exactness != ExactnessLevel.EXACT:
@@ -314,8 +331,10 @@ class Process(ABC):
         )
 
     def __radd__(self, other: object) -> Process:
-        if other == 0:
+        # 0 + X keeps sum([X, Y, ...]) working
+        if isinstance(other, (int, float)) and not isinstance(other, bool) and other == 0:
             return self
+        _reject_constant(other, "+")
         return NotImplemented
 
     def __mul__(self, c: float) -> _ScaledProcess:
@@ -334,7 +353,14 @@ class Process(ABC):
         return _make_scaled(self, -1.0)
 
     def __sub__(self, other: Process) -> Process:
+        if not isinstance(other, Process):
+            _reject_constant(other, "-")
+            return NotImplemented
         return self.__add__(_make_scaled(other, -1.0))
+
+    def __rsub__(self, other: object) -> Process:
+        _reject_constant(other, "-")
+        return NotImplemented
 
     def __matmul__(self, subordinator: Process) -> _ComposedProcess:
         """
@@ -345,6 +371,8 @@ class Process(ABC):
 
         Reference: Sato (1999), Theorem 30.1.
         """
+        if not isinstance(subordinator, Process):
+            return NotImplemented
         if not subordinator._properties().is_subordinator:
             raise ValueError(
                 f"{type(subordinator).__name__} is not a subordinator. "

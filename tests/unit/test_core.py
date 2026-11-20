@@ -344,3 +344,50 @@ class TestCompensatedSums:
         X = BrownianMotion(mu=0.2, sigma=0.3)
         Xc = X + Drift(-0.2)
         assert (Xc @ GammaProcess(a=1.0, b=1.0)).properties.is_martingale is True
+
+
+class TestArithmeticWithConstants:
+    """X + c is ambiguous (shift or drift), so it raises TypeError, not AttributeError."""
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            lambda X: X + 0.5,
+            lambda X: 0.5 + X,
+            lambda X: X - 1,
+            lambda X: 1 - X,
+            lambda X: X + np.float64(2.0),
+        ],
+    )
+    def test_numbers_raise_type_error_pointing_to_drift(self, op) -> None:
+        from spxa.zoo.levy import BrownianMotion
+
+        with pytest.raises(TypeError, match=r"Drift\("):
+            op(BrownianMotion(0.1, 0.2))
+
+    def test_other_types_get_the_standard_type_error(self) -> None:
+        from spxa.zoo.levy import BrownianMotion, GammaProcess
+
+        X = BrownianMotion(0.1, 0.2)
+        with pytest.raises(TypeError, match="unsupported operand"):
+            X + "a"  # type: ignore[operator]
+        with pytest.raises(TypeError, match="unsupported operand"):
+            X @ 3  # type: ignore[operator]
+        from spxa.core.process import Process
+
+        assert isinstance(X @ GammaProcess(2.0, 2.0), Process)
+
+    def test_sum_builtin_still_works(self) -> None:
+        from spxa.zoo.levy import BrownianMotion
+
+        X = BrownianMotion(0.1, 0.2)
+        Z = sum([X, X, X])
+        assert Z.cumulants(2)[1] == pytest.approx(0.3)
+        with pytest.raises(TypeError):
+            sum([X, X], 1.0)
+
+    def test_drift_is_the_supported_spelling(self) -> None:
+        from spxa.zoo.levy import BrownianMotion, Drift
+
+        Z = BrownianMotion(0.1, 0.2) + Drift(0.5)
+        assert Z.cumulants(1)[1] == pytest.approx(0.6)
