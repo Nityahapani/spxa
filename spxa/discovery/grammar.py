@@ -142,11 +142,24 @@ class Grammar:
         return sum(1 for _ in self.structures())
 
 
+def _term_rank(term: Node) -> int:
+    """0 for two-sided families, 1 for signed subordinators, 2 for anything else."""
+    inner = term.child if isinstance(term, Scale) else term
+    if isinstance(inner, Leaf):
+        return 1 if inner.family.is_subordinator else 0
+    return 2
+
+
 def canonical(structure: Node) -> Node:
-    """Order the terms of a top-level sum by key, so equal multisets compare equal."""
+    """Order the terms of a top-level sum so that equal multisets compare equal.
+
+    Two-sided families come first, then signed subordinators, then
+    subordinated atoms; ties are broken by key. Rendered models then read
+    like ``VG + 0.3 * Gamma``.
+    """
     if not isinstance(structure, Sum):
         return structure
-    return Sum(sorted(structure.children, key=lambda c: c.key()))
+    return Sum(sorted(structure.children, key=lambda c: (_term_rank(c), c.key())))
 
 
 def parse_atoms(names: Iterable[str]) -> list[Node]:

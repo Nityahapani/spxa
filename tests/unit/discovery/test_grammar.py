@@ -41,9 +41,13 @@ def test_structure_counts_and_uniqueness() -> None:
 def test_extensions_are_canonical_and_skip_duplicates() -> None:
     g = grammar_from_names(["BM", "VG", "Gamma"], max_terms=3)
     ext = {e.key() for e in g.extensions(Leaf(VARIANCE_GAMMA))}
-    assert ext == {"BM + VG", "Gamma + VG", "-Gamma + VG"}
+    assert ext == {"BM + VG", "VG + Gamma", "VG + -Gamma"}
     two = canonical(Leaf(VARIANCE_GAMMA) + Leaf(BROWNIAN))
     assert two.key() == "BM + VG"
+    # two-sided families, then signed subordinators, then subordinated atoms
+    sub = default_subordinated_atoms()[0]
+    mixed = canonical(sub + -Leaf(GAMMA) + Leaf(VARIANCE_GAMMA) + Leaf(BROWNIAN))
+    assert mixed.key() == f"BM + VG + -Gamma + {sub.key()}"
     assert canonical(Leaf(BROWNIAN)) is not None
 
 
