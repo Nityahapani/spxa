@@ -163,3 +163,30 @@ def test_invalid_arguments(vg_sample: np.ndarray) -> None:
     s = from_statistics(mean=0.0, variance=1.0)
     with pytest.raises(ValueError, match="sample"):
         discover(s, grammar=g, method="likelihood")
+
+
+def test_discover_reads_files_and_return_series(tmp_path, vg_sample: np.ndarray) -> None:
+    from datetime import date, timedelta
+
+    from spxa.discovery.io import load_returns
+
+    start = date(2020, 1, 3)  # a Friday: weekly dates
+    lines = ["date,return"] + [
+        f"{(start + timedelta(weeks=i)).isoformat()},{r:.17g}" for i, r in enumerate(vg_sample)
+    ]
+    path = tmp_path / "weekly.csv"
+    path.write_text("\n".join(lines))
+    g = grammar_from_names(["BM", "VG"], max_terms=1)
+    from_path = discover(str(path), grammar=g, n_starts=1)
+    assert from_path.summary.dt == pytest.approx(DT)
+    direct = discover(vg_sample, dt=DT, grammar=g, n_starts=1)
+    assert from_path.best.bic == pytest.approx(direct.best.bic, rel=1e-12)
+    series = load_returns(path)
+    assert discover(series, grammar=g, n_starts=1).best.bic == pytest.approx(direct.best.bic)
+    undated = tmp_path / "undated.csv"
+    undated.write_text("return\n" + "\n".join(f"{r:.17g}" for r in vg_sample))
+    with pytest.raises(ValueError, match="pass dt="):
+        discover(str(undated), grammar=g)
+    s = summarize(vg_sample, dt=DT)
+    with pytest.raises(ValueError, match="conflicts"):
+        discover(s, dt=1.0, grammar=g)

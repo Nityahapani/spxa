@@ -25,6 +25,7 @@ report states the non-identifiability explicitly.
 
 from __future__ import annotations
 
+import os
 from typing import Literal, Optional, Sequence, Union
 
 import numpy as np
@@ -34,6 +35,7 @@ from spxa.discovery.expr import Leaf, Model, Node, Sum
 from spxa.discovery.families import DRIFT
 from spxa.discovery.fit import BinnedData, FitResult, fit_structure, initial_params, with_location
 from spxa.discovery.grammar import Grammar, canonical
+from spxa.discovery.io import ReturnSeries, load_returns
 from spxa.discovery.report import DiscoveryReport, _err
 
 Criterion = Literal["bic", "aic"]
@@ -80,18 +82,31 @@ def _warm_start(parent: FitResult, child: Node, std: float) -> list[tuple[float,
     return out
 
 
-def _as_summary(
-    data: Union[EmpiricalSummary, Sequence[float], np.ndarray], dt: float
-) -> EmpiricalSummary:
+Data = Union[EmpiricalSummary, ReturnSeries, str, os.PathLike[str], Sequence[float], np.ndarray]
+
+
+def _as_summary(data: Data, dt: Optional[float]) -> EmpiricalSummary:
     if isinstance(data, EmpiricalSummary):
+        if dt is not None and not np.isclose(dt, data.dt):
+            raise ValueError(f"dt={dt} conflicts with the summary's dt={data.dt}")
         return data
-    return summarize(np.asarray(data, dtype=float), dt=dt)
+    if isinstance(data, (str, os.PathLike)):
+        data = load_returns(data)
+    if isinstance(data, ReturnSeries):
+        step = dt if dt is not None else data.dt
+        if step is None:
+            raise ValueError(
+                f"no dates in the data to infer the sampling interval from; pass dt= "
+                f"(column {data.column!r})"
+            )
+        return summarize(data.returns, dt=step)
+    return summarize(np.asarray(data, dtype=float), dt=1.0 if dt is None else dt)
 
 
 def discover(
-    data: Union[EmpiricalSummary, Sequence[float], np.ndarray],
+    data: Data,
     *,
-    dt: float = 1.0,
+    dt: Optional[float] = None,
     grammar: Optional[Grammar] = None,
     method: Optional[Literal["likelihood", "cumulants"]] = None,
     criterion: Criterion = "bic",
@@ -108,10 +123,19 @@ def discover(
     Parameters
     ----------
     data :
-        Increments (returns) sampled every ``dt``, or an
-        :class:`~spxa.discovery.empirical.EmpiricalSummary`. A summary built
-        with :func:`~spxa.discovery.empirical.from_statistics` has no sample
-        and is fitted on cumulants.
+        One of:
+
+        - increments (returns) sampled every ``dt``;
+        - a path to a CSV file of returns or prices (read with
+          :func:`~spxa.discovery.io.load_returns`);
+        - a :class:`~spxa.discovery.io.ReturnSeries`;
+        - an :class:`~spxa.discovery.empirical.EmpiricalSummary`. A summary
+          built with :func:`~spxa.discovery.empirical.from_statistics` has no
+          sample and is fitted on cumulants.
+    dt :
+        Sampling interval in model time units (years for annualised
+        parameters). Defaults to the interval inferred from a file's dates,
+        or the summary's own, or 1 for a bare array.
     grammar :
         Search space; :class:`~spxa.discovery.grammar.Grammar` by default.
     method :
