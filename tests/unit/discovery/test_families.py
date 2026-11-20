@@ -18,6 +18,10 @@ MEMBERS = {
     "VG": (0.2, 0.35, -0.15),
     "NIG": (6.0, -2.0, 0.3),
     "Meixner": (0.4, -0.7, 1.3),
+    "Poisson": (1.5, 0.2),
+    "NormalJumps": (0.9, -0.1, 0.25),
+    "DoubleExpJumps": (2.0, 0.35, 12.0, 7.0),
+    "CGMY": (0.7, 5.0, 8.0, 0.6),
 }
 
 
@@ -103,7 +107,7 @@ def test_typical_member_has_the_requested_spread(name: str) -> None:
             assert np.sqrt(k[1]) == pytest.approx(s, rel=1e-9)
 
 
-@pytest.mark.parametrize("name", ["Gamma", "IG", "VG", "NIG", "Meixner"])
+@pytest.mark.parametrize("name", ["Gamma", "IG", "VG", "NIG", "Meixner", "DoubleExpJumps", "CGMY"])
 def test_strip_edges(name: str) -> None:
     fam = get_family(name)
     p = MEMBERS[name]
@@ -118,11 +122,13 @@ def test_strip_edges(name: str) -> None:
 
 def test_subordinator_flags_and_domains() -> None:
     subs = {n for n, f in FAMILIES.items() if f.is_subordinator}
-    assert subs == {"Gamma", "IG"}
+    assert subs == {"Gamma", "IG", "Poisson"}
     for name, bad in [
         ("BM", (-1.0,)),
         ("NIG", (1.0, 1.0, 1.0)),
         ("Meixner", (1.0, 3.2, 1.0)),
+        ("DoubleExpJumps", (1.0, 1.0, 2.0, 2.0)),
+        ("CGMY", (1.0, 1.0, 1.0, 1.5)),
         ("VG", (0.1, 0.2)),
     ]:
         with pytest.raises(ValueError):

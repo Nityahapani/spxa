@@ -32,6 +32,8 @@ from typing import Callable, Sequence
 
 import numpy as np
 from numpy.polynomial import polynomial as P
+from scipy.special import gamma as gamma_fn
+from scipy.special import gammaln
 
 from spxa.core.process import Process
 
@@ -490,6 +492,177 @@ MEIXNER = Family(
 )
 
 
+# ── Poisson ───────────────────────────────────────────────────────────────────
+
+
+def _poisson_process(p: Params) -> Process:
+    from spxa.zoo.levy.poisson import PoissonProcess
+
+    return PoissonProcess(rate=p[0], jump_size=p[1])
+
+
+POISSON = Family(
+    name="Poisson",
+    process_name="PoissonProcess",
+    param_names=("rate", "jump_size"),
+    cumulants_fn=lambda p, N: np.array([p[0] * p[1] ** n for n in range(1, N + 1)]),
+    log_mgf_fn=lambda z, p: p[0] * np.expm1(p[1] * z),
+    strip_fn=lambda p: (-INF, INF),
+    to_free_fn=lambda p: np.log(p),
+    from_free_fn=lambda x: (float(np.exp(x[0])), float(np.exp(x[1]))),
+    process_fn=_poisson_process,
+    is_subordinator=True,
+    validate_fn=_pos("rate", "jump_size"),
+    rescale_fn=lambda p, c: (p[0], c * p[1]),
+    unit_scale_fn=lambda p: (p[1], (p[0], 1.0)),
+    typical_fn=lambda s: (1.0, s),
+    reference="Poisson (1837)",
+)
+
+
+# ── Compound Poisson with normal jumps ────────────────────────────────────────
+
+
+def _cpn_process(p: Params) -> Process:
+    from spxa.zoo.levy.compound_poisson import CompoundPoisson, NormalJump
+
+    return CompoundPoisson(rate=p[0], jump_dist=NormalJump(mean=p[1], std=p[2]))
+
+
+NORMAL_JUMPS = Family(
+    name="NormalJumps",
+    process_name="CompoundPoisson",
+    param_names=("rate", "jump_mean", "jump_std"),
+    # κ_n = λ E[Y^n]
+    cumulants_fn=lambda p, N: p[0] * _normal_raw_moments(p[1], p[2], N),
+    log_mgf_fn=lambda z, p: p[0] * np.expm1(p[1] * z + 0.5 * p[2] ** 2 * z**2),
+    strip_fn=lambda p: (-INF, INF),
+    to_free_fn=lambda p: np.array([np.log(p[0]), p[1], np.log(p[2])]),
+    from_free_fn=lambda x: (float(np.exp(x[0])), float(x[1]), float(np.exp(x[2]))),
+    process_fn=_cpn_process,
+    is_subordinator=False,
+    validate_fn=_pos("rate", "", "jump_std"),
+    rescale_fn=lambda p, c: (p[0], c * p[1], c * p[2]),
+    unit_scale_fn=lambda p: (p[2], (p[0], p[1] / p[2], 1.0)),
+    typical_fn=lambda s: (1.0, 0.0, s),
+    reference="Merton (1976)",
+)
+
+
+# ── Compound Poisson with double-exponential jumps ────────────────────────────
+
+
+def _cpde_cumulants(p: Params, N: int) -> np.ndarray:
+    lam, prob, eta1, eta2 = p
+    # E[Y^n] = n! (p η1^{-n} + (1-p)(-1)^n η2^{-n})
+    return np.array(
+        [
+            lam * factorial(n) * (prob / eta1**n + (1 - prob) * (-1) ** n / eta2**n)
+            for n in range(1, N + 1)
+        ]
+    )
+
+
+def _cpde_validate(p: Params) -> None:
+    lam, prob, eta1, eta2 = p
+    _pos("rate", "", "eta1", "eta2")(p)
+    if not 0.0 < prob < 1.0:
+        raise ValueError(f"p must lie in (0, 1), got {prob}")
+
+
+def _cpde_process(p: Params) -> Process:
+    from spxa.zoo.levy.compound_poisson import CompoundPoisson, DoubleExponentialJump
+
+    return CompoundPoisson(rate=p[0], jump_dist=DoubleExponentialJump(p=p[1], eta1=p[2], eta2=p[3]))
+
+
+DOUBLE_EXP_JUMPS = Family(
+    name="DoubleExpJumps",
+    process_name="CompoundPoisson",
+    param_names=("rate", "p", "eta1", "eta2"),
+    cumulants_fn=_cpde_cumulants,
+    log_mgf_fn=lambda z, p: (
+        p[0] * (p[1] * p[2] / (p[2] - z) + (1 - p[1]) * p[3] / (p[3] + z) - 1.0)
+    ),
+    strip_fn=lambda p: (-p[3], p[2]),
+    to_free_fn=lambda p: np.array(
+        [np.log(p[0]), _logit(p[1], 0.0, 1.0), np.log(p[2]), np.log(p[3])]
+    ),
+    from_free_fn=lambda x: (
+        float(np.exp(x[0])),
+        _expit(float(x[1]), 0.0, 1.0),
+        float(np.exp(x[2])),
+        float(np.exp(x[3])),
+    ),
+    process_fn=_cpde_process,
+    is_subordinator=False,
+    validate_fn=_cpde_validate,
+    rescale_fn=lambda p, c: (p[0], p[1], p[2] / c, p[3] / c),
+    unit_scale_fn=lambda p: (1.0 / p[2], (p[0], p[1], 1.0, p[3] / p[2])),
+    # symmetric, E[Y²] = 2/η² = s²
+    typical_fn=lambda s: (1.0, 0.5, np.sqrt(2.0) / s, np.sqrt(2.0) / s),
+    reference="Kou (2002)",
+)
+
+
+# ── CGMY ──────────────────────────────────────────────────────────────────────
+
+
+def _cgmy_cumulants(p: Params, N: int) -> np.ndarray:
+    C, G, M, Y = p
+    # κ_n = C Γ(n - Y)(M^{Y-n} + (-1)^n G^{Y-n})
+    return np.array(
+        [
+            C * np.exp(gammaln(n - Y)) * (M ** (Y - n) + (-1) ** n * G ** (Y - n))
+            for n in range(1, N + 1)
+        ]
+    )
+
+
+def _cgmy_validate(p: Params) -> None:
+    C, G, M, Y = p
+    _pos("C", "G", "M")(p)
+    if not 0.0 < Y < 1.0:
+        raise ValueError(f"the CGMY family here takes Y in (0, 1), got {Y}")
+
+
+def _cgmy_process(p: Params) -> Process:
+    from spxa.zoo.levy.cgmy import CGMY
+
+    return CGMY(C=p[0], G=p[1], M=p[2], Y=p[3])
+
+
+CGMY_FAMILY = Family(
+    name="CGMY",
+    process_name="CGMY",
+    param_names=("C", "G", "M", "Y"),
+    cumulants_fn=_cgmy_cumulants,
+    log_mgf_fn=lambda z, p: (
+        p[0]
+        * float(gamma_fn(-p[3]))
+        * ((p[2] - z) ** p[3] - p[2] ** p[3] + (p[1] + z) ** p[3] - p[1] ** p[3])
+    ),
+    strip_fn=lambda p: (-p[1], p[2]),
+    to_free_fn=lambda p: np.array(
+        [np.log(p[0]), np.log(p[1]), np.log(p[2]), _logit(p[3], 0.0, 1.0)]
+    ),
+    from_free_fn=lambda x: (
+        float(np.exp(x[0])),
+        float(np.exp(x[1])),
+        float(np.exp(x[2])),
+        _expit(float(x[3]), 0.0, 1.0),
+    ),
+    process_fn=_cgmy_process,
+    is_subordinator=False,
+    validate_fn=_cgmy_validate,
+    rescale_fn=lambda p, c: (p[0] * c ** p[3], p[1] / c, p[2] / c, p[3]),
+    unit_scale_fn=lambda p: (1.0 / p[2], (p[0] * p[2] ** p[3], p[1] / p[2], 1.0, p[3])),
+    # Y = 1/2, G = M: variance 2 C Γ(3/2) M^{-3/2} = s² with M = 1/s
+    typical_fn=lambda s: (s**2 / (2.0 * float(gamma_fn(1.5)) * s**1.5), 1.0 / s, 1.0 / s, 0.5),
+    reference="Carr, Geman, Madan & Yor (2002)",
+)
+
+
 #: Every family, keyed by name.
 FAMILIES: dict[str, Family] = {
     f.name: f
@@ -501,6 +674,10 @@ FAMILIES: dict[str, Family] = {
         VARIANCE_GAMMA,
         NIG_FAMILY,
         MEIXNER,
+        POISSON,
+        NORMAL_JUMPS,
+        DOUBLE_EXP_JUMPS,
+        CGMY_FAMILY,
     )
 }
 
