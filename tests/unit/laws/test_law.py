@@ -159,3 +159,20 @@ def test_composite_counterexamples_shrink_to_the_guilty_operand() -> None:
     assert r.status == "falsified"
     assert repr(r.counterexample["X"]) == "GammaProcess(a=1.0, b=1.0)"
     assert "GammaProcess" in repr(r.original["X"])
+
+
+def test_result_to_dict_is_json_ready() -> None:
+    import json
+
+    from spxa.laws import expect, floats, law
+
+    @law(x=floats(0.0, 1.0))
+    def below_half(x):
+        expect(x < 0.5, "too big", x=x)
+
+    data = below_half.check(n_examples=50, seed=1).to_dict()
+    json.dumps(data)
+    assert data["status"] == "falsified"
+    assert data["law"] == "below_half"
+    assert float(data["counterexample"]["x"]) >= 0.5
+    assert isinstance(data["details"]["x"], float)

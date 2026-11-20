@@ -80,6 +80,36 @@ class LawResult:
         """``True`` when a counterexample was found (falsified or error)."""
         return self.status in ("falsified", "error")
 
+    def to_dict(self) -> dict[str, Any]:
+        """JSON-ready summary. Counterexample values appear as their ``repr``,
+        which for processes is a constructor call that rebuilds them."""
+
+        def reprs(d: Optional[dict[str, Any]]) -> Optional[dict[str, str]]:
+            return None if d is None else {k: repr(v) for k, v in d.items()}
+
+        def plain(v: Any) -> Any:
+            if isinstance(v, (bool, int, str)) or v is None:
+                return v
+            if isinstance(v, (float, np.floating)):
+                return float(v)
+            return repr(v)
+
+        return {
+            "law": self.law,
+            "description": self.description,
+            "status": self.status,
+            "n_examples": self.n_examples,
+            "n_discarded": self.n_discarded,
+            "seed": self.seed,
+            "counterexample": reprs(self.counterexample),
+            "original": reprs(self.original),
+            "message": self.message,
+            "details": {k: plain(v) for k, v in self.details.items()},
+            "exception": self.exception,
+            "shrink_steps": self.shrink_steps,
+            "elapsed": self.elapsed,
+        }
+
     def raise_if_failed(self) -> None:
         """Raise :class:`LawFailure` unless the law was verified."""
         if not self.ok:
