@@ -344,13 +344,18 @@ class CGMY(Process):
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
         """
-        Simulation by FFT inversion of the characteristic function.
+        Simulation of CGMY increments.
 
-        Each increment is drawn from the CGMY(CΔt, G, M, Y) law. The CDF is
-        recovered on a grid sized from the cumulants and the tail rate
-        min(G, M), and refined until the cf has decayed (see
-        :mod:`spxa.sim.cf_sampling`). The draws are accurate up to the grid
-        discretisation. They are not exact in distribution.
+        For 0 < Y < 1 with G, M > 0 the draws are exact. The exponent splits as
+        TS(Y, C, M) minus an independent TS(Y, C, G), two tempered stable
+        subordinators, each drawn by
+        :func:`~spxa.zoo.levy.tempered_stable.sample_tempered_stable`.
+
+        Otherwise each increment is drawn from the CGMY(CΔt, G, M, Y) law by
+        FFT inversion of the characteristic function. The CDF is recovered on
+        a grid sized from the cumulants and the tail rate min(G, M), and
+        refined until the cf has decayed (see :mod:`spxa.sim.cf_sampling`).
+        Those draws are accurate up to the grid discretisation.
 
         Parameters
         ----------
@@ -364,6 +369,10 @@ class CGMY(Process):
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
+        if self._vector_sampler:
+            paths = np.zeros((n_paths, n_steps + 1))
+            paths[:, 1:] = np.cumsum(self.sample_at(np.full((n_paths, n_steps), dt), rng), axis=1)
+            return paths
         k = self.cumulants(2)
         increments = sample_from_cf(
             lambda u: self.char_func(u, dt),
@@ -376,6 +385,21 @@ class CGMY(Process):
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths
+
+    @property
+    def _vector_sampler(self) -> bool:  # type: ignore[override]
+        return bool(0 < self.Y < 1 and self.G > 0 and self.M > 0)
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``; exact for 0 < Y < 1."""
+        if not self._vector_sampler:
+            return super().sample_at(times, rng)
+        from spxa.zoo.levy.tempered_stable import TemperedStable
+
+        rng = rng or np.random.default_rng()
+        up = TemperedStable(self.Y, self.C, self.M).sample_at(times, rng)
+        down = TemperedStable(self.Y, self.C, self.G).sample_at(times, rng)
+        return up - down
 
     def __repr__(self) -> str:
         return f"CGMY(C={self.C}, G={self.G}, M={self.M}, Y={self.Y})"

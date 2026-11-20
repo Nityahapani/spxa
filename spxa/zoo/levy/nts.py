@@ -325,10 +325,11 @@ class NormalTemperedStableProcess(Process):
         r"""
         Simulate NTS paths: :math:`X = \theta\,\Delta T + \sigma\sqrt{\Delta T}\,Z` per step.
 
-        The subordinator increments :math:`\Delta T` are drawn from
-        TemperedStable(α, δΔt, λ), the law of the NTS clock, by cf inversion
-        (:mod:`spxa.sim.cf_sampling`). Previously they came from a Gamma
-        matched only to the first two moments.
+        The subordinator increments :math:`\Delta T` are exact draws of the
+        NTS clock, TemperedStable(α, δ, λ) at time Δt
+        (:func:`~spxa.zoo.levy.tempered_stable.sample_tempered_stable`), so
+        the paths are exact. Previously the clock came from a Gamma matched
+        only to the first two moments.
 
         The positional order ``(n_steps, n_paths, T, rng)`` is the one shared by
         every :class:`~spxa.core.process.Process`. Pass a time grid as
@@ -362,7 +363,7 @@ class NormalTemperedStableProcess(Process):
             if dt <= 0:
                 raise ValueError("t_grid must be strictly increasing")
 
-            delta_T = clock.simulate(1, n_paths, T=float(dt), rng=rng)[:, 1]
+            delta_T = clock.sample_at(np.full(n_paths, float(dt)), rng)
 
             # Normal draw given delta_T
             z = rng.standard_normal(size=n_paths)
@@ -370,6 +371,17 @@ class NormalTemperedStableProcess(Process):
             paths[:, i] = paths[:, i - 1] + dx
 
         return paths
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        r"""Independent exact draws of X_t: :math:`\theta S + \sigma\sqrt{S}Z` with S the clock at t."""
+        from spxa.zoo.levy.tempered_stable import TemperedStable
+
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        s = TemperedStable(self.alpha, self.delta, self.lambd).sample_at(t, rng)
+        return self.theta * s + self.sigma * np.sqrt(s) * rng.standard_normal(t.shape)
 
     def __repr__(self) -> str:
         return (

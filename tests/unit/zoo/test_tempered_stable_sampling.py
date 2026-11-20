@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from spxa.laws.stats import ecf_test, mean_test, variance_test
-from spxa.zoo.levy import TemperedStable
+from spxa.zoo.levy import CGMY, NormalTemperedStable, TemperedStable
 from spxa.zoo.levy.tempered_stable import sample_positive_stable
 
 TIMES = [1e-6, 1e-3, 0.1, 1.0, 10.0, 100.0]
@@ -60,3 +60,20 @@ def test_simulate_uses_the_exact_sampler(t: float) -> None:
 def test_draws_are_non_negative_and_zero_at_zero() -> None:
     x = TemperedStable(0.5, 1.0, 2.0).sample_at(np.array([0.0, 1e-8, 1.0, 200.0]))
     assert x[0] == 0.0 and np.all(x >= 0.0)
+
+
+@pytest.mark.parametrize("t", [1e-4, 0.1, 2.0])
+def test_nts_is_exact_at_short_horizons(t: float) -> None:
+    _check(NormalTemperedStable(0.6, 1.5, 0.8, 0.1, 0.3), t)
+
+
+@pytest.mark.parametrize("t", [1e-4, 0.1, 2.0])
+def test_cgmy_below_one_is_a_difference_of_tempered_stables(t: float) -> None:
+    X = CGMY(1.0, 1.5, 4.0, 0.6)
+    assert X._vector_sampler
+    _check(X, t)
+
+
+def test_cgmy_at_or_above_one_keeps_the_inversion() -> None:
+    assert not CGMY(1.0, 5.0, 10.0, 1.5)._vector_sampler
+    assert not CGMY(1.0, 5.0, 10.0, 0.0)._vector_sampler

@@ -13,6 +13,7 @@ import pytest
 
 from spxa.zoo.levy import (
     NIG,
+    CGMY,
     AlphaStable,
     BrownianMotion,
     CompoundPoisson,
@@ -22,7 +23,9 @@ from spxa.zoo.levy import (
     KouJumpDiffusion,
     MertonJumpDiffusion,
     NegativeBinomialProcess,
+    NormalTemperedStable,
     PoissonProcess,
+    TemperedStable,
     VarianceGamma,
 )
 from spxa.zoo.levy.compound_poisson import NormalJump
@@ -41,6 +44,9 @@ FAMILIES = [
     AlphaStable(1.5, 0.3, 0.4, 0.1),
     AlphaStable(1.0, 0.4, 0.5, 0.2),
     AlphaStable(0.7, -0.5, 0.5, 0.0),
+    TemperedStable(0.6, 1.0, 1.0),
+    CGMY(1.0, 3.0, 6.0, 0.6),
+    NormalTemperedStable(0.6, 1.5, 0.8, 0.1, 0.3),
 ]
 
 
@@ -85,10 +91,25 @@ def test_mixed_times_in_one_call() -> None:
 
 def test_default_sample_at_groups_equal_times() -> None:
     """Families without a direct sampler fall back to one simulate call per distinct time."""
-    from spxa.zoo.levy import TemperedStable
+    from spxa.zoo.levy import MeixnerProcess
 
-    X = TemperedStable(0.5, 1.0, 2.0)
+    X = MeixnerProcess(0.3, -0.5, 1.0, 0.0)
     assert not X._vector_sampler
     x = X.sample_at(np.repeat([0.0, 0.5, 1.0], 20_000), np.random.default_rng(4))
     assert np.all(x[:20_000] == 0.0)
-    assert np.mean(x[40_000:]) == pytest.approx(X.cumulants(1)[1], rel=0.03)
+    for u in (1.0, 4.0):
+        assert _ecf_z(x[40_000:], lambda v: X.char_func(v, 1.0), u) < 4.5
+
+
+def test_default_sample_at_with_many_distinct_times() -> None:
+    """Over 64 distinct times, the dyadic decomposition draws X_t with the right mixture cf."""
+    X = CGMY(1.0, 5.0, 10.0, 1.5)
+    assert not X._vector_sampler
+    times = np.random.default_rng(5).uniform(0.2, 1.5, 20_000)
+    x = X.sample_at(times, np.random.default_rng(6))
+    for u in (0.5, 2.0):
+        # conditionally on the times, E e^{iuX} averages phi(u, t_k)
+        def mix(v: float) -> complex:
+            return complex(np.mean(np.exp(times * X._char_exponent(np.array([v]))[0])))
+
+        assert _ecf_z(x, mix, u) < 4.5
