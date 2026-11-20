@@ -45,6 +45,36 @@ print(float(Z.triplet.b))   # 0.14542109130283806
 print(Z.exactness == spxa.ExactnessLevel.EXACT)  # True
 ```
 
+## Discovery and laws
+
+`spxa.discovery` runs the algebra backwards. It searches compositions of
+primitives for the one that explains a return series, its summary
+statistics, or option prices. `spxa.laws` turns the axioms into executable
+tests: declare a law, and spxa searches random processes for a shrunk
+counterexample.
+
+```python
+import numpy as np
+from spxa import VarianceGamma
+from spxa.discovery import discover, grammar_from_names
+from spxa.laws import compositions, expect_close, law
+from spxa.laws.quantities import mean
+
+paths = VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1).simulate(2000, 1, 2000 / 52, np.random.default_rng(0))
+report = discover(np.diff(paths[0]), dt=1 / 52, grammar=grammar_from_names(["BM", "VG", "NIG"], max_terms=1))
+print(report.best.model.structure.key())  # VG + Drift
+
+@law(X=compositions(max_depth=1), Y=compositions(max_depth=1))
+def mean_is_additive(X, Y):
+    expect_close(mean(X + Y), mean(X) + mean(Y))
+
+print(mean_is_additive.check(n_examples=100).status)  # verified
+```
+
+`spxa-discover returns prices.csv` and `spxa-laws` run both from the shell.
+See the [discovery](docs/theory/discovery.md) and [laws](docs/theory/laws.md)
+guides.
+
 | Module | Purpose |
 |--------|---------|
 | `spxa.core` | Process algebra, Lévy–Khintchine triplets, exactness lattice |
@@ -61,6 +91,8 @@ print(Z.exactness == spxa.ExactnessLevel.EXACT)  # True
 | `spxa.morph` | Model morphing & barycenters |
 | `spxa.geom` | Information geometry |
 | `spxa.signature` | Rough path signatures |
+| `spxa.discovery` | Process discovery: structures from returns or option prices |
+| `spxa.laws` | Property-based testing of process laws |
 
 ## Docs
 

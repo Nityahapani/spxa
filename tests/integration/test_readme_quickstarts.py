@@ -18,11 +18,11 @@ def _block(heading: str) -> str:
     return text[begin : text.index("\n```", begin)]
 
 
-@pytest.mark.parametrize("heading", ["## Quickstart"])
-def test_quickstart_prints_its_comments(heading: str) -> None:
+@pytest.mark.parametrize("heading, n_prints", [("## Quickstart", 4), ("## Discovery and laws", 2)])
+def test_quickstart_prints_its_comments(heading: str, n_prints: int) -> None:
     code = _block(heading)
     expected = [m.group(1).strip() for m in re.finditer(r"^print\(.*\)\s+# (.+)$", code, re.M)]
-    assert len(expected) == 4
+    assert len(expected) == n_prints
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         exec(compile(code, heading, "exec"), {})
