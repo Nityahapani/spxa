@@ -30,7 +30,7 @@ weights
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable, Literal, Optional
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional
 
 import numpy as np
 
@@ -194,6 +194,60 @@ class DiscoveryReport:
                     f"{_flag(r)}{r.model.render(digits, weighted='subordinators')}"
                 )
         return "\n".join([header] + rows)
+
+    def to_dict(self, top: Optional[int] = None) -> dict[str, Any]:
+        """JSON-ready summary: headline, warnings and the ranked candidates.
+
+        Each candidate entry has its rendered expression, structure key,
+        named parameters (see :func:`~spxa.discovery.inference.parameter_names`),
+        criterion values, fit-quality measures and degeneracy reasons.
+        Values that do not apply are ``None``. Non-finite floats become
+        ``None``, so the output is valid JSON.
+        """
+        from spxa.discovery.inference import parameter_names
+
+        weights: Optional[np.ndarray] = None
+        if self.method != "cumulants":
+            weights = self.weights()
+
+        def num(v: Any) -> Optional[float]:
+            if v is None:
+                return None
+            f = float(v)
+            return f if np.isfinite(f) else None
+
+        rows = []
+        for i, r in enumerate(self.candidates[: top or len(self.candidates)]):
+            flat = [float(v) for p in r.model.params for v in p]
+            rows.append(
+                {
+                    "rank": i + 1,
+                    "expression": r.model.render(weighted="subordinators"),
+                    "structure": r.structure_key,
+                    "parameters": dict(zip(parameter_names(r.model), flat)),
+                    "n_params": r.n_params,
+                    "loglik": num(r.loglik),
+                    "aic": num(r.aic),
+                    "bic": num(r.bic),
+                    "weight": None if weights is None else float(weights[i]),
+                    "gof_pvalue": num(r.g_pvalue),
+                    "cdf_gap": num(r.ks_distance),
+                    "moment_error": num(r.match_error),
+                    "extras": {k: num(v) for k, v in r.extras.items()},
+                    "converged": bool(r.converged),
+                    "degeneracies": r.degeneracies(),
+                }
+            )
+        return {
+            "headline": self.headline(),
+            "method": self.method,
+            "criterion": self.criterion,
+            "n_obs": None if self.summary is None else self.summary.n,
+            "dt": None if self.summary is None else self.summary.dt,
+            "warnings": list(self.warnings),
+            "candidates": rows,
+            "excluded": [r.structure_key for r in self.excluded],
+        }
 
     def __str__(self) -> str:
         lines = [self.headline(), "", self.table()]

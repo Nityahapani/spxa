@@ -138,3 +138,30 @@ def test_degenerate_fits_are_marked_and_screened() -> None:
     kept, out, notes = screen_degenerate(fits[:1], True)
     assert kept == fits[:1] and out == [] and "every fitted structure" in notes[0]
     assert screen_degenerate(fits[1:], True) == (fits[1:], [], [])
+
+
+def test_to_dict_is_valid_json() -> None:
+    import json
+
+    fits = [_fit(VG_GAMMA, 110.0, 0.01), _fit(VG, 100.0, 0.02), _fit(BM, 50.0, 0.05)]
+    rep = DiscoveryReport(fits, SUMMARY, "bic", "likelihood", 0.02, warnings=["w"])
+    d = json.loads(json.dumps(rep.to_dict(), allow_nan=False))
+    assert d["headline"] == rep.headline() and d["warnings"] == ["w"]
+    assert d["n_obs"] == 1000 and d["dt"] == 0.1 and d["excluded"] == []
+    first = d["candidates"][0]
+    assert first["rank"] == 1 and first["structure"] == fits[0].structure_key
+    assert first["parameters"] == {
+        "VG.sigma": 0.2,
+        "VG.nu": 0.3,
+        "VG.theta": -0.1,
+        "Gamma.a": 2.0,
+        "Gamma.b": 25.0,
+        "Drift.mu": 0.0,
+    }
+    assert first["bic"] == pytest.approx(fits[0].bic) and first["degeneracies"] == []
+    assert sum(c["weight"] for c in d["candidates"]) == pytest.approx(1.0)
+    assert len(rep.to_dict(top=2)["candidates"]) == 2
+
+    stats = DiscoveryReport([_fit(VG, None)], SUMMARY, "bic", "cumulants", 0.02)
+    c = json.loads(json.dumps(stats.to_dict(), allow_nan=False))["candidates"][0]
+    assert c["weight"] is None and c["bic"] is None and c["moment_error"] is not None
