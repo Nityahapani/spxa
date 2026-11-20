@@ -214,30 +214,18 @@ class MeixnerProcess(Process):
         )
 
     def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
+        r"""
         Exact characteristic function.
 
         φ(u; t) = exp(imu) · (cos(β/2) / cosh((αu - iβ)/2))^{2δt}
 
-        Schoutens & Teugels (1998), equation (3).
+        Schoutens & Teugels (1998), equation (3). Evaluated as
+        :math:`e^{t\psi(u)}` with the overflow-free exponent of
+        :meth:`_char_exponent`.
         """
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        cos_half = np.cos(self.beta / 2)
-        z = (self.alpha * u_arr - 1j * self.beta) / 2.0
-        # log cosh(z) via the identity log cosh(z) = log(e^z + e^{-z}) - log 2
-        # Use logsumexp-style: for Re(z)>=0, factor out e^z:
-        #   log cosh(z) = z + log(1 + e^{-2z}) - log 2
-        # The issue is e^{-2z} may overflow when Re(z) << 0.
-        # Robust: compute log(e^z + e^{-z}) - log 2 via the real-part stable form.
-        # Since cosh(z) = cosh(x)cos(y) + i sinh(x)sin(y) for z=x+iy,
-        # and |cosh(z)|² = cosh²(x) - sin²(y), we can compute directly for
-        # the moderate values we encounter (|Re(z)| = α|u|/2 ≤ α·u_max/2).
-        # For the FFT grid u_max is chosen so that α·u_max/2 ≈ 20σ which is safe.
-        cosh_z = np.cosh(z)
-        log_cosh = np.log(np.where(np.abs(cosh_z) > 1e-300, cosh_z, 1e-300 + 0j))
-        log_ratio = np.log(cos_half + 0j) - log_cosh
-        exponent = 1j * self.m * t * u_arr + 2 * self.delta * t * log_ratio
-        result = np.exp(exponent)
+        # the overflow-free exponent: np.cosh overflows once alpha |u| / 2 > 710
+        result = np.exp(t * self._char_exponent(u_arr))
         return result if result.shape != (1,) else result[0]
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
