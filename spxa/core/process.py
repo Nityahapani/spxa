@@ -513,6 +513,7 @@ class _ComposedProcess(Process):
         self._right = right
         self._operation = operation
         self._props = props
+        self._refined_props: Optional[ProcessProperties] = None
 
     def _triplet(self) -> LevyTriplet:
         if self._operation == "+":
@@ -544,7 +545,43 @@ class _ComposedProcess(Process):
             return {n: left[n] + right[n] for n in range(1, order + 1)}
 
     def _properties(self) -> ProcessProperties:
-        return self._props
+        if self._refined_props is None:
+            self._refined_props = self._refine_martingale(self._props)
+        return self._refined_props
+
+    def _refine_martingale(self, props: ProcessProperties) -> ProcessProperties:
+        r"""
+        Flag a sum of non-martingales whose means cancel as a martingale.
+
+        The rule "martingale iff both summands are" is exact when only one
+        summand is a martingale, but misses :math:`E[X_1] + E[Y_1] = 0`, e.g. a
+        compensated process :math:`X - E[X_1]t`. A Lévy process with a finite
+        mean is a martingale iff that mean is zero. For EXACT sums with
+        finite means the two means are compared, and cancellation within
+        rounding (:math:`10^{-12}` of their sizes) counts as zero. The check
+        runs once, on first access.
+        """
+        if (
+            self._operation != "+"
+            or props.is_martingale
+            or not props.has_finite_mean
+            or self._exactness != ExactnessLevel.EXACT
+        ):
+            return props
+        try:
+            left = float(self._left.cumulants(1)[1])
+            right = float(self._right.cumulants(1)[1])
+        except Exception:
+            return props
+        if not (np.isfinite(left) and np.isfinite(right)):
+            return props
+        if abs(left + right) > 1e-12 * (abs(left) + abs(right)):
+            return props
+        refined = props.add_note(
+            f"The means cancel (E[X_1] = {left!r}, E[Y_1] = {right!r}), so the sum is a martingale."
+        )
+        refined.is_martingale = True
+        return refined
 
     def simulate(
         self,

@@ -316,3 +316,31 @@ class TestMartingalesUnderTimeChange:
         heavy_clock = ProcessProperties(is_subordinator=True, has_finite_mean=False)
         z = ProcessProperties.combine_subordination(parent, heavy_clock)
         assert z.is_martingale is False and any("infinite mean" in n for n in z.notes)
+
+
+class TestCompensatedSums:
+    def test_compensated_process_is_a_martingale(self):
+        from spxa.zoo.levy import Drift
+
+        G = GammaProcess(a=2.0, b=3.0)
+        Z = G + Drift(-G.cumulants(1)[1])
+        assert Z.properties.is_martingale is True
+        assert any("means cancel" in n for n in Z.properties.notes)
+        assert (2.0 * Z).properties.is_martingale is True  # scaling keeps it
+
+    def test_opposite_drifts_cancel(self):
+        Z = BrownianMotion(mu=0.3, sigma=1.0) + BrownianMotion(mu=-0.3, sigma=0.5)
+        assert Z.properties.is_martingale is True
+
+    def test_unequal_means_do_not(self):
+        from spxa.zoo.levy import Drift
+
+        Z = GammaProcess(a=2.0, b=3.0) + Drift(-0.6)
+        assert Z.properties.is_martingale is False
+
+    def test_compensated_time_change(self):
+        from spxa.zoo.levy import Drift
+
+        X = BrownianMotion(mu=0.2, sigma=0.3)
+        Xc = X + Drift(-0.2)
+        assert (Xc @ GammaProcess(a=1.0, b=1.0)).properties.is_martingale is True
