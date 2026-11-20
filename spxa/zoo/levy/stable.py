@@ -339,7 +339,8 @@ class AlphaStable(Process):
           2. E ~ Exponential(1)
           3. For α ≠ 1:
              X = S · sin(α(U+B)) / cos(U)^{1/α} · (cos(U-α(U+B))/E)^{(1-α)/α}
-          4. Scale by σ·Δt^{1/α} and shift by μ·Δt
+          4. Scale by c = σ·Δt^{1/α} and shift by μ·Δt; at α = 1 also add
+             (2/π)βc·log c, because S1 is not scale-equivariant there
 
         Parameters
         ----------
@@ -373,7 +374,13 @@ class AlphaStable(Process):
                 - self.beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + self.beta * U))
             )
 
-        increments = self.sigma * (dt ** (1 / self.alpha)) * increments + self.mu * dt
+        scale = self.sigma * dt ** (1 / self.alpha)
+        increments = scale * increments + self.mu * dt
+        if abs(self.alpha - 1.0) <= 1e-12:
+            # S1 at alpha = 1 is not scale-equivariant: if X ~ S1(1, beta, 1, 0), then
+            # cX ~ S1(1, beta, c, -(2/pi) beta c log c), so the shift must be added
+            # back (Weron 1996; Samorodnitsky & Taqqu 1994, Property 1.2.3).
+            increments = increments + (2 / np.pi) * self.beta * scale * np.log(scale)
 
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
