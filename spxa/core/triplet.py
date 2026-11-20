@@ -57,8 +57,9 @@ class LevyTriplet:
         """
         Evaluate the characteristic function E[e^{iuX_t}] = exp(t·ψ(u)).
 
-        Uses the Lévy–Khintchine formula numerically. For u far from 0,
-        the integral is split at ±1 to handle the singularity at x=0.
+        Uses the Lévy–Khintchine formula. The jump integral comes from
+        :meth:`LevyMeasure.jump_exponent`, which uses quadrature unless the
+        measure has a closed form.
 
         Parameters
         ----------
@@ -67,30 +68,13 @@ class LevyTriplet:
         t :
             Time. Default 1.
         """
-        from scipy import integrate  # type: ignore[import-untyped]
-
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
         results = np.zeros_like(u_arr, dtype=complex)
 
         for i, ui in enumerate(u_arr.flat):
             gaussian_term = -0.5 * self.sigma_sq * ui**2
             drift_term = 1j * self.b * ui
-
-            def integrand(x: float) -> complex:
-                if x == 0.0:
-                    return complex(0.0)
-                k = float(self.nu.density(np.array([x]))[0])
-                exp_term = np.exp(1j * ui * x) - 1 - 1j * ui * x * (abs(x) <= 1)
-                return exp_term * k
-
-            jump_re_neg, _ = integrate.quad(lambda x: integrand(x).real, -np.inf, -1e-8, limit=200)
-            jump_re_pos, _ = integrate.quad(lambda x: integrand(x).real, 1e-8, np.inf, limit=200)
-            jump_re = jump_re_neg + jump_re_pos
-            jump_im_neg, _ = integrate.quad(lambda x: integrand(x).imag, -np.inf, -1e-8, limit=200)
-            jump_im_pos, _ = integrate.quad(lambda x: integrand(x).imag, 1e-8, np.inf, limit=200)
-            jump_im = jump_im_neg + jump_im_pos
-
-            psi = drift_term + gaussian_term + complex(jump_re, jump_im)
+            psi = drift_term + gaussian_term + self.nu.jump_exponent(complex(ui))
             results.flat[i] = np.exp(t * psi)
 
         return results if results.shape != (1,) else results[0]

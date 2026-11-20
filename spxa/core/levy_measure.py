@@ -127,6 +127,30 @@ class LevyMeasure(abc.ABC):
         neg, _ = integrate.quad(integrand, -b, -a, limit=200)
         return float(pos + neg)
 
+    def jump_exponent(self, u: complex) -> complex:
+        r"""
+        Return :math:`\int (e^{iux} - 1 - iux\mathbb 1_{|x| \le 1})\, \nu(dx)`.
+
+        This is the jump part of the Lévy–Khintchine exponent. The default
+        integrates the density on :math:`(-\infty, -10^{-8}]` and
+        :math:`[10^{-8}, \infty)`. Measures with atoms or a closed form
+        override it.
+        """
+        from scipy import integrate  # type: ignore[import-untyped]
+
+        def integrand(x: float) -> complex:
+            if x == 0.0:
+                return complex(0.0)
+            k = float(self.density(np.array([x]))[0])
+            return complex((np.exp(1j * u * x) - 1 - 1j * u * x * (abs(x) <= 1)) * k)
+
+        parts = [
+            integrate.quad(lambda x, f=f: f(integrand(x)), lo, hi, limit=200)[0]
+            for f in (lambda z: z.real, lambda z: z.imag)
+            for lo, hi in ((-np.inf, -1e-8), (1e-8, np.inf))
+        ]
+        return complex(parts[0] + parts[1], parts[2] + parts[3])
+
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         """Add two Lévy measures. Used when adding independent Lévy processes."""
         return CompoundLevyMeasure([self, other])
@@ -161,6 +185,9 @@ class CompoundLevyMeasure(LevyMeasure):
 
     def first_moment_between(self, a: float, b: float) -> float:
         return float(sum(c.first_moment_between(a, b) for c in self.components))
+
+    def jump_exponent(self, u: complex) -> complex:
+        return complex(sum(c.jump_exponent(u) for c in self.components))
 
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         if isinstance(other, CompoundLevyMeasure):
@@ -253,3 +280,15 @@ class ScaledLevyMeasure(LevyMeasure):
         # ∫_{a<|x|≤b} x ν_Z(dx) = ∫_{a<|cy|≤b} cy ν_X(dy)
         c = abs(self.scale)
         return float(self.scale * self.base.first_moment_between(a / c, b / c))
+
+    def jump_exponent(self, u: complex) -> complex:
+        # ∫ (e^{iucy} − 1 − iucy 1{|cy| ≤ 1}) ν_X(dy)
+        #   = J_X(cu) − iu · c ∫ y (1{|cy| ≤ 1} − 1{|y| ≤ 1}) ν_X(dy)
+        c = self.scale
+        if abs(c) < 1:
+            shift = c * self.base.first_moment_between(1.0, 1.0 / abs(c))
+        elif abs(c) > 1:
+            shift = -c * self.base.first_moment_between(1.0 / abs(c), 1.0)
+        else:
+            shift = 0.0
+        return complex(self.base.jump_exponent(c * u) - 1j * u * shift)

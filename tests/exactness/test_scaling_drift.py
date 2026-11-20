@@ -66,3 +66,23 @@ def test_first_moment_between_on_compound_and_scaled_measures() -> None:
     with pytest.raises(ValueError):
         vg.triplet.nu.first_moment_between(1.0, 0.5)
     assert np.isfinite(vg.triplet.nu.first_moment_between(1.0, np.inf))
+
+
+@pytest.mark.exactness
+def test_jump_exponent_of_scaled_and_summed_measures() -> None:
+    vg, nig = PROCESSES["VG"](), PROCESSES["NIG"]()
+    for c in (0.5, -3.0):
+        z = vg.triplet.scale(c)
+        for u in (0.7, -2.0):
+            # the jump exponent of ν_Z with Z's drift reproduces ψ_X(cu)
+            psi = 1j * z.b * u + z.nu.jump_exponent(u)
+            assert abs(np.exp(psi) - complex(vg.char_func(c * u))) < 1e-7
+    s = vg.triplet + nig.triplet
+    assert (
+        abs(
+            s.nu.jump_exponent(1.3)
+            - vg.triplet.nu.jump_exponent(1.3)
+            - nig.triplet.nu.jump_exponent(1.3)
+        )
+        < 1e-12
+    )
