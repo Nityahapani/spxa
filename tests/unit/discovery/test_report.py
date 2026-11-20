@@ -1,0 +1,82 @@
+"""DiscoveryReport rendering, weights and matching, on hand-built fits."""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from spxa.discovery.empirical import from_statistics
+from spxa.discovery.expr import Leaf, Model
+from spxa.discovery.families import BROWNIAN, DRIFT, GAMMA, VARIANCE_GAMMA
+from spxa.discovery.fit import FitResult
+from spxa.discovery.report import DiscoveryReport
+
+SUMMARY = from_statistics(
+    mean=0.0, variance=0.01, skewness=-0.3, excess_kurtosis=2.0, dt=0.1, n=1000
+)
+
+
+def _fit(model: Model, loglik: float | None, ks: float | None = None) -> FitResult:
+    return FitResult(
+        model=model,
+        method="likelihood" if loglik is not None else "cumulants",
+        objective=0.0,
+        n_obs=1000,
+        loglik=loglik,
+        g_statistic=10.0 if loglik is not None else None,
+        g_pvalue=0.4 if loglik is not None else None,
+        ks_distance=ks,
+        target_cumulants=SUMMARY.cumulants.copy(),
+        dt=SUMMARY.dt,
+    )
+
+
+VG_GAMMA = Model(
+    Leaf(VARIANCE_GAMMA) + Leaf(GAMMA) + Leaf(DRIFT), [(0.2, 0.3, -0.1), (2.0, 25.0), (0.0,)]
+)
+VG = Model(Leaf(VARIANCE_GAMMA) + Leaf(DRIFT), [(0.2, 0.3, -0.1), (0.0,)])
+BM = Model(Leaf(BROWNIAN) + Leaf(DRIFT), [(0.3,), (0.0,)])
+
+
+def test_weights_follow_the_bic_differences() -> None:
+    fits = [_fit(VG_GAMMA, -100.0, 0.004), _fit(VG, -101.0, 0.006), _fit(BM, -150.0, 0.05)]
+    fits.sort(key=lambda f: f.bic)
+    rep = DiscoveryReport(fits, SUMMARY, "bic", "likelihood", 0.02)
+    bic = np.array([f.bic for f in fits])
+    expected = np.exp(-0.5 * (bic - bic.min()))
+    np.testing.assert_allclose(rep.weights(), expected / expected.sum())
+    assert rep.score(fits[1]) == fits[1].bic
+
+
+def test_headline_uses_the_cdf_gap_and_weighted_subordinators() -> None:
+    # Gamma(a, b) is (1/b) * Gamma(a, 1): rendered as 0.04 * GammaProcess(a=2, b=1)
+    fits = [_fit(VG_GAMMA, -100.0, 0.004), _fit(BM, -150.0, 0.05)]
+    rep = DiscoveryReport(fits, SUMMARY, "bic", "likelihood", 0.02)
+    head = rep.headline()
+    assert head.startswith(
+        "VarianceGamma(sigma=0.2, nu=0.3, theta=-0.1) + 0.04 * GammaProcess(a=2, b=1)"
+    )
+    assert "within 0.4% (largest gap between model and empirical CDFs" in head
+    gap = fits[1].bic - fits[0].bic
+    assert head.endswith(f"BIC lead over the runner-up {gap:.1f}")
+    table = rep.table().splitlines()
+    assert "CDF gap" in table[0] and "moment err" in table[0]
+    assert table[1].split()[0] == "1" and float(table[1].split()[1]) == 0.0
+
+
+def test_cumulant_reports_quote_the_moment_error() -> None:
+    fits = [_fit(VG, None), _fit(BM, None)]
+    fits.sort(key=lambda f: f.match_error)
+    rep = DiscoveryReport(fits, SUMMARY, "bic", "cumulants", tolerance=10.0)
+    assert rep.score(fits[0]) == fits[0].match_error
+    assert "largest error in variance, skewness and excess kurtosis" in rep.headline()
+    assert "moment err" in rep.table().splitlines()[0]
+    assert rep.matching() == [f for f in fits if f.match_error <= 10.0]
+    with pytest.raises(ValueError):
+        rep.weights()
+
+
+def test_warnings_are_printed() -> None:
+    rep = DiscoveryReport([_fit(BM, -1.0, 0.1)], SUMMARY, "aic", "likelihood", 0.02, ["careful"])
+    assert str(rep).endswith("warning: careful")
+    assert "runner-up" not in rep.headline()
