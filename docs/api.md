@@ -204,6 +204,14 @@ the running library. All signatures are exact.
    - [Variance & Volatility Swaps](#variance-volatility-swaps)
    - [Model Risk](#model-risk)
    - [Risk Adapter, Processes & Graph Nodes](#risk-adapter-processes-graph-nodes)
+23. [Process Discovery (`spxa.discovery`)](#process-discovery-spxadiscovery)
+   - [Families & Expressions](#families-expressions)
+   - [Data: Files, Summaries & Statistics](#data-files-summaries-statistics)
+   - [Fitting One Structure](#fitting-one-structure)
+   - [Search & Reports](#search-reports)
+   - [Inference: Standard Errors, Vuong & Bootstrap](#inference-standard-errors-vuong-bootstrap)
+   - [Option Prices](#option-prices)
+   - [Command Line](#command-line)
 
 ---
 
@@ -5445,3 +5453,56 @@ This section covers arbitrage-free implied-volatility slices and surfaces in log
 - `spxa.graph.vol` nodes:
   - `svi_total_variance_node(a, b, rho, m, sigma, *, k)` has an analytic gradient.
   - `surface_price_node(spot, vol_shift=0.0, *, surface, strike, maturity, option="call", dynamics="sticky_strike")` uses the adapter's delta and vega as its vector–Jacobian product.
+
+## Process Discovery (`spxa.discovery`)
+
+Inverse stochastic algebra: given returns, summary statistics or option prices, find the compositions of Lévy primitives that explain them, with parameters, fit quality and uncertainty. The theory is in [Process discovery](theory/discovery.md).
+
+### Families & Expressions
+- `Family`: a primitive, defined by its cumulant exponent $K(z)$, exact cumulants, exponential-moment strip and an unconstrained parametrisation (`to_free`/`from_free`). Registry: `FAMILIES`, `get_family(name)`. Built-in families: `DRIFT`, `BROWNIAN`, `GAMMA`, `INVERSE_GAUSSIAN`, `VARIANCE_GAMMA`, `NIG_FAMILY`, `MEIXNER`, `POISSON`, `NORMAL_JUMPS`, `DOUBLE_EXP_JUMPS` and `CGMY_FAMILY`.
+- Structures: `leaf(F)`/`Leaf(F)`, `Sum(children)`, `Scale(c, child)` and `Subordinate(base, clock)`, built with `+`, `c * X`, unary `-` and `X @ T`. Each structure has `key()`, `leaves()` and `n_params`.
+- `Model(structure, params)` provides `log_mgf(z)`, `char_exponent(u)`, `cumulants(order=4, t=1.0)`, `cgf_series(order)`, `strip()`, `render(digits, weighted)`, `to_free()`/`Model.from_free(structure, x)` and `to_process()` (the equivalent zoo process).
+- `recognize(process)`: converts a zoo expression into a `Model`, which has exact cumulants even for `@`. It raises `NotRecognizedError` otherwise.
+- `CGFSeries(cumulants)`, `cumulants_to_moments(k)` and `moments_to_cumulants(m)`.
+
+### Data: Files, Summaries & Statistics
+- `load_returns(source, column=None, kind="auto"|"returns"|"prices", log=True, delimiter=None)` returns a `ReturnSeries(returns, dt, column, kind, dates)`. `dt` is inferred from ISO dates with `infer_dt(dates)`.
+- `summarize(returns, dt=1.0, max_lag=10, hac_lags=0)` returns an `EmpiricalSummary` with per-unit-time cumulants (from k-statistics), their covariance (from influence functions, Newey–West with `hac_lags`), autocorrelations of returns and squared returns, and rank Ljung–Box tests. It has the properties `mean` and `variance` and the methods `skewness(horizon=None)` and `excess_kurtosis(horizon=None)`.
+- `from_statistics(mean, variance, skewness=0.0, excess_kurtosis=0.0, dt=1.0, n=None)`: a summary from the moments of increments over `dt`, with no sample.
+- Helpers: `k_statistics(x)`, `cumulant_covariance(x, hac_lags=0)`, `acf(x, max_lag)`, `ljung_box(x, max_lag)` and `rank_ljung_box(x, max_lag, volatility=False)`.
+- `COSDistribution(char_func, cumulants, n_terms=1024, L=12.0, bounds=None)` and `model_distribution(model, t)`: COS density, CDF and bin probabilities.
+
+### Fitting One Structure
+- `BinnedData.from_sample(sample, dt)`: bins and a Gaussian smoothing kernel fixed once per data set. It provides `probabilities(model)`, `pointwise_loglik(model)`, `kernel_matrix()` and `gof_statistic(probabilities, n_params)`.
+- `fit_structure(structure, summary, method="likelihood"|"cumulants", *, location=True, n_starts=4, rng=None, binned=None, maxiter=400, initial=None)` returns a `FitResult`. `with_location(structure)` appends the drift leaf.
+- `FitResult` has:
+  - the fitted model, `loglik`, `aic`, `bic` and `n_params`;
+  - `g_statistic`, `g_pvalue`, `ks_distance` (the CDF gap) and `converged`;
+  - `model_cumulants`, `moment_errors`, `match_error` and `cumulant_z_scores`;
+  - `degeneracies(boundary=9, share=1e-4)` and `degenerate` (limiting-case fits).
+
+### Search & Reports
+- `Grammar(return_families, subordinator_families, subordinated, max_terms)` with `atoms()`, `structures(max_terms)` and `extensions(structure)`; `grammar_from_names(names, max_terms=2, subordinated=False)`, `parse_atoms(names)` and `canonical(structure)`.
+- `discover(data, *, dt=None, grammar=None, method=None, criterion="bic"|"aic", search="beam"|"exhaustive", beam_width=4, max_terms=None, n_starts=3, extension_starts=2, seed=0, tolerance=0.02, exclude_degenerate=False)`. `data` can be an array of returns, a CSV path, a `ReturnSeries` or an `EmpiricalSummary`.
+- `DiscoveryReport` has:
+  - `candidates` (in rank order), `best`, `excluded`, `warnings`, `summary` and `binned`;
+  - `score(r)`, `weights()` (IC weights), `matching()` and `admissible()`;
+  - `headline()`, `table(top=10)`, `to_dict(top=None)` (strict JSON) and `str(report)`;
+  - `uncertainty(which=0)` and `compare(first=0, second=1, correction="bic")`.
+- `screen_degenerate(ranked, exclude, score=None, criterion="bic")` lives in `spxa.discovery.report`.
+
+### Inference: Standard Errors, Vuong & Bootstrap
+- `parameter_uncertainty(result, summary, binned=None)` returns a `ParameterUncertainty(names, estimates, covariance, method)` with `standard_errors`, `confidence_intervals(level)` and `table()`. Likelihood fits use the sandwich method and cumulant fits use GMM.
+- `vuong_test(first, second, binned, correction="none"|"aic"|"bic", level=0.05)` returns a `VuongResult(z, p_value, preferred, log_likelihood_ratio)`.
+- `bootstrap(report, n_boot=50, top=5, block_length=1, seed=0)` returns a `BootstrapResult` with `selection_frequency`, `intervals(structure, level)` and `table()`. It needs a report built from a return sample.
+
+### Option Prices
+- `martingale_correction(model)` returns $\omega = -K_X(1)$. It raises when $E[e^{X_1}] = \infty$.
+- `cos_prices(model, spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0)`: European prices under $S_T = S_0 e^{(r-q+\omega)T + X_T}$.
+- `OptionQuotes.from_arrays(spot, strikes, maturities, prices, call=True, rate=0.0, dividend=0.0)` provides `forwards`, `discounts`, `implied_vols(prices=None)` and `maturity_groups()`. `model_prices(model, quotes)` prices every quote.
+- `fit_options(structure, quotes, *, n_starts=3, rng=None, initial=None, n_terms=1024, maxiter=300)`: vega-weighted least squares. Its `extras` hold `iv_rmse`, `iv_max_error`, `price_rel_rmse` and `iv_rmse@T`.
+- `discover_from_options(quotes, *, grammar=None, criterion="bic", search="beam", beam_width=3, max_terms=None, n_starts=2, seed=0, n_terms=1024, exclude_degenerate=False)`. It warns when the pricing errors depend on maturity.
+
+### Command Line
+- `spxa-discover returns FILE [--column C] [--kind auto|returns|prices] [--simple] [--dt DT]` and `spxa-discover options FILE --spot S [--rate R] [--dividend Q]`. The options file has the columns `strike`, `maturity`, `price` and optionally `type`.
+- Options shared by both modes: `--families BM,VG,...`, `--max-terms`, `--criterion`, `--beam-width`, `--exclude-degenerate`, `--seed`, `--top` and `--json`. `python -m spxa.discovery` runs the same command. `spxa.discovery.cli.read_option_quotes(path, spot, rate, dividend)` reads quote files.
