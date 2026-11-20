@@ -863,6 +863,7 @@ __all__ = [
     "rates",
     "vol",
     "discovery",
+    "laws",
 ]
 
 
@@ -882,6 +883,7 @@ def __getattr__(name: str):
         "rates",
         "vol",
         "discovery",
+        "laws",
     ):
         import importlib
 

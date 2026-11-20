@@ -26,6 +26,15 @@ Quantities and library
     :mod:`spxa.laws.library` holds ready-made laws: ``AXIOMS``, ``ALGEBRA``,
     ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS``, ``PROPERTIES`` and
     ``SIMULATION``.
+Suites and reports
+    :class:`Suite` groups laws, filters them by name or tag, and checks them
+    into a :class:`SuiteReport` (text, Markdown or JSON). :func:`default_suite`
+    holds every library law. The command line ``python -m spxa.laws`` (or
+    ``spxa-laws``) runs it.
+pytest
+    :func:`law_tests` turns laws into parametrised pytest cases, and
+    :func:`assert_holds` checks one law inside a test
+    (:mod:`spxa.laws.testing`).
 Statistical expectations
     For laws about random output, :mod:`spxa.laws.stats` provides calibrated
     tests (empirical cf, mean, variance, independence) and
@@ -60,6 +69,8 @@ from spxa.laws.strategies import (
 
 from spxa.laws import library, quantities, stats
 from spxa.laws.stats import expect_not_rejected
+from spxa.laws.suite import Suite, SuiteFailure, SuiteReport, default_suite
+from spxa.laws.testing import assert_holds, law_tests
 
 __all__ = [
     "Strategy",
@@ -85,6 +96,13 @@ __all__ = [
     "expect_close",
     "implies",
     "expect_not_rejected",
+    # suites and pytest
+    "Suite",
+    "SuiteFailure",
+    "SuiteReport",
+    "default_suite",
+    "assert_holds",
+    "law_tests",
     # processes
     "PRIMITIVES",
     "SUBORDINATORS",
