@@ -12,6 +12,7 @@ from spxa.discovery.empirical import (
     from_statistics,
     k_statistics,
     ljung_box,
+    rank_ljung_box,
     summarize,
 )
 
@@ -105,7 +106,30 @@ def test_volatility_clustering_is_flagged() -> None:
         r[t] = sig[t] * rng.normal()
     s = summarize(r)
     assert s.ljung_box_squared[1] < 1e-6
+    assert s.rank_ljung_box_volatility[1] < 1e-6
     assert not s.is_levy_consistent()
+
+
+def test_heavy_tailed_iid_increments_are_not_flagged() -> None:
+    # daily Gamma(4, 25) increments have excess kurtosis 6/(4/252) = 378;
+    # the classical tests reject independence far above their level, the
+    # rank tests do not
+    classical = ranks = 0
+    for seed in range(40):
+        x = np.random.default_rng(seed).gamma(4 / 252, 1 / 25, size=5_000)
+        s = summarize(x, dt=1 / 252)
+        classical += min(s.ljung_box_returns[1], s.ljung_box_squared[1]) < 0.01
+        ranks += not s.is_levy_consistent()
+    assert classical >= 3
+    assert ranks <= 2
+
+
+def test_rank_ljung_box_detects_dependence() -> None:
+    e = np.random.default_rng(3).standard_t(3, size=3_001)
+    _, p_iid = rank_ljung_box(e, 10)
+    _, p_ma = rank_ljung_box(e[1:] + 0.5 * e[:-1], 10)
+    assert p_iid > 0.01
+    assert p_ma < 1e-10
 
 
 def test_from_statistics() -> None:

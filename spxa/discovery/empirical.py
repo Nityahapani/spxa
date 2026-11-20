@@ -101,6 +101,25 @@ def ljung_box(x: Sequence[float], max_lag: int) -> tuple[float, float]:
     return q, float(stats.chi2.sf(q, max_lag))
 
 
+def rank_ljung_box(
+    x: Sequence[float], max_lag: int, volatility: bool = False
+) -> tuple[float, float]:
+    r"""Ljung–Box test on ranks: an independence check that tolerates heavy tails.
+
+    The classical test assumes finite fourth moments of the series, and
+    eighth moments when it is applied to squared returns. Pure-jump
+    increments at short horizons can have excess kurtosis in the hundreds,
+    and the test is then badly oversized. Ranks are bounded and remove the
+    problem; under independence they are exchangeable (Dufour & Roy 1985).
+    With ``volatility=True`` the ranks are of :math:`|x - \mathrm{median}(x)|`
+    and the test detects volatility clustering.
+    """
+    x = np.asarray(x, dtype=float)
+    if volatility:
+        x = np.abs(x - np.median(x))
+    return ljung_box(stats.rankdata(x), max_lag)
+
+
 @dataclass(frozen=True)
 class EmpiricalSummary:
     r"""What discovery fits to: per-unit-time cumulants and their uncertainty.
@@ -120,7 +139,10 @@ class EmpiricalSummary:
         Autocorrelations of returns and of squared returns, if a sample was
         given.
     ljung_box_returns, ljung_box_squared :
-        ``(Q, p-value)`` pairs.
+        Classical ``(Q, p-value)`` pairs, kept for reporting.
+    rank_ljung_box_returns, rank_ljung_box_volatility :
+        Rank-based ``(Q, p-value)`` pairs (:func:`rank_ljung_box`), which
+        :meth:`is_levy_consistent` uses.
     """
 
     cumulants: np.ndarray
@@ -131,6 +153,8 @@ class EmpiricalSummary:
     acf_squared: Optional[np.ndarray] = None
     ljung_box_returns: Optional[tuple[float, float]] = None
     ljung_box_squared: Optional[tuple[float, float]] = None
+    rank_ljung_box_returns: Optional[tuple[float, float]] = None
+    rank_ljung_box_volatility: Optional[tuple[float, float]] = None
     sample: Optional[np.ndarray] = field(default=None, repr=False)
 
     @property
@@ -156,8 +180,15 @@ class EmpiricalSummary:
         return None if self.covariance is None else np.sqrt(np.diag(self.covariance))
 
     def is_levy_consistent(self, level: float = 0.01) -> bool:
-        """False if returns or squared returns are significantly autocorrelated at ``level``."""
-        for test in (self.ljung_box_returns, self.ljung_box_squared):
+        """False if increments show serial dependence at ``level``.
+
+        Uses the rank-based tests when available, since the classical ones
+        reject far too often for i.i.d. heavy-tailed increments.
+        """
+        tests = (self.rank_ljung_box_returns, self.rank_ljung_box_volatility)
+        if all(t is None for t in tests):
+            tests = (self.ljung_box_returns, self.ljung_box_squared)
+        for test in tests:
             if test is not None and test[1] < level:
                 return False
         return True
@@ -187,6 +218,8 @@ def summarize(
         acf_squared=acf(x**2, max_lag),
         ljung_box_returns=ljung_box(x, max_lag),
         ljung_box_squared=ljung_box(x**2, max_lag),
+        rank_ljung_box_returns=rank_ljung_box(x, max_lag),
+        rank_ljung_box_volatility=rank_ljung_box(x, max_lag, volatility=True),
         sample=x,
     )
 
