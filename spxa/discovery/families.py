@@ -466,13 +466,28 @@ def _meixner_process(p: Params) -> Process:
     return MeixnerProcess(alpha=p[0], beta=p[1], delta=p[2], m=0.0)
 
 
+def _log_cos(w: np.ndarray) -> np.ndarray:
+    r"""Principal :math:`\log\cos w` without overflow for large :math:`|\mathrm{Im}\,w|`.
+
+    With :math:`\zeta = iw` and :math:`s = \mathrm{sign}\,\mathrm{Re}\,\zeta` (taking
+    :math:`s = 1` at zero), :math:`\log\cos w = \log\cosh\zeta = s\zeta +
+    \log(1 + e^{-2s\zeta}) - \log 2`, and :math:`|e^{-2s\zeta}| \le 1`. On the
+    Meixner characteristic exponent, :math:`|\mathrm{Im}\,\zeta| = |\beta|/2 < \pi/2`,
+    so the imaginary part stays in :math:`(-\pi, \pi)` and this is the principal
+    branch. ``np.cos`` overflows once :math:`\alpha u/2 \gtrsim 710`.
+    """
+    zeta = 1j * np.asarray(w, dtype=complex)
+    s = np.where(zeta.real < 0, -1.0, 1.0)
+    return s * zeta + np.log1p(np.exp(-2.0 * s * zeta)) - np.log(2.0)
+
+
 MEIXNER = Family(
     name="Meixner",
     process_name="MeixnerProcess",
     param_names=("alpha", "beta", "delta"),
     cumulants_fn=_meixner_cumulants,
     log_mgf_fn=lambda z, p: (
-        2.0 * p[2] * (np.log(np.cos(p[1] / 2.0)) - np.log(np.cos((p[0] * z + p[1]) / 2.0)))
+        2.0 * p[2] * (np.log(np.cos(p[1] / 2.0)) - _log_cos((p[0] * z + p[1]) / 2.0))
     ),
     strip_fn=lambda p: ((-np.pi - p[1]) / p[0], (np.pi - p[1]) / p[0]),
     to_free_fn=lambda p: np.array([np.log(p[0]), _logit(p[1], -np.pi, np.pi), np.log(p[2])]),

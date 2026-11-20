@@ -149,3 +149,22 @@ def test_variance_gamma_is_a_difference_of_gammas() -> None:
     up = gam.cumulants((1 / p[1], hi), 7)
     down = gam.cumulants((1 / p[1], -lo), 7) * (-1.0) ** np.arange(1, 8)
     np.testing.assert_allclose(vg.cumulants(p, 7), up + down, rtol=1e-12)
+
+
+def test_meixner_exponent_is_finite_at_large_frequencies() -> None:
+    import warnings
+
+    from spxa.discovery.families import MEIXNER, _log_cos
+
+    w = np.array([0.3, -1.2 + 0.4j, 0.7 - 3j, 1.0 + 50j])
+    np.testing.assert_allclose(_log_cos(w), np.log(np.cos(w)), rtol=0, atol=1e-14)
+    alpha, beta, delta = 0.26, 0.4, 1.5
+    u = np.array([1e3, 1e4, 1e5])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        psi = MEIXNER.char_exponent(u, (alpha, beta, delta))
+    # |cosh(x + iy)| ~ e^{|x|}/2: ψ(u) → 2δ(log cos(β/2) + log 2 - α|u|/2) + iδβ
+    expected = (
+        2 * delta * (np.log(np.cos(beta / 2)) + np.log(2) - alpha * u / 2) + 1j * delta * beta
+    )
+    np.testing.assert_allclose(psi, expected, rtol=1e-12)
