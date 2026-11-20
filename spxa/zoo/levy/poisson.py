@@ -51,6 +51,18 @@ class _PoissonLevyMeasure(LevyMeasure):
     def moment(self, n: int) -> float:
         return self.rate * (self.jump_size**n)
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        """λc if the atom c lies in a < |x| ≤ b, else 0."""
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        return float(self.rate * self.jump_size) if a < abs(self.jump_size) <= b else 0.0
+
+    def jump_exponent(self, u: complex) -> complex:
+        """λ(e^{iuc} − 1) − iuλc·1{|c| ≤ 1}."""
+        c = self.jump_size
+        inside = self.rate * c if abs(c) <= 1 else 0.0
+        return complex(self.rate * np.expm1(1j * u * c) - 1j * u * inside)
+
 
 class PoissonProcess(Process):
     """
@@ -59,8 +71,8 @@ class PoissonProcess(Process):
     X_t counts the number of jumps of size c up to time t.
     N(t) ~ Poisson(λt) so X_t = c · N(t).
 
-    Lévy–Khintchine triplet: (0, 0, λ·δ_c) for c ≤ 1,
-    or (-λc, 0, λ·δ_c) for c > 1 (truncation function adjustment).
+    Lévy–Khintchine triplet with truncation x·1{|x| ≤ 1}: (λc, 0, λ·δ_c)
+    for |c| ≤ 1 and (0, 0, λ·δ_c) for |c| > 1.
 
     Parameters
     ----------
@@ -97,7 +109,9 @@ class PoissonProcess(Process):
     def _triplet(self) -> LevyTriplet:
         c = self.jump_size
         nu = _PoissonLevyMeasure(rate=self.rate, jump_size=c)
-        b = -self.rate * c if abs(c) > 1 else 0.0
+        # truncation x·1{|x| ≤ 1}: an atom inside the unit ball is compensated
+        # inside the integral, so b must put the mean λc back; outside it, b = 0
+        b = self.rate * c if abs(c) <= 1 else 0.0
         return LevyTriplet(b=b, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
