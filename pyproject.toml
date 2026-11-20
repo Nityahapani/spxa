@@ -61,6 +61,7 @@ Changelog = "https://github.com/Nityahapani/spxa/blob/main/CHANGELOG.md"
 
 [project.scripts]
 spxa-discover = "spxa.discovery.cli:main"
+spxa-laws = "spxa.laws.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
