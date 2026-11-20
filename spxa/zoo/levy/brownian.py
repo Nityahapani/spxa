@@ -92,7 +92,8 @@ class BrownianMotion(Process):
             is_martingale=(self.mu == 0.0),
             has_finite_variance=True,
             has_finite_mean=True,
-            self_similarity_index=0.5,
+            # B_{ct} + μct ∼ c^{1/2}(B_t + μt) only when μ = 0
+            self_similarity_index=0.5 if self.mu == 0.0 else None,
             tail_index=None,
             is_subordinator=False,
             hurst_index=None,

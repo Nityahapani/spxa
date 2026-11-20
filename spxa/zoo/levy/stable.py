@@ -168,6 +168,22 @@ class AlphaStable(Process):
         nu = _stable_levy_measure(self.alpha, self.beta, self.sigma)
         return LevyTriplet(b=self.mu, sigma_sq=0.0, nu=nu)
 
+    def _strictly_stable(self) -> bool:
+        r"""
+        Whether :math:`X_{ct} \sim c^{1/\alpha}X_t`.
+
+        With the exponent :math:`-\sigma^\alpha|u|^\alpha(1 - i\beta\,\mathrm{sgn}(u)
+        \tan\frac{\pi\alpha}2) + i\mu u`, the drift scales as :math:`c` and
+        the rest as :math:`c^{1/\alpha}`, so :math:`\mu` must vanish for
+        :math:`\alpha \ne 1`. For :math:`\alpha = 1`, the drift scales like
+        the rest, but the :math:`\beta\,|u|\log|u|` term gives an extra
+        :math:`\frac2\pi\beta\sigma\,c\log c`, so :math:`\beta` must vanish
+        (Samorodnitsky & Taqqu 1994, Prop. 1.2.1 and Def. 1.1.6).
+        """
+        if abs(self.alpha - 1.0) <= 1e-12:
+            return self.beta == 0.0
+        return self.mu == 0.0
+
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
@@ -175,7 +191,7 @@ class AlphaStable(Process):
             is_martingale=False,
             has_finite_variance=(self.alpha == 2.0),
             has_finite_mean=(self.alpha > 1.0),
-            self_similarity_index=1.0 / self.alpha,
+            self_similarity_index=1.0 / self.alpha if self._strictly_stable() else None,
             tail_index=self.alpha if self.alpha < 2 else None,
             is_subordinator=False,
         )
