@@ -12,13 +12,16 @@ module-level tuple:
   time changes.
 - :mod:`~spxa.laws.library.triplet` (``TRIPLET``): a primitive's closed
   forms against its Lévy–Khintchine triplet and measure.
+- :mod:`~spxa.laws.library.cumulants` (``CUMULANTS``): cumulants
+  recovered from the characteristic function; convexity of the CGF.
 """
 
 from __future__ import annotations
 
 from spxa.laws.library.algebra import ALGEBRA
 from spxa.laws.library.axioms import AXIOMS
+from spxa.laws.library.cumulants import CUMULANTS
 from spxa.laws.library.subordination import SUBORDINATION
 from spxa.laws.library.triplet import TRIPLET
 
-__all__ = ["ALGEBRA", "AXIOMS", "SUBORDINATION", "TRIPLET"]
+__all__ = ["ALGEBRA", "AXIOMS", "CUMULANTS", "SUBORDINATION", "TRIPLET"]
