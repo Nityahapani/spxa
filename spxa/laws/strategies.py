@@ -18,7 +18,9 @@ aggressive simplification before the cautious ones.
 Floats shrink towards a target: the value in range closest to 0 unless
 ``simplest`` is given. The candidates, in order, are the target, the
 nearest integer, values rounded to 1, 2 and 3 significant digits, and
-points that halve the distance to the target. Integers shrink towards
+the points :math:`t + d(1 - 2^{-k})` for :math:`k = 1, \dots, 8`, which close
+in on a failure boundary from the far side (:math:`d` is the distance from
+the target :math:`t`). Integers shrink towards
 their target by halving. Tuples and dictionaries shrink one component at
 a time.
 
@@ -192,7 +194,7 @@ def _float_candidates(x: float, target: float, lo: float, hi: float) -> list[flo
             for digits in (1, 2, 3):
                 add(float(f"{x:.{digits}g}"))
         d = x - target
-        for k in (1, 2, 3, 4):
+        for k in range(1, 9):
             add(target + d * (1 - 0.5**k))
     return out
 

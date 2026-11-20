@@ -11,8 +11,9 @@ each one and returns a :class:`LawResult`:
     tried and how many were discarded by :func:`~spxa.laws.expect.assume`.
 ``"falsified"``
     The predicate raised :class:`~spxa.laws.expect.LawViolation` or
-    returned ``False``. The result holds the counterexample and the
-    failure message.
+    returned ``False``. The counterexample is shrunk to a locally minimal
+    one (see :meth:`Law._shrink`). The result keeps both the shrunk and the
+    original counterexample, and the failure message of the shrunk one.
 ``"error"``
     Evaluation raised any other exception. That is also a
     counterexample: the law could not be evaluated where it should
@@ -132,6 +133,12 @@ def evaluate(fn: Callable[..., Any], args: Mapping[str, Any]) -> Outcome:
     return Outcome("pass")
 
 
+def _same_failure(reference: Outcome, candidate: Outcome) -> bool:
+    if reference.kind == "violation":
+        return candidate.kind == "violation"
+    return candidate.kind == "error" and candidate.exception == reference.exception
+
+
 class Law:
     """A named predicate over arguments drawn from strategies.
 
@@ -238,8 +245,31 @@ class Law:
     def _shrink(
         self, tree: Tree[dict[str, Any]], outcome: Outcome, max_shrinks: int
     ) -> tuple[Tree[dict[str, Any]], Outcome, int]:
-        """No shrinking yet: report the counterexample as found."""
-        return tree, outcome, 0
+        """Greedy descent to a locally minimal counterexample.
+
+        At each step the children of the current counterexample are tried
+        in order, simplest first. The first child that fails *in the same
+        way* becomes the new counterexample: a violation must stay a
+        violation, and an error must raise the same exception type. The
+        descent stops when no child fails or after ``max_shrinks``
+        evaluations. The result is locally minimal: none of its direct
+        simplifications fails.
+        """
+        current, current_out = tree, outcome
+        steps = evaluations = 0
+        while evaluations < max_shrinks:
+            for child in current.children():
+                evaluations += 1
+                out = evaluate(self.fn, child.value)
+                if _same_failure(current_out, out):
+                    current, current_out = child, out
+                    steps += 1
+                    break
+                if evaluations >= max_shrinks:
+                    break
+            else:
+                break
+        return current, current_out, steps
 
     def __repr__(self) -> str:
         args = ", ".join(f"{k}={v!r}" for k, v in self.strategies.items())

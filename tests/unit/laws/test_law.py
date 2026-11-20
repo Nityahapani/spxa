@@ -51,7 +51,10 @@ def test_falsified_by_a_false_return() -> None:
     r = false_for_large.check(n_examples=100, seed=0)
     assert r.status == "falsified" and r.failed
     assert r.counterexample is not None and r.counterexample["x"] >= 7.5
-    assert r.original == r.counterexample  # no shrinking yet
+    # shrunk to the boundary of the failure region
+    assert r.counterexample == {"x": 7.5} and r.original["x"] > 7.5 and r.shrink_steps >= 1
+    unshrunk = false_for_large.check(n_examples=100, seed=0, shrink=False)
+    assert unshrunk.counterexample == unshrunk.original == r.original
     assert r.message == "the law returned False"
     assert "FALSIFIED" in str(r) and "x = " in str(r)
     with pytest.raises(LawFailure) as e:
@@ -97,7 +100,10 @@ def test_checks_are_reproducible() -> None:
     b = false_for_large.check(n_examples=100, seed=11)
     assert a.counterexample == b.counterexample and a.n_examples == b.n_examples
     c = false_for_large.check(n_examples=100, seed=12)
-    assert c.counterexample != a.counterexample
+    assert c.original != a.original
+    # both shrink close to the boundary x = 7.5
+    for r in (a, c):
+        assert 7.5 <= r.counterexample["x"] < 7.6
 
 
 def test_evaluate_silences_floating_point_warnings() -> None:
@@ -112,3 +118,44 @@ def test_holds_for_and_result_fields() -> None:
     assert out.kind == "violation"
     r = LawResult("l", "verified", 3, 0, seed=0)
     assert r.ok and r.shrink_steps == 0
+
+
+def test_shrinking_keeps_the_failure_kind() -> None:
+    @law(x=floats(0.0, 100.0))
+    def two_bugs(x: float) -> None:
+        if x < 10.0:
+            raise KeyError("small")  # a different failure below 10
+        expect(x < 50.0, "too big")
+
+    r = two_bugs.check(n_examples=200, seed=2)
+    assert r.status == "falsified" and r.message == "too big"
+    assert r.counterexample == {"x": 50.0}
+
+    @law(x=floats(0.0, 100.0))
+    def errors_only(x: float) -> None:
+        if x > 20.0:
+            raise ZeroDivisionError("big")
+        if x > 5.0:
+            raise ValueError("medium")
+
+    e = errors_only.check(n_examples=200, seed=5)
+    assert e.status == "error" and e.exception == "ZeroDivisionError"
+    assert 20.0 < e.counterexample["x"] <= 25.0
+
+
+def test_shrinking_budget() -> None:
+    capped = false_for_large.check(n_examples=100, seed=0, max_shrinks=1)
+    assert capped.shrink_steps <= 1
+
+
+def test_composite_counterexamples_shrink_to_the_guilty_operand() -> None:
+    from spxa.laws.processes import compositions, levy_processes
+
+    @law(X=compositions(levy_processes(["BrownianMotion", "GammaProcess"]), max_depth=2))
+    def no_gamma(X) -> None:  # type: ignore[no-untyped-def]
+        expect("GammaProcess" not in repr(X), "contains a gamma process")
+
+    r = no_gamma.check(n_examples=100, seed=0)
+    assert r.status == "falsified"
+    assert repr(r.counterexample["X"]) == "GammaProcess(a=1.0, b=1.0)"
+    assert "GammaProcess" in repr(r.original["X"])
