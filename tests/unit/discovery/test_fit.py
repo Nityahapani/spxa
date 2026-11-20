@@ -8,7 +8,7 @@ import pytest
 from spxa.discovery.empirical import from_statistics, summarize
 from spxa.discovery.expr import Model, leaf
 from spxa.discovery.families import BROWNIAN, DRIFT, GAMMA, NIG_FAMILY, VARIANCE_GAMMA
-from spxa.discovery.fit import BinnedData, fit_structure, initial_params, with_location
+from spxa.discovery.fit import BinnedData, FitResult, fit_structure, initial_params, with_location
 
 from .conftest import gamma_increments, vg_increments
 
@@ -203,3 +203,45 @@ def test_large_moment_errors_can_be_sampling_noise() -> None:
     z = r.cumulant_z_scores
     assert z is not None and np.max(np.abs(z)) < 1.5
     assert r.g_pvalue is not None and r.g_pvalue > 0.1
+
+
+def _result(model: Model) -> FitResult:
+    return FitResult(model=model, method="likelihood", objective=0.0, n_obs=100, loglik=0.0)
+
+
+def test_degeneracies() -> None:
+    from spxa.discovery.families import CGMY_FAMILY
+
+    vg = leaf(VARIANCE_GAMMA)
+    healthy = [
+        Model(with_location(vg), [(0.2, 0.25, -0.3), (0.05,)]),
+        Model(leaf(NIG_FAMILY), [(13.6, -4.88, 0.32)]),
+        Model(vg + leaf(GAMMA), [(0.2, 0.25, -0.3), (1.0, 4.0)]),
+        Model(with_location(leaf(BROWNIAN)), [(0.2,), (1e6,)]),  # drift exempt
+    ]
+    for m in healthy:
+        assert _result(m).degeneracies() == [] and not _result(m).degenerate
+
+    one_sided = _result(Model(leaf(NIG_FAMILY), [(8.97e5, 8.97e5 - 1.0, 0.01)]))
+    reasons = one_sided.degeneracies()
+    assert (
+        one_sided.degenerate
+        and len(reasons) == 1
+        and reasons[0].startswith("NIG.alpha at a boundary")
+    )
+
+    cgmy = _result(Model(leaf(CGMY_FAMILY), [(1.0, 5.0, 5.0, 4.69e-5)]))
+    assert [r.split()[0] for r in cgmy.degeneracies()] == ["CGMY.Y"]
+
+    tiny = _result(Model(leaf(BROWNIAN) + vg, [(1e-3,), (0.159, 0.234, -0.125)]))
+    (msg,) = tiny.degeneracies()
+    assert msg.startswith("BM carries") and "of the variance" in msg
+    assert tiny.degeneracies(share=1e-8) == []
+
+    vanished = _result(Model(leaf(BROWNIAN) + vg, [(6.58e-11,), (0.159, 0.234, -0.125)]))
+    assert len(vanished.degeneracies()) == 2  # both signs fire
+    assert (
+        _result(Model(leaf(NIG_FAMILY), [(1.2e4, -1.2e4 + 0.5, 0.02)]))
+        .degeneracies(boundary=9.0)[0]
+        .startswith("NIG.alpha")
+    )

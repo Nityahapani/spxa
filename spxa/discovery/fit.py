@@ -46,6 +46,9 @@ from spxa.discovery.empirical import EmpiricalSummary
 from spxa.discovery.expr import Leaf, Model, Node, Scale, Subordinate, Sum
 from spxa.discovery.families import DRIFT, GAMMA, INVERSE_GAUSSIAN, POISSON
 
+DEGENERATE_BOUNDARY = 9.0  # see FitResult.degeneracies
+DEGENERATE_SHARE = 1e-4
+
 Method = Literal["likelihood", "cumulants"]
 _PENALTY = 1e12
 
@@ -310,6 +313,65 @@ class FitResult:
     @property
     def structure_key(self) -> str:
         return self.model.structure.key()
+
+    def degeneracies(
+        self, boundary: float = DEGENERATE_BOUNDARY, share: float = DEGENERATE_SHARE
+    ) -> list[str]:
+        r"""Reasons to read this fit as a limiting case rather than as its nominal structure.
+
+        Two signs are checked:
+
+        - **boundary**: an unconstrained coordinate (log or logit of a
+          parameter; see :meth:`Family.to_free`) exceeds ``boundary`` in
+          absolute value. The default 9 means a parameter more than
+          :math:`e^9 \approx 8100` times away from 1, or within about 1e-4
+          of an interval bound. Such fits sit at an edge of the family.
+          ``NIG(alpha=9e5, beta=9e5, ...)`` is the one-sided limit and
+          ``CGMY(Y=5e-5)`` is the variance-gamma-like limit. Drift
+          coordinates are exempt.
+        - **vanishing summand**: a top-level summand supplies less than
+          ``share`` of the variance of the sum, so the structure reduces to
+          its parent. ``BM(sigma=1e-10) + VG(...)`` is an example.
+
+        The boundary check depends on units: parameters are per unit time
+        and returns are in natural units (decimals, not percent). An empty
+        list means no sign of degeneracy was found.
+        """
+        from spxa.discovery.inference import parameter_names
+
+        out: list[str] = []
+        names = parameter_names(self.model)
+        x = self.model.to_free()
+        i = 0
+        for lf in self.model.structure.leaves():
+            k = lf.family.n_params
+            if lf.family is not DRIFT:
+                for j in range(i, i + k):
+                    if not np.isfinite(x[j]) or abs(x[j]) > boundary:
+                        out.append(
+                            f"{names[j]} at a boundary of its family (free coordinate {x[j]:.3g})"
+                        )
+            i += k
+        s = self.model.structure
+        if isinstance(s, Sum):
+            parts, i = [], 0
+            for child in s.children:
+                n = len(child.leaves())
+                if not all(lf.family is DRIFT for lf in child.leaves()):
+                    sub = Model(child, self.model.params[i : i + n])
+                    parts.append((child.key(), float(sub.cumulants(2)[1])))
+                i += n
+            total = sum(v for _, v in parts)
+            if len(parts) > 1 and total > 0:
+                for key, v in parts:
+                    if v / total < share:
+                        out.append(f"{key} carries {100 * v / total:.2g}% of the variance")
+        return out
+
+    @property
+    def degenerate(self) -> bool:
+        """``True`` if :meth:`degeneracies` finds anything at the default thresholds."""
+        return bool(self.degeneracies())
 
     def __str__(self) -> str:
         parts = [self.model.render()]
