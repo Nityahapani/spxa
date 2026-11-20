@@ -639,12 +639,12 @@ process.sample_at(times: np.ndarray, rng: np.random.Generator | None = None) -> 
 Independent draws of $X_{t_k}$, one per entry of `times`, in the shape of
 `times`. This is what a random time change needs: given clock increments
 $\Delta T$, the increments of $X_T$ are $X_{\Delta T}$. Most Lévy families draw
-directly (Brownian motion, Gamma, IG, VG, NIG, Poisson, negative binomial,
+directly (Drift, Brownian motion, Gamma, IG, VG, NIG, Poisson, negative binomial,
 compound Poisson, Merton, Kou, α-stable, tempered stable, NTS, and CGMY with
 $0 < Y < 1$), as do their sums, multiples and time changes. Other processes
-call `simulate` once per distinct time, or once per dyadic length when
-there are more than 64 distinct times. Times are then resolved to $10^{-6}$
-of the largest. `X @ T` draws each increment as $X$ at the clock's
+call `simulate` once per distinct time, or once per dyadic length (21 batched calls) when
+there are more than 64 distinct times. Times are then resolved to $2^{-20}$
+(about $10^{-6}$) of the largest. `X @ T` draws each increment as $X$ at the clock's
 increment, through `sample_at` or by inverting its characteristic function.
 It never interpolates the parent path.
 
