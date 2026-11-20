@@ -117,12 +117,11 @@ class GammaProcess(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy.special import expi  # type: ignore[import-untyped]
-
         nu = _gamma_levy_measure(self.a, self.b)
-        # ∫_0^1 a·e^{-bx}/x dx = a · E_1(b) where E_1 is the exponential integral.
-        # expi(-b) = -E_1(b) for b > 0, so E_1(b) = -expi(-b).
-        b_drift = -self.a * float(expi(-self.b))
+        # With truncation x·1{|x| ≤ 1} the drift of a driftless subordinator is
+        # ∫_0^1 x ν(dx) = a ∫_0^1 e^{-bx} dx = a(1 - e^{-b})/b, so that
+        # κ_1 = b_drift + ∫_1^∞ x ν(dx) = a(1 - e^{-b})/b + a e^{-b}/b = a/b.
+        b_drift = self.a * float(-np.expm1(-self.b)) / self.b
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
