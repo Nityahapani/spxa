@@ -49,22 +49,32 @@ from spxa.story.narrator import CompositionNode, NodeKind
 
 
 def _meixner_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMeasure:
-    """
-    Meixner Lévy density: k(x) = δ·exp(βx/α) / (x·sinh(πx/α)) for x ≠ 0.
+    r"""
+    Meixner Lévy density :math:`k(x) = \delta e^{\beta x/\alpha} / (x \sinh(\pi x/\alpha))`, :math:`x \ne 0`.
+
+    It is evaluated in the overflow-free form
+
+    .. math:: k(x) = \frac{2\delta\, e^{(\beta x - \pi|x|)/\alpha}}{|x|\,(1 - e^{-2\pi|x|/\alpha})},
+
+    because the naive quotient is ``inf/inf`` once :math:`\pi|x|/\alpha > 710`.
+    Moments of every order are the cumulants
+    :math:`\int x^n k = 2\delta(\alpha/2)^n P_{n-1}(\tan(\beta/2))`
+    (see :meth:`MeixnerProcess.cumulant_exact`).
 
     Schoutens (2002), p. 53.
     """
+    from numpy.polynomial import polynomial as P
 
     def density(x: np.ndarray) -> np.ndarray:
-        out = np.zeros_like(x, dtype=float)
-        nz = x != 0
-        xv = x[nz]
-        sinh_vals = np.sinh(np.pi * xv / alpha)
-        valid = np.abs(sinh_vals) > 1e-300
-        out[nz] = np.where(
-            valid,
-            delta * np.exp(beta * xv / alpha) / (xv * sinh_vals),
-            0.0,
+        x_arr = np.asarray(x, dtype=float)
+        out = np.zeros_like(x_arr)
+        nz = x_arr != 0
+        ax = np.abs(x_arr[nz])
+        out[nz] = (
+            2
+            * delta
+            * np.exp((beta * x_arr[nz] - np.pi * ax) / alpha)
+            / (-ax * np.expm1(-2 * np.pi * ax / alpha))
         )
         return out
 
@@ -72,26 +82,22 @@ def _meixner_levy_measure(alpha: float, beta: float, delta: float) -> DensityLev
         from scipy import integrate  # type: ignore[import-untyped]
 
         result, _ = integrate.quad(
-            lambda t: delta * np.exp(beta * t / alpha) / (t * np.sinh(np.pi * t / alpha)),
-            xv,
-            np.inf,
-            limit=200,
+            lambda t: float(density(np.array([t]))[0]), xv, np.inf, limit=200
         )
-        return result
+        return float(result)
 
-    # Cumulants via the known closed-form formulas (Schoutens & Teugels 1998)
-    def moment_1() -> float:
-        return delta * alpha * np.tan(beta / 2)
-
-    def moment_2() -> float:
-        cos2 = np.cos(beta / 2) ** 2
-        return delta * alpha**2 / (2 * cos2)
+    def make_moment(n: int):  # type: ignore[no-untyped-def]
+        poly = np.array([0.0, 1.0])
+        for _ in range(n - 1):
+            poly = P.polymul(P.polyder(poly), [1.0, 0.0, 1.0])
+        value = 2 * delta * (alpha / 2) ** n * float(P.polyval(np.tan(beta / 2), poly))
+        return lambda: value
 
     return DensityLevyMeasure(
         _density_fn=density,
         _total_mass=np.inf,
         _tail_fn=tail,
-        _moment_fns={1: moment_1, 2: moment_2},
+        _moment_fns={n: make_moment(n) for n in range(1, 21)},
     )
 
 
@@ -176,20 +182,23 @@ class MeixnerProcess(Process):
         from scipy import integrate  # type: ignore[import-untyped]
 
         nu = _meixner_levy_measure(self.alpha, self.beta, self.delta)
+        a, b = self.alpha, self.beta
 
-        def integrand(x: float) -> float:
-            if abs(x) < 1e-10:
-                return 0.0
-            sinh_val = np.sinh(np.pi * x / self.alpha)
-            if abs(sinh_val) < 1e-300:
-                return 0.0
-            return self.delta * np.exp(self.beta * x / self.alpha) / np.sinh(np.pi * x / self.alpha)
+        # b = m + ∫_{|x|≤1} x k(x) dx. Pairing x with −x removes the 1/x
+        # singularity: x k(x) − x k(−x) = 2δ sinh(βx/α)/sinh(πx/α), which is
+        # evaluated as sign(β) e^{(|β|−π)x/α} (1 − e^{−2|β|x/α})/(1 − e^{−2πx/α}).
+        def paired(x: float) -> float:
+            return float(
+                2
+                * self.delta
+                * np.sign(b)
+                * np.exp((abs(b) - np.pi) * x / a)
+                * np.expm1(-2 * abs(b) * x / a)
+                / np.expm1(-2 * np.pi * x / a)
+            )
 
-        b_pos, _ = integrate.quad(integrand, 1e-8, 1.0, limit=200)
-        b_neg, _ = integrate.quad(integrand, -1.0, -1e-8, limit=200)
-        b_drift = self.m + b_pos + b_neg
-
-        return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
+        small, _ = integrate.quad(paired, 0.0, 1.0, limit=200)
+        return LevyTriplet(b=self.m + small, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
