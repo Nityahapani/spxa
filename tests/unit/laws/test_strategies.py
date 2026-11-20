@@ -68,11 +68,25 @@ def test_float_shrinking_finds_the_boundary_of_a_failure() -> None:
 
 
 def test_float_children_are_strictly_simpler() -> None:
+    def key(v: float) -> tuple[int, float]:
+        return len(repr(v)), abs(v - 1.0)
+
     rng = np.random.default_rng(5)
     for _ in range(50):
         t = floats(-3.0, 7.0, simplest=1.0).generate(rng)
         for c in t.children():
-            assert abs(c.value - 1.0) < abs(t.value - 1.0) and -3.0 <= c.value <= 7.0
+            assert key(c.value) < key(t.value) and -3.0 <= c.value <= 7.0
+
+
+def test_floats_shrink_to_short_decimals() -> None:
+    # any non-zero value fails: the simplest failing value is a one-digit decimal
+    for seed in range(10):
+        t = floats(-1.0, 1.0).generate(np.random.default_rng(seed))
+        assert descend(t, lambda x: x != 0.0) in (0.1, -0.1)
+        # a threshold: the boundary itself, or the next short decimal
+        u = floats(0.0, 10.0).generate(np.random.default_rng(seed))
+        if u.value >= 7.5:
+            assert descend(u, lambda x: x >= 7.5) in (7.5, 8.0)
 
 
 def test_integers() -> None:

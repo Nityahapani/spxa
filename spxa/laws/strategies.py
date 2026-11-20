@@ -16,12 +16,16 @@ Children are listed simplest first, so a greedy descent tries the most
 aggressive simplification before the cautious ones.
 
 Floats shrink towards a target: the value in range closest to 0 unless
-``simplest`` is given. The candidates, in order, are the target, the
-nearest integer, values rounded to 1, 2 and 3 significant digits, and
-the points :math:`t + d(1 - 2^{-k})` for :math:`k = 1, \dots, 8`, which close
-in on a failure boundary from the far side (:math:`d` is the distance from
-the target :math:`t`). Integers shrink towards
-their target by halving. Tuples and dictionaries shrink one component at
+``simplest`` is given. A float counts as simpler when its shortest decimal
+representation is shorter, or equally long and nearer the target. So
+``0.1`` is simpler than ``0.05``, which is simpler than ``1e-16``, and a
+counterexample reads ``Drift(mu=0.1)``, not ``Drift(mu=1e-16)``. The
+candidates, in order, are the target, the nearest integer, values rounded
+to 1, 2 and 3 significant digits, the points :math:`t + d(1 - 2^{-k})` for
+:math:`k = 1, \dots, 8` (:math:`d` is the offset from the target :math:`t`),
+the power of ten just above the offset, and the offset with its
+leading digit stepped one unit towards the target. Only simpler candidates are kept, which also guarantees that
+shrinking terminates. Integers shrink towards their target by halving. Tuples and dictionaries shrink one component at
 a time.
 
 Determinism: generation draws only from the ``numpy.random.Generator``
@@ -180,11 +184,17 @@ class _FlatMapped(Strategy[U]):
 # ── numbers ───────────────────────────────────────────────────────────────
 
 
+def _simplicity(v: float, target: float) -> tuple[int, float]:
+    """Shorter decimal representations are simpler; ties go to the value nearer the target."""
+    return len(repr(v)), abs(v - target)
+
+
 def _float_candidates(x: float, target: float, lo: float, hi: float) -> list[float]:
     out: list[float] = []
+    key = _simplicity(x, target)
 
     def add(v: float) -> None:
-        if lo <= v <= hi and v != x and abs(v - target) < abs(x - target) and v not in out:
+        if lo <= v <= hi and v != x and _simplicity(v, target) < key and v not in out:
             out.append(v)
 
     add(target)
@@ -196,6 +206,13 @@ def _float_candidates(x: float, target: float, lo: float, hi: float) -> list[flo
         d = x - target
         for k in range(1, 9):
             add(target + d * (1 - 0.5**k))
+        if d != 0:
+            p = math.floor(math.log10(abs(d)))
+            # a power of ten above the offset: farther, but shorter (0.0236 -> 0.1)
+            add(target + math.copysign(float(f"1e{p + 1}"), d))
+            # step the leading digit of the offset one unit towards the target
+            m = round(d / 10.0**p)
+            add(target + float(f"{m - (1 if d > 0 else -1)}e{p}"))
     return out
 
 
