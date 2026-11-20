@@ -199,3 +199,23 @@ class TestSimulation:
         paths_bm = bm.simulate(n_steps=20, n_paths=5, T=1.0, rng=rng)
         paths_z = z.simulate(n_steps=20, n_paths=5, T=1.0, rng=rng2)
         np.testing.assert_allclose(paths_z, 3.0 * paths_bm)
+
+
+class TestJumpExponentComplexFrequencies:
+    """The default quadrature works off the real axis (Laplace exponents)."""
+
+    def test_gamma_laplace_exponent(self):
+        # K(z) = -a log(1 - z/b) for Re z < b, via ψ(-iz)
+        a, b = 1.5, 3.0
+        nu = GammaProcess(a=a, b=b).triplet.nu
+        for z in (-5.0, -0.5, 1.0, -2.0 + 1.0j):
+            trip = GammaProcess(a=a, b=b).triplet
+            got = 1j * trip.b * (-1j * z) + nu.jump_exponent(-1j * z)
+            assert np.isfinite(got)
+            assert got == pytest.approx(-a * np.log(1 - z / b), rel=1e-7)
+
+    def test_no_nan_from_the_empty_half_line(self):
+        # e^{iux} overflows for x → -∞ when Im u < 0, where the density is 0
+        nu = GammaProcess(a=2.0, b=1.0).triplet.nu
+        assert np.isfinite(nu.jump_exponent(5j))
+        assert np.isfinite(nu.jump_exponent(-0.5j))

@@ -135,6 +135,14 @@ class LevyMeasure(abc.ABC):
         integrates the density on :math:`(-\infty, -10^{-8}]` and
         :math:`[10^{-8}, \infty)`. Measures with atoms or a closed form
         override it.
+
+        Complex :math:`u` is allowed wherever the integral converges, i.e.
+        :math:`\int_{|x|>1} e^{-\operatorname{Im}(u)x}\,\nu(dx) < \infty`. This
+        gives the Laplace exponent :math:`\psi(-iz)` of a subordinator for
+        :math:`\operatorname{Re} z \le 0`. The product :math:`e^{iux}k(x)`
+        is formed in log space and is zero where :math:`k(x) = 0`. A direct
+        product would give :math:`\infty\cdot 0 = \text{NaN}` where
+        :math:`e^{iux}` overflows on a half-line that carries no mass.
         """
         from scipy import integrate  # type: ignore[import-untyped]
 
@@ -142,7 +150,11 @@ class LevyMeasure(abc.ABC):
             if x == 0.0:
                 return complex(0.0)
             k = float(self.density(np.array([x]))[0])
-            return complex((np.exp(1j * u * x) - 1 - 1j * u * x * (abs(x) <= 1)) * k)
+            if k == 0.0:
+                return complex(0.0)
+            with np.errstate(over="ignore"):
+                weighted = np.exp(1j * u * x + np.log(k))
+            return complex(weighted - (1 + 1j * u * x * (abs(x) <= 1)) * k)
 
         parts = [
             integrate.quad(lambda x, f=f: f(integrand(x)), lo, hi, limit=200)[0]
