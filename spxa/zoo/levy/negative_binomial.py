@@ -95,6 +95,38 @@ class _NegBinLevyMeasure(LevyMeasure):
         k_max = int(np.ceil(-15 * np.log(10) / np.log(self.p))) + 10
         return self.r * sum(k ** (n - 1) * self.p**k for k in range(1, k_max + 1))
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        r"""
+        :math:`\int_{a<|x|\le b} x\,\nu(dx) = r\sum_{a<k\le b} p^k`, a geometric sum.
+
+        The default integrates a density, which this atomic measure does
+        not have.
+        """
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        k0 = int(np.floor(a)) + 1
+        if np.isinf(b):
+            return float(self.r * self.p**k0 / (1.0 - self.p))
+        k1 = int(np.floor(b))
+        if k1 < k0:
+            return 0.0
+        return float(self.r * (self.p**k0 - self.p ** (k1 + 1)) / (1.0 - self.p))
+
+    def jump_exponent(self, u: complex) -> complex:
+        r"""
+        :math:`\sum_k \frac{rp^k}{k}(e^{iuk} - 1) - iurp
+        = r\log\frac{1-p}{1-pe^{iu}} - iurp`.
+
+        The compensator term comes from the atom at :math:`k = 1`, the only
+        one in :math:`|x| \le 1`. The formula holds for complex :math:`u`
+        with :math:`|pe^{iu}| < 1`. There :math:`1 - pe^{iu}` has positive
+        real part, so the principal logarithm is the right branch.
+        """
+        z = self.p * np.exp(1j * complex(u))
+        return complex(
+            self.r * (np.log(1.0 - self.p) - np.log(1.0 - z)) - 1j * complex(u) * self.r * self.p
+        )
+
 
 class NegativeBinomialProcess(Process):
     """
