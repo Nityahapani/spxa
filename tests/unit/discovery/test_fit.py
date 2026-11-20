@@ -10,7 +10,7 @@ from spxa.discovery.expr import Model, leaf
 from spxa.discovery.families import BROWNIAN, DRIFT, GAMMA, NIG_FAMILY, VARIANCE_GAMMA
 from spxa.discovery.fit import BinnedData, fit_structure, initial_params, with_location
 
-from .conftest import vg_increments
+from .conftest import gamma_increments, vg_increments
 
 SIGMA, NU, THETA, MU = 0.2, 0.25, -0.3, 0.1
 DT = 1 / 52
@@ -79,7 +79,12 @@ def test_binned_data() -> None:
     assert b.n == 1_000 and len(b.counts) == 20
     assert np.all(np.diff(b.edges[1:-1]) >= 4 * b.bandwidth)
     assert np.isinf(b.edges[0]) and np.isinf(b.edges[-1])
-    assert np.all(np.abs(b.raw_counts - 50) <= 1)
+    # logit-spaced levels: about tail_count = 10 observations in each outer bin
+    assert b.raw_counts[0] == pytest.approx(10, abs=4)
+    assert b.raw_counts[-1] == pytest.approx(10, abs=4)
+    assert b.raw_counts.max() > 2 * b.raw_counts.mean()
+    equal = BinnedData.from_sample(x, dt=1.0, tail_count=None)
+    assert np.all(np.abs(equal.raw_counts - 50) <= 1)
     # smoothing moves mass between neighbouring bins but conserves it
     assert b.counts.sum() == pytest.approx(1_000, rel=1e-12)
     assert b.bandwidth == pytest.approx(0.02 * x.std(), rel=0.5)
@@ -120,3 +125,19 @@ def test_warm_start(vg_data) -> None:
     np.testing.assert_allclose(warm.model.params[0], cold.model.params[0], rtol=1e-3)
     with pytest.raises(ValueError):
         fit_structure(leaf(VARIANCE_GAMMA), vg_data, initial=[(0.2, 0.3, 0.0)])
+
+
+def test_tail_bins_recover_a_sum_of_pure_jump_laws() -> None:
+    # daily VG(0.15, 0.2, -0.1) + Gamma(4, 25): true κ2, κ4 = 0.0309, 4.8e-4.
+    # With equal quantile bins the fit's κ4 came out 3-4 times too large.
+    dt, n = 1 / 252, 5_000
+    x = vg_increments(0.15, 0.2, -0.1, dt, n, seed=1) + gamma_increments(4.0, 25.0, dt, n, seed=20)
+    s = summarize(x, dt=dt)
+    r = fit_structure(leaf(VARIANCE_GAMMA) + leaf(GAMMA), s, n_starts=3)
+    (sigma, nu, theta), (a, b) = r.model.params[0], r.model.params[1]
+    assert 0.12 < sigma < 0.2 and 0.12 < nu < 0.3 and -0.25 < theta < 0.0
+    assert 2.0 < a < 9.0 and 15.0 < b < 50.0
+    k = r.model_cumulants
+    assert 0.025 < k[1] < 0.04
+    assert 3e-4 < k[3] < 9.6e-4
+    assert r.g_pvalue > 0.05

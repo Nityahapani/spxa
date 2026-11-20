@@ -70,6 +70,15 @@ class BinnedData:
     is fixed per data set from the empirical cumulants, so the sine matrix
     is computed once and each model evaluation costs one characteristic-function
     call and one matrix product.
+
+    Bin edges are empirical quantiles at levels evenly spaced on the logit
+    scale, from :math:`q_0` to :math:`1-q_0` with
+    :math:`q_0 = \min(\texttt{tail\_count}/n, 1/(2\,\texttt{n\_bins}))`. The
+    outermost bins therefore hold about ``tail_count`` observations. Equal
+    quantile bins put a probability mass of :math:`1/\texttt{n\_bins}` in each
+    tail bin, and the likelihood then cannot see the tails. Fits to sums of
+    pure-jump laws then had kurtosis several times too large. Pass
+    ``tail_count=None`` for equal quantile bins.
     """
 
     edges: np.ndarray
@@ -93,11 +102,16 @@ class BinnedData:
 
     @classmethod
     def from_sample(
-        cls, x: np.ndarray, dt: float, n_bins: Optional[int] = None, max_terms: int = 4096
+        cls,
+        x: np.ndarray,
+        dt: float,
+        n_bins: Optional[int] = None,
+        max_terms: int = 4096,
+        tail_count: Optional[float] = 10.0,
     ) -> BinnedData:
         x = np.asarray(x, dtype=float)
         if n_bins is None:
-            n_bins = int(np.clip(x.size // 50, 10, 40))
+            n_bins = int(np.clip(x.size // 50, 10, 60))
         d = x - x.mean()
         c2 = float(np.mean(d**2))
         c4 = max(float(np.mean(d**4)) - 3 * c2**2, 0.0)
@@ -110,7 +124,13 @@ class BinnedData:
         # like multinomial counts (short-horizon pure-jump data has a near-atom
         # at the drift, where quantile bins would otherwise be ~1e-11 wide)
         inner_list: list[float] = []
-        for e in np.quantile(x, np.arange(1, n_bins) / n_bins):
+        if tail_count is None:
+            levels = np.arange(1, n_bins) / n_bins
+        else:
+            q0 = min(tail_count / x.size, 0.5 / n_bins)
+            g = np.linspace(np.log(q0 / (1 - q0)), -np.log(q0 / (1 - q0)), n_bins - 1)
+            levels = 1.0 / (1.0 + np.exp(-g))
+        for e in np.quantile(x, levels):
             if not inner_list or e - inner_list[-1] >= 4.0 * h:
                 inner_list.append(float(e))
         inner = np.array(inner_list)
