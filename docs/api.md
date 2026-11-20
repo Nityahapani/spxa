@@ -599,6 +599,7 @@ Z = X * c            # same as c * X
 Z = -X               # negation
 Z = X @ T            # subordination: Z_t = X_{T_t}  (T must be a subordinator)
 Z = sum([X, Y, ...]) # Python's built-in sum() works via __radd__
+Z = X + Drift(c)     # a deterministic drift c·t (X + c with a number raises TypeError)
 ```
 
 All operators propagate `ExactnessLevel` and `ProcessProperties` automatically.
@@ -631,6 +632,21 @@ process.simulate(
 Simulate sample paths. Returns shape `(n_paths, n_steps + 1)`. All paths
 start at 0: `paths[:, 0] == 0` always. For multivariate processes returns
 shape `(n_paths, n_steps + 1, d)`.
+
+```python
+process.sample_at(times: np.ndarray, rng: np.random.Generator | None = None) -> np.ndarray
+```
+Independent draws of $X_{t_k}$, one per entry of `times`, in the shape of
+`times`. This is what a random time change needs: given clock increments
+$\Delta T$, the increments of $X_T$ are $X_{\Delta T}$. Most Lévy families draw
+directly (Brownian motion, Gamma, IG, VG, NIG, Poisson, negative binomial,
+compound Poisson, Merton, Kou, α-stable, tempered stable, NTS, and CGMY with
+$0 < Y < 1$), as do their sums, multiples and time changes. Other processes
+call `simulate` once per distinct time, or once per dyadic length when
+there are more than 64 distinct times. Times are then resolved to $10^{-6}$
+of the largest. `X @ T` draws each increment as $X$ at the clock's
+increment, through `sample_at` or by inverting its characteristic function.
+It never interpolates the parent path.
 
 ```python
 process.__story__() -> str
@@ -3567,7 +3583,10 @@ char_exp_subordinated(
 ) -> np.ndarray
 ```
 Characteristic function of Z = X @ T using the composition formula
-ψ_Z(u) = −φ(−ψ_X(u)) where φ is the Laplace exponent of T.
+ψ_Z(u) = −φ(−ψ_X(u)) where φ is the Laplace exponent of T. It delegates
+to `(parent @ subordinator).char_func(u, t)`. ψ_X comes from the exponent
+itself, not from the principal logarithm of φ_X, which wraps once
+|Im ψ_X(u)| > π.
 
 ```python
 bernstein_function(
