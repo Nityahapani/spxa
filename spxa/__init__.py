@@ -862,6 +862,7 @@ __all__ = [
     "market",
     "rates",
     "vol",
+    "discovery",
 ]
 
 
@@ -880,6 +881,7 @@ def __getattr__(name: str):
         "market",
         "rates",
         "vol",
+        "discovery",
     ):
         import importlib
 
