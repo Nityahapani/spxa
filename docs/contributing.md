@@ -175,15 +175,17 @@ class MyProcess(Process):
 
     def _triplet(self) -> LevyTriplet:
         # Return LevyTriplet(b=..., sigma_sq=..., nu=...)
-        # b must be consistent with the truncation h(x) = 1_{|x|≤1}
-        # If b is computed by quadrature, use an exact formula (like E_1)
-        # when available. See gamma.py for the pattern.
+        # b must be consistent with the truncation h(x) = x·1_{|x|≤1}, so that
+        # κ_1 = b + ∫_{|x|>1} x ν(dx) equals the mean. For a driftless
+        # subordinator b = ∫_0^1 x ν(dx); for the Gamma process that is
+        # a(1 - e^{-b})/b (see gamma.py). Prefer closed forms to quadrature,
+        # and test triplet.cumulant(n) against your closed-form cumulants.
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
             has_independent_increments=True,
-            is_martingale=...,      # True only if drift=0 and ∫_{|x|>1} x ν(dx) = 0
+            is_martingale=...,      # True only if κ_1 = b + ∫_{|x|>1} x ν(dx) = 0
             has_finite_variance=...,
             has_finite_mean=...,
             self_similarity_index=None,   # fill if self-similar
