@@ -59,6 +59,9 @@ Repository = "https://github.com/Nityahapani/spxa"
 Issues = "https://github.com/Nityahapani/spxa/issues"
 Changelog = "https://github.com/Nityahapani/spxa/blob/main/CHANGELOG.md"
 
+[project.scripts]
+spxa-discover = "spxa.discovery.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["spxa*", "audits*"]
