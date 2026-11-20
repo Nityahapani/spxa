@@ -13,7 +13,7 @@ import pytest
 from scipy import stats  # type: ignore[import-untyped]
 
 from spxa.sim.cf_sampling import cf_grid_cdf, sample_from_cf
-from spxa.zoo.levy import GammaProcess
+from spxa.zoo.levy import CGMY, GammaProcess, MeixnerProcess, TemperedStable
 
 Z_MAX = 4.5
 
@@ -61,3 +61,31 @@ def test_sampler_passes_ks_on_gamma() -> None:
 def test_rejects_degenerate_scale() -> None:
     with pytest.raises(ValueError, match="positive std"):
         cf_grid_cdf(lambda u: np.ones_like(u, dtype=complex), 0.0, 0.0)
+
+
+@pytest.mark.parametrize(
+    "X",
+    [
+        CGMY(1.07, 9.55, 2.73, 1.81),  # the old fixed grid aliased this: z = 533
+        CGMY(1.31, 3.43, 1.85, 0.13),
+        MeixnerProcess(1.31, -1.15, 0.178, -0.19),
+        MeixnerProcess(0.6, -1.0, 1.65, -0.16),
+        TemperedStable(0.9, 0.2, 0.5),
+        TemperedStable(0.31, 0.67, 8.2),
+    ],
+    ids=repr,
+)
+def test_simulated_increments_match_the_cf(X) -> None:
+    dt = 0.25
+    x = X.simulate(4, 50_000, T=1.0, rng=np.random.default_rng(3))
+    incr = x[:, 1]
+    final = x[:, -1]
+    for u in (0.5, 2.0, 8.0):
+        assert _ecf_z(incr, lambda v: X.char_func(v, dt), u) < Z_MAX
+        assert _ecf_z(final, lambda v: X.char_func(v, 1.0), u) < Z_MAX
+
+
+def test_lower_support_bound_is_respected() -> None:
+    X = TemperedStable(0.31, 0.67, 8.2)
+    paths = X.simulate(50, 2_000, T=1.0, rng=np.random.default_rng(1))
+    assert np.all(np.diff(paths, axis=1) >= 0.0)

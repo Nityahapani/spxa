@@ -42,6 +42,7 @@ from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
+from spxa.sim.cf_sampling import sample_from_cf
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
@@ -269,12 +270,14 @@ class TemperedStable(Process):
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
         """
-        Exact simulation via Gil-Pelaez CDF inversion.
+        Simulation by FFT inversion of the characteristic function.
 
         For each increment of length Δt, the distribution is
-        TemperedStable(α, C·Δt, λ) — the intensity scales linearly with Δt.
-        We invert the characteristic function numerically using the
-        Gil-Pelaez formula to recover the CDF, then sample via interpolation.
+        TemperedStable(α, C·Δt, λ): the intensity scales linearly with Δt.
+        The CDF is recovered from the characteristic function on a grid
+        covering the exponential tail, rate λ (see :mod:`spxa.sim.cf_sampling`),
+        then inverted at uniform variates. Accurate up to the grid
+        discretisation.
 
         Parameters
         ----------
@@ -293,33 +296,16 @@ class TemperedStable(Process):
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
-
-        # Build CDF for TS(alpha, C*dt, lam) increment
-        # Mean and std for grid centering
-        mean_dt = self.cumulant_exact(1, t=dt)
-        std_dt = np.sqrt(self.cumulant_exact(2, t=dt))
-        x_half = max(10 * std_dt, 1e-6)
-        n_x = 2000
-        x_grid = np.linspace(max(mean_dt - x_half, 1e-8), mean_dt + x_half, n_x)
-
-        n_u = 1500
-        u_max = min(50.0 / std_dt, 1000.0)
-        u_grid = np.linspace(1e-6, u_max, n_u)
-
-        cf_vals = self.char_func_exact(u=u_grid, t=dt)
-        pdf = np.zeros(n_x)
-        for j, x in enumerate(x_grid):
-            integrand = (cf_vals * np.exp(-1j * u_grid * x)).real
-            pdf[j] = float(np.trapezoid(integrand, u_grid)) / np.pi
-
-        pdf = np.maximum(pdf, 0.0)
-        dx = x_grid[1] - x_grid[0]
-        cdf = np.cumsum(pdf) * dx
-        cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-        u_unif = rng.uniform(size=(n_paths, n_steps))
-        increments = np.interp(u_unif, cdf, x_grid)
-
+        k = self.cumulants(2)
+        increments = sample_from_cf(
+            lambda u: self.char_func(u, dt),
+            mean=k[1] * dt,
+            std=float(np.sqrt(k[2] * dt)),
+            size=(n_paths, n_steps),
+            rng=rng,
+            tail_decay=self.lam,
+            lower=0.0,
+        )
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths

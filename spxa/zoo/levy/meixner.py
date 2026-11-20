@@ -45,6 +45,7 @@ from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
+from spxa.sim.cf_sampling import sample_from_cf
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
@@ -285,15 +286,13 @@ class MeixnerProcess(Process):
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
         """
-        Simulation via FFT-based CDF inversion (Gil-Pelaez).
+        Simulation by FFT inversion of the characteristic function.
 
-        For each increment of length Δt, samples from the Meixner(α,β,δΔt,mΔt)
-        distribution by:
-          1. Computing the CDF via the exact characteristic function on a grid.
-          2. Sampling uniform variates and inverting the CDF via interpolation.
-
-        This is exact in distribution (up to grid resolution) and always
-        terminates. Accuracy improves with n_fft.
+        Each increment of length Δt is drawn from Meixner(α, β, δΔt, mΔt):
+        the CDF is recovered from the exact characteristic function on a grid
+        covering the slower exponential tail, rate (π − |β|)/α (see
+        :mod:`spxa.sim.cf_sampling`), then inverted at uniform variates.
+        Accurate up to the grid discretisation.
 
         Parameters
         ----------
@@ -307,33 +306,15 @@ class MeixnerProcess(Process):
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
-
-        # Build CDF via Gil-Pelaez inversion on a fine x-grid
-        std_dt = max(np.sqrt(self.cumulant_exact(2, t=dt)), 1e-6)
-        mean_dt = self.cumulant_exact(1, t=dt)
-        n_x = 2000
-        x_half = max(12 * std_dt, 1e-4)
-        x_grid = np.linspace(mean_dt - x_half, mean_dt + x_half, n_x)
-
-        # Integrate the imaginary part of CF to get PDF via Gil-Pelaez:
-        # f(x) = 1/π ∫_0^∞ Re[e^{-iux} φ(u)] du
-        n_u = 2000
-        u_max = min(200.0 / self.alpha, 800.0)
-        u_grid = np.linspace(1e-6, u_max, n_u)
-        cf_vals = self.char_func_exact(u=u_grid, t=dt)
-        pdf = np.zeros(n_x)
-        for j, x in enumerate(x_grid):
-            integrand = (cf_vals * np.exp(-1j * u_grid * x)).real
-            pdf[j] = float(np.trapezoid(integrand, u_grid)) / np.pi
-
-        pdf = np.maximum(pdf, 0.0)
-        dx = x_grid[1] - x_grid[0]
-        cdf = np.cumsum(pdf) * dx
-        cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-        u_unif = rng.uniform(size=(n_paths, n_steps))
-        increments = np.interp(u_unif, cdf, x_grid)
-
+        k = self.cumulants(2)
+        increments = sample_from_cf(
+            lambda u: self.char_func(u, dt),
+            mean=k[1] * dt,
+            std=float(np.sqrt(k[2] * dt)),
+            size=(n_paths, n_steps),
+            rng=rng,
+            tail_decay=(np.pi - abs(self.beta)) / self.alpha,
+        )
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths

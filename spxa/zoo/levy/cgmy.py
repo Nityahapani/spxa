@@ -37,6 +37,7 @@ from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
+from spxa.sim.cf_sampling import sample_from_cf
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
@@ -343,15 +344,13 @@ class CGMY(Process):
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
         """
-        Simulation via characteristic function inversion (Gil-Pelaez).
+        Simulation by FFT inversion of the characteristic function.
 
-        For each time step, samples from the CGMY distribution by inverting
-        the characteristic function numerically. This is exact in distribution
-        but slower than closed-form methods.
-
-        For production use with many paths, a series representation method
-        (Rosiński 2001) should be preferred. This implementation is provided
-        for correctness; the series method will be added in a future release.
+        Each increment is drawn from the CGMY(CΔt, G, M, Y) law. The CDF is
+        recovered on a grid sized from the cumulants and the tail rate
+        min(G, M), and refined until the cf has decayed (see
+        :mod:`spxa.sim.cf_sampling`). The draws are accurate up to the grid
+        discretisation. They are not exact in distribution.
 
         Parameters
         ----------
@@ -365,30 +364,15 @@ class CGMY(Process):
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
-
-        # Numerically invert characteristic function via Fourier FFT
-        u_max = max(2000.0, 100.0 * max(self.G, self.M))
-        N = 8192
-        u_grid = np.linspace(-u_max, u_max, N)
-        du = u_grid[1] - u_grid[0]
-        cf_vals = self.char_func_exact(u=u_grid, t=dt)
-
-        dx = 2.0 * np.pi / (N * du)
-        x_grid = (np.arange(N) - N / 2.0) * dx
-
-        # Fourier inversion: 1/(2pi) int phi(u) e^{-iux} du = ifft(conj(phi)) * (N*du)/(2pi)
-        pdf_fft = (
-            np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(np.conj(cf_vals)))).real
-            * (N * du)
-            / (2.0 * np.pi)
+        k = self.cumulants(2)
+        increments = sample_from_cf(
+            lambda u: self.char_func(u, dt),
+            mean=k[1] * dt,
+            std=float(np.sqrt(k[2] * dt)),
+            size=(n_paths, n_steps),
+            rng=rng,
+            tail_decay=min(self.G, self.M),
         )
-        pdf_fft = np.maximum(pdf_fft, 0.0)
-        cdf = np.cumsum(pdf_fft) * dx
-        cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-        uniforms = rng.uniform(size=(n_paths, n_steps))
-        increments = np.interp(uniforms, cdf, x_grid)
-
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths
