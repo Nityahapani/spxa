@@ -19,6 +19,7 @@ Structures
     :class:`Leaf`, :class:`Sum`, :class:`Scale`, :class:`Subordinate` and the
     bound :class:`Model`; :func:`recognize` maps an spxa process to a model.
 Data
+    :func:`load_returns` reads returns or prices from a CSV file;
     :func:`summarize` and :func:`from_statistics` build an :class:`EmpiricalSummary`.
 Fitting
     :func:`fit_structure` (smoothed binned likelihood or cumulants), :class:`BinnedData`.
@@ -55,6 +56,7 @@ from spxa.discovery.families import (
     get_family,
 )
 from spxa.discovery.fit import BinnedData, FitResult, fit_structure, with_location
+from spxa.discovery.io import ReturnSeries, infer_dt, load_returns
 from spxa.discovery.grammar import Grammar, canonical, grammar_from_names, parse_atoms
 from spxa.discovery.recognize import NotRecognizedError, recognize
 from spxa.discovery.report import DiscoveryReport
@@ -92,6 +94,9 @@ __all__ = [
     "recognize",
     "NotRecognizedError",
     # data
+    "load_returns",
+    "ReturnSeries",
+    "infer_dt",
     "EmpiricalSummary",
     "summarize",
     "from_statistics",
