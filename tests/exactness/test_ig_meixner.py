@@ -181,11 +181,36 @@ class TestMeixnerProcess:
 
     @pytest.mark.exactness
     def test_meixner_cumulant_4(self) -> None:
-        """κ₄ = δα⁴(2+cosβ)/(8cos⁴(β/2)). Schoutens & Teugels (1998), eq. (8)."""
+        """κ₄ = δα⁴(2−cosβ)/(4cos⁴(β/2)): excess kurtosis (2−cosβ)/δ (Schoutens 2003)."""
         a, b, d = 0.4, -1.0, 0.5
         mx = MeixnerProcess(alpha=a, beta=b, delta=d)
-        expected = d * a**4 * (2 + np.cos(b)) / (8 * np.cos(b / 2) ** 4)
+        expected = d * a**4 * (2 - np.cos(b)) / (4 * np.cos(b / 2) ** 4)
         assert mx.cumulant_exact(4) == pytest.approx(expected, rel=1e-10)
+        kurt = mx.cumulant_exact(4) / mx.cumulant_exact(2) ** 2
+        assert kurt == pytest.approx((2 - np.cos(b)) / d, rel=1e-12)
+        # β = 0: K(θ) = -2δ log cos(αθ/2) = δα²θ²/4 + δα⁴θ⁴/96 + ..., so κ₄ = δα⁴/4
+        assert MeixnerProcess(alpha=a, beta=0.0, delta=d).cumulant_exact(4) == pytest.approx(
+            d * a**4 / 4, rel=1e-12
+        )
+
+    @pytest.mark.exactness
+    def test_meixner_higher_cumulants_match_the_cumulant_exponent(self) -> None:
+        """κₙ, n ≤ 8, against n![zⁿ]K(z) by a Cauchy integral on |z| = r."""
+        from math import factorial
+
+        a, b, d, m = 0.4, -0.7, 1.3, 0.05
+        mx = MeixnerProcess(alpha=a, beta=b, delta=d, m=m)
+        r, n_pts = 2.0, 256
+        z = r * np.exp(2j * np.pi * np.arange(n_pts) / n_pts)
+        k = m * z + 2 * d * (np.log(np.cos(b / 2)) - np.log(np.cos((a * z + b) / 2)))
+        coef = np.fft.fft(k) / n_pts
+        for n in range(1, 9):
+            numeric = (coef[n] / r**n).real * factorial(n)
+            assert mx.cumulant_exact(n) == pytest.approx(numeric, rel=1e-9)
+        assert mx.cumulants(6)[6] == pytest.approx(mx.cumulant_exact(6))
+        assert mx.cumulant_exact(3, t=2.5) == pytest.approx(2.5 * mx.cumulant_exact(3))
+        with pytest.raises(ValueError):
+            mx.cumulant_exact(0)
 
     @pytest.mark.exactness
     def test_meixner_simulate_mean(self) -> None:

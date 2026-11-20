@@ -122,7 +122,8 @@ class MeixnerProcess(Process):
       κ₁ = δα tan(β/2) + m
       κ₂ = δα²/(2cos²(β/2))
       κ₃ = δα³ sin(β/2)/(2cos³(β/2))   [= δα³ tan(β/2)/(2cos²(β/2))]
-      κ₄ = δα⁴(2 + cos β)/(8cos⁴(β/2))
+      κ₄ = δα⁴(2 - cos β)/(4cos⁴(β/2))
+      κₙ = 2δ(α/2)ⁿ · dⁿ⁻¹/dyⁿ⁻¹ tan y at y = β/2, for every n ≥ 2
 
     Characteristic function (Schoutens & Teugels 1998, eq. 3):
       φ(u; t) = exp(imu) · (cos(β/2)/cosh((αu - iβ)/2))^{2δt}
@@ -234,34 +235,35 @@ class MeixnerProcess(Process):
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
-        Exact cumulants (Schoutens & Teugels 1998, equations 5–8).
+        Exact cumulants of every order.
+
+        On its strip the cumulant exponent is
+        K(z) = mz + 2δ[log cos(β/2) − log cos((αz + β)/2)], so
 
         κ₁ = δα tan(β/2) + m
+        κₙ = 2δ(α/2)ⁿ Pₙ₋₁(tan(β/2))   for n ≥ 2,
+
+        where dᵏ/dyᵏ tan y = Pₖ(tan y), P₀(T) = T, Pₖ₊₁ = Pₖ′(T)(1 + T²). In closed form:
+
         κ₂ = δα²/(2cos²(β/2))
         κ₃ = δα³ sin(β/2)/(2cos³(β/2))
-        κ₄ = δα⁴(2 + cosβ)/(8cos⁴(β/2))
+        κ₄ = δα⁴(2 − cos β)/(4cos⁴(β/2))
+
+        The excess kurtosis is therefore κ₄/κ₂² = (2 − cos β)/δ
+        (Schoutens 2003, Table 5.5).
         """
+        if n < 1:
+            raise ValueError(f"cumulant order must be >= 1, got {n}")
+        from numpy.polynomial import polynomial as P
+
         a, b, d = self.alpha, self.beta, self.delta
-        cos_h = np.cos(b / 2)
-        sin_h = np.sin(b / 2)
+        poly = np.array([0.0, 1.0])
+        for _ in range(n - 1):
+            poly = P.polymul(P.polyder(poly), [1.0, 0.0, 1.0])
+        kappa = 2.0 * d * (a / 2.0) ** n * float(P.polyval(np.tan(b / 2.0), poly))
         if n == 1:
-            return t * (d * a * np.tan(b / 2) + self.m)
-        if n == 2:
-            return t * d * a**2 / (2 * cos_h**2)
-        if n == 3:
-            return t * d * a**3 * sin_h / (2 * cos_h**3)
-        if n == 4:
-            return t * d * a**4 * (2 + np.cos(b)) / (8 * cos_h**4)
-        # Higher orders via numerical differentiation of log char_func
-        from scipy.misc import derivative  # type: ignore[import-untyped]
-
-        def log_cf(u_val: float) -> complex:
-            return np.log(complex(self.char_func_exact(u_val, t=t)) + 1e-300)
-
-        kappa = (1j) ** (-n) * derivative(
-            lambda u: log_cf(u).real if n % 2 == 0 else log_cf(u).imag, 0.0, dx=1e-4, n=n
-        )
-        return float(kappa.real)
+            kappa += self.m
+        return float(t * kappa)
 
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}

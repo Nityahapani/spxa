@@ -1064,7 +1064,8 @@ polynomial structure (Meixner–Pollaczek polynomials are eigenfunctions of its 
 - κ₁ = δα·tan(β/2) + m
 - κ₂ = δα²/(2cos²(β/2))
 - κ₃ = δα³·sin(β/2)/(2cos³(β/2))
-- κ₄ = δα⁴(2+cosβ)/(8cos⁴(β/2))
+- κ₄ = δα⁴(2−cosβ)/(4cos⁴(β/2)), so the excess kurtosis is (2−cosβ)/δ
+- κₙ for every n ≥ 2 from the derivatives of tan at β/2
 
 **Extra methods:**
 ```python
