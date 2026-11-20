@@ -17,7 +17,9 @@ Two objectives are available.
 ``"cumulants"``
     A weighted distance between the model's per-unit-time cumulants
     :math:`\kappa_2, \kappa_3, \kappa_4` and their estimates, weighted by the
-    inverse sampling variances when known and by relative error otherwise.
+    inverse sampling variances when known. Otherwise it is the sum of
+    squared :attr:`FitResult.moment_errors` (variance, skewness, excess
+    kurtosis over :math:`\Delta t`).
     It is the only option when the data are summary statistics.
 
 Location comes from a :data:`~spxa.discovery.families.DRIFT` leaf, which
@@ -206,6 +208,8 @@ class FitResult:
     ks_distance: Optional[float] = None
     target_cumulants: Optional[np.ndarray] = None
     converged: bool = True
+    dt: Optional[float] = None
+    target_standard_errors: Optional[np.ndarray] = None
     extras: dict[str, float] = field(default_factory=dict)
 
     @property
@@ -242,16 +246,63 @@ class FitResult:
         return None if e is None else float(np.max(e[1:]))
 
     @property
+    def moment_errors(self) -> Optional[np.ndarray]:
+        r"""Errors in the variance, skewness and excess kurtosis of the increment over ``dt``.
+
+        The returned values are, in order:
+
+        - the relative error of the variance;
+        - the error of the skewness, divided by :math:`\max(|\hat s|, 1)`;
+        - the error of the excess kurtosis, divided by :math:`\max(|\hat k|, 1)`.
+
+        So these are relative errors when the statistic is large, and
+        absolute errors when it is small. Unlike raw cumulant relative errors,
+        they stay meaningful when a target such as the skewness is close to zero.
+        """
+        if self.target_cumulants is None or self.dt is None:
+            return None
+        return _moment_errors(self.model_cumulants, self.target_cumulants, self.dt)
+
+    @property
+    def match_error(self) -> Optional[float]:
+        """Largest of :attr:`moment_errors`: "matches your data within x%"."""
+        e = self.moment_errors
+        return None if e is None else float(np.max(e))
+
+    @property
+    def cumulant_z_scores(self) -> Optional[np.ndarray]:
+        r""":math:`(\kappa_j^{model} - \hat\kappa_j)/\mathrm{se}(\hat\kappa_j)` for j = 1..4."""
+        if self.target_cumulants is None or self.target_standard_errors is None:
+            return None
+        return (self.model_cumulants - self.target_cumulants) / np.maximum(
+            self.target_standard_errors, 1e-300
+        )
+
+    @property
     def structure_key(self) -> str:
         return self.model.structure.key()
 
     def __str__(self) -> str:
         parts = [self.model.render()]
         if self.g_pvalue is not None:
-            parts.append(f"G-test p={self.g_pvalue:.3g}")
-        if self.max_relative_error is not None:
-            parts.append(f"max cumulant error {100 * self.max_relative_error:.2f}%")
+            parts.append(f"goodness-of-fit p={self.g_pvalue:.3g}")
+        if self.ks_distance is not None:
+            parts.append(f"max CDF gap {100 * self.ks_distance:.2f}%")
+        if self.match_error is not None:
+            parts.append(f"moment error {100 * self.match_error:.2f}%")
         return " | ".join(parts)
+
+
+def _standardized(k: np.ndarray, dt: float) -> np.ndarray:
+    """Variance, skewness and excess kurtosis over ``dt`` from per-unit-time κ1..κ4."""
+    var = k[1] * dt
+    return np.array([var, k[2] * dt / var**1.5, k[3] * dt / var**2])
+
+
+def _moment_errors(model: np.ndarray, target: np.ndarray, dt: float) -> np.ndarray:
+    m, t = _standardized(model, dt), _standardized(target, dt)
+    scale = np.array([abs(t[0]), max(abs(t[1]), 1.0), max(abs(t[2]), 1.0)])
+    return np.abs(m - t) / scale
 
 
 def _has_drift(structure: Node) -> bool:
@@ -329,9 +380,11 @@ class _Objective:
         target = summary.cumulants
         if summary.covariance is not None:
             se = np.sqrt(np.diag(summary.covariance))
-            self.weights = 1.0 / np.maximum(se, 1e-300) ** 2
+            self.weights: Optional[np.ndarray] = 1.0 / np.maximum(se, 1e-300) ** 2
         else:
-            self.weights = 1.0 / np.maximum(np.abs(target), 1e-300) ** 2
+            # no sampling variances: least squares on the moment errors, which
+            # stay finite when a target (typically the skewness) is zero
+            self.weights = None
         self.target = target
 
     def model(self, x: np.ndarray) -> Model:
@@ -358,7 +411,11 @@ class _Objective:
                 warnings.simplefilter("ignore")
                 m = self.model(x)
                 if self.method == "cumulants":
-                    r = m.cumulants(4) - self.target
+                    k = m.cumulants(4)
+                    if self.weights is None:
+                        e = _moment_errors(k, self.target, self.summary.dt)
+                        return float(np.sum(e**2))
+                    r = k - self.target
                     return float(np.sum(self.weights[1:] * r[1:] ** 2))
                 assert self.binned is not None
                 val = -float(self.binned.counts @ np.log(self.binned.probabilities(m)))
@@ -463,4 +520,8 @@ def fit_structure(
         ks_distance=ks,
         target_cumulants=summary.cumulants.copy(),
         converged=bool(best.success),
+        dt=summary.dt,
+        target_standard_errors=None
+        if summary.covariance is None
+        else np.sqrt(np.diag(summary.covariance)),
     )

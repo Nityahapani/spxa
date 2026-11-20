@@ -141,3 +141,28 @@ def test_tail_bins_recover_a_sum_of_pure_jump_laws() -> None:
     assert 0.025 < k[1] < 0.04
     assert 3e-4 < k[3] < 9.6e-4
     assert r.g_pvalue > 0.05
+
+
+def test_moment_errors_and_z_scores() -> None:
+    # the model is BM(0.2) exactly; targets are Laplace-like moments over dt = 1/4
+    s = from_statistics(mean=0.0, variance=0.011, skewness=0.0, excess_kurtosis=3.0, dt=0.25, n=400)
+    r = fit_structure(leaf(BROWNIAN), s, method="cumulants")
+    e = r.moment_errors
+    assert e is not None
+    sigma = r.model.params[0][0]
+    # variance error relative, skewness error absolute (|target| < 1), kurtosis relative
+    assert e[0] == pytest.approx(abs(sigma**2 * 0.25 - 0.011) / 0.011, rel=1e-9)
+    assert e[1] == pytest.approx(0.0, abs=1e-12)
+    assert e[2] == pytest.approx(1.0, rel=1e-9)
+    assert r.match_error == pytest.approx(max(e))
+    z = r.cumulant_z_scores
+    assert z is not None and z.shape == (4,)
+    se = np.sqrt(np.diag(s.covariance))
+    np.testing.assert_allclose(z, (r.model_cumulants - s.cumulants) / se)
+    assert "moment error" in str(r)
+
+
+def test_moment_errors_survive_a_zero_skewness_target() -> None:
+    s = from_statistics(mean=0.0, variance=1.0, skewness=0.0, excess_kurtosis=0.0)
+    r = fit_structure(leaf(NIG_FAMILY), s, method="cumulants")
+    assert r.match_error is not None and r.match_error < 0.05
