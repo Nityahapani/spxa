@@ -487,11 +487,15 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
 
     def jump_exponent(self, u: complex) -> complex:
         """λ(φ_Y(u) − 1) − iuλ E[Y 1{|Y| ≤ 1}]."""
+        u = complex(u)
         phi = complex(np.asarray(self.jump_dist.char_func(np.array([u]))).ravel()[0])
-        return complex(
-            self.rate * (phi - 1.0)
-            - 1j * u * self.rate * self.jump_dist.truncation_mean(cutoff=1.0)
-        )
+        inside = self.rate * self.jump_dist.truncation_mean(cutoff=1.0)
+        if u.real == 0.0:
+            # u = -iz: E[e^{zY}] is real. Real arithmetic overflows to +inf;
+            # complex arithmetic gives NaN from 0 * inf.
+            z = -u.imag
+            return complex(self.rate * (phi.real - 1.0) - z * inside, 0.0)
+        return complex(self.rate * (phi - 1.0) - 1j * u * inside)
 
     def is_finite_activity(self) -> bool:
         return True

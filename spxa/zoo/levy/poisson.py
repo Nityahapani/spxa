@@ -61,6 +61,13 @@ class _PoissonLevyMeasure(LevyMeasure):
         """λ(e^{iuc} − 1) − iuλc·1{|c| ≤ 1}."""
         c = self.jump_size
         inside = self.rate * c if abs(c) <= 1 else 0.0
+        u = complex(u)
+        if u.real == 0.0:
+            # u = -iz: the exponent is real. Real arithmetic overflows to +inf;
+            # complex arithmetic gives NaN from 0 * inf (Poisson @ Poisson at z = 3.5).
+            z = -u.imag
+            with np.errstate(over="ignore"):
+                return complex(self.rate * np.expm1(z * c) - z * inside, 0.0)
         return complex(self.rate * np.expm1(1j * u * c) - 1j * u * inside)
 
 
