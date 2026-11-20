@@ -189,6 +189,17 @@ class GammaProcess(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = -a\log(1 - iu/b)`, the closed form.
+
+        In the strip :math:`\operatorname{Im}u > -b`, where :math:`E[e^{iuX_1}]`
+        converges, :math:`1 - iu/b` has a positive real part, so the principal
+        logarithm is the analytic continuation from the real axis.
+        """
+        u = np.asarray(u, dtype=complex)
+        return -self.a * np.log(1.0 - 1j * u / self.b)
+
     def simulate(
         self,
         n_steps: int,

@@ -278,6 +278,26 @@ class MeixnerProcess(Process):
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = 2\delta\big[\log\cos(\beta/2) - \log\cosh\big(\tfrac{\alpha u - i\beta}{2}\big)\big] + imu`.
+
+        With :math:`w = (\alpha u - i\beta)/2 = a + ib`,
+        :math:`\operatorname{Re}\cosh w = \cosh a\cos b > 0` whenever
+        :math:`|b| < \pi/2`. That covers the real axis (:math:`|\beta| < \pi`)
+        and the whole convergence strip, so the principal logarithm is
+        analytic there. It is evaluated as
+        :math:`\log\cosh w = s w + \log(1 + e^{-2sw}) - \log 2`, with
+        :math:`s = \operatorname{sign}(a)`, which never overflows. Both
+        imaginary parts lie in :math:`(-\pi, \pi)` and agree modulo
+        :math:`2\pi`, so they are equal.
+        """
+        u = np.asarray(u, dtype=complex)
+        w = (self.alpha * u - 1j * self.beta) / 2.0
+        s = np.where(w.real >= 0, 1.0, -1.0)
+        log_cosh = s * w + np.log1p(np.exp(-2.0 * s * w)) - np.log(2.0)
+        return 2.0 * self.delta * (np.log(np.cos(self.beta / 2.0)) - log_cosh) + 1j * self.m * u
+
     def simulate(
         self,
         n_steps: int,

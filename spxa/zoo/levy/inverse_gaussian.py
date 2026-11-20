@@ -241,6 +241,17 @@ class InverseGaussianProcess(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = \frac{\lambda}{\mu}\big(1 - \sqrt{1 - 2i\mu^2u/\lambda}\big)`, the closed form.
+
+        The radicand has a positive real part in the convergence strip
+        :math:`\operatorname{Im}u > -\lambda/(2\mu^2)`, where the principal
+        square root is analytic.
+        """
+        u = np.asarray(u, dtype=complex)
+        return (self.lam / self.mu) * (1.0 - np.sqrt(1.0 - 2j * self.mu**2 * u / self.lam))
+
     def simulate(
         self,
         n_steps: int,

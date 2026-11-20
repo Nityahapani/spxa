@@ -230,6 +230,19 @@ class VarianceGamma(Process):
         result = base ** (-t / self.nu)
         return result if result.shape != (1,) else result[0]
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = -\frac1\nu\log\big(1 - i\theta\nu u + \tfrac12\sigma^2\nu u^2\big)`, the closed form.
+
+        VG is Brownian motion run on a Gamma clock, and the argument is
+        :math:`1 - \nu\psi_{BM}(u)`. Where :math:`E[e^{iuX_1}]` converges,
+        :math:`\nu\operatorname{Re}\psi_{BM}(u) < 1`, so the argument has a
+        positive real part and the principal logarithm is analytic there.
+        """
+        u = np.asarray(u, dtype=complex)
+        base = 1.0 - 1j * u * self.theta * self.nu + 0.5 * self.sigma**2 * self.nu * u**2
+        return -np.log(base) / self.nu
+
     def simulate(
         self,
         n_steps: int,

@@ -262,6 +262,20 @@ class TemperedStable(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = C\,\Gamma(-\alpha)\big[(\lambda - iu)^\alpha - \lambda^\alpha\big]`, the closed form.
+
+        :math:`\lambda - iu` has a positive real part in the strip
+        :math:`\operatorname{Im}u > -\lambda`, where the principal power is
+        analytic.
+        """
+        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
+
+        u = np.asarray(u, dtype=complex)
+        coeff = self.C * float(gamma_fn(-self.alpha))
+        return coeff * ((self.lam - 1j * u) ** self.alpha - self.lam**self.alpha)
+
     def simulate(
         self,
         n_steps: int,
