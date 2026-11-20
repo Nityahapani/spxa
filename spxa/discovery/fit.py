@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal, Optional, Sequence
 
 import numpy as np
 from scipy import optimize, stats
@@ -363,6 +363,7 @@ def fit_structure(
     rng: Optional[np.random.Generator] = None,
     binned: Optional[BinnedData] = None,
     maxiter: int = 400,
+    initial: Optional[Sequence[Sequence[float]]] = None,
 ) -> FitResult:
     """Fit ``structure`` to ``summary``.
 
@@ -382,6 +383,11 @@ def fit_structure(
     binned :
         Pre-computed bins. :func:`~spxa.discovery.search.discover` shares one
         set across all candidates so that likelihoods are comparable.
+    initial :
+        Natural parameters per leaf of the (location-augmented) structure,
+        used as the first starting point instead of the generic initial
+        values. Beam search passes the parent's fit with the new atom's
+        typical member.
     """
     if location:
         structure = with_location(structure)
@@ -398,10 +404,12 @@ def fit_structure(
     obj = _Objective(structure, summary, method, binned)
 
     std = float(np.sqrt(max(summary.variance, 1e-300)))
-    x0 = Model(structure, initial_params(structure, std)).to_free()
+    x0 = Model(
+        structure, initial if initial is not None else initial_params(structure, std)
+    ).to_free()
     raw = [x0] + [x0 + rng.normal(scale=0.7, size=x0.size) for _ in range(max(n_starts, 1) - 1)]
-    starts = []
-    for x in raw:
+    starts = [x0] if initial is not None else []
+    for x in raw[1:] if initial is not None else raw:
         try:
             starts.append(obj.matched(x).to_free())
         except (ValueError, ZeroDivisionError, FloatingPointError):

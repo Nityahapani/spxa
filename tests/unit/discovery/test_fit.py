@@ -111,3 +111,12 @@ def test_goodness_of_fit_is_calibrated_under_the_null() -> None:
     rejections = np.mean(np.array(pvals) < 0.05)
     # binomial(120, 0.05): mean 6, sd 2.4 rejections
     assert 0.0 < rejections < 0.12
+
+
+def test_warm_start(vg_data) -> None:
+    cold = fit_structure(leaf(VARIANCE_GAMMA), vg_data, n_starts=1)
+    warm = fit_structure(leaf(VARIANCE_GAMMA), vg_data, n_starts=1, initial=cold.model.params)
+    assert warm.objective <= cold.objective + 1e-6
+    np.testing.assert_allclose(warm.model.params[0], cold.model.params[0], rtol=1e-3)
+    with pytest.raises(ValueError):
+        fit_structure(leaf(VARIANCE_GAMMA), vg_data, initial=[(0.2, 0.3, 0.0)])
