@@ -296,3 +296,23 @@ class TestSubordinatorsCompose:
         np.testing.assert_allclose(
             ((X @ T) @ S).char_func(u), (X @ (T @ S)).char_func(u), rtol=1e-8
         )
+
+
+class TestMartingalesUnderTimeChange:
+    def test_martingale_in_integrable_time_is_a_martingale(self):
+        X = BrownianMotion(mu=0.0, sigma=0.4)
+        Z = X @ GammaProcess(a=2.0, b=2.0)
+        assert Z.properties.is_martingale is True
+        assert Z.cumulants(1)[1] == 0.0
+
+    def test_drifting_parent_is_not(self):
+        Z = BrownianMotion(mu=0.1, sigma=0.4) @ GammaProcess(a=2.0, b=2.0)
+        assert Z.properties.is_martingale is False
+
+    def test_clock_with_infinite_mean_blocks_the_flag(self):
+        from spxa.core.properties import ProcessProperties
+
+        parent = BrownianMotion(mu=0.0, sigma=1.0).properties
+        heavy_clock = ProcessProperties(is_subordinator=True, has_finite_mean=False)
+        z = ProcessProperties.combine_subordination(parent, heavy_clock)
+        assert z.is_martingale is False and any("infinite mean" in n for n in z.notes)
