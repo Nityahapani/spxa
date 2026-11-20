@@ -17,6 +17,10 @@ Compositions
     operand shrinks in place. A law that fails for ``X + Y`` because of
     ``X`` alone is therefore reported with ``X``.
 
+Martingales
+    :func:`martingales` centres draws, :math:`X_t - E[X_1]t`, so laws
+    with a martingale hypothesis are not vacuous.
+
 Heavy tails
     :func:`levy_processes` excludes families without a finite mean
     (:class:`~spxa.zoo.levy.stable.AlphaStable`) unless
@@ -369,3 +373,26 @@ def compositions(
         operations,
         leaf_probability,
     )
+
+
+def _centre(X: Process) -> Process:
+    """``X`` if it is flagged a martingale, else ``X + Drift(-E[X_1])``."""
+    if X.properties.is_martingale:
+        return X
+    return X + Drift(-float(X.cumulants(1)[1]))
+
+
+def martingales(base: Optional[Strategy[Process]] = None) -> Strategy[Process]:
+    r"""Martingales: processes from ``base`` with their mean drift removed.
+
+    A Lévy process is a martingale exactly when :math:`E|X_1| < \infty` and
+    :math:`E[X_1] = 0`. Each draw from ``base`` (default: depth-1
+    :func:`compositions`) with a finite mean is centred to
+    :math:`X_t - E[X_1]\,t`. Generic strategies almost never hit
+    :math:`E[X_1] = 0` exactly, so laws with a martingale hypothesis
+    need this strategy, or they hold vacuously.
+    """
+    if base is None:
+        base = compositions(max_depth=1)
+    finite = base.filter(lambda X: bool(X.properties.has_finite_mean), name="finite mean")
+    return finite.map(_centre, name="martingales")

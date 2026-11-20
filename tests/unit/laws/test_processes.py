@@ -14,6 +14,7 @@ from spxa.laws.processes import (
     alpha_stables,
     compositions,
     levy_processes,
+    martingales,
     scalars,
     subordinators,
 )
@@ -105,3 +106,30 @@ def test_scaled_compositions_use_nonzero_constants() -> None:
     )
     ratio = s.example().cumulants(1)[1] / base.cumulants(1)[1]
     assert 2.0 <= ratio <= 3.0
+
+
+def test_martingales_are_centred_martingales() -> None:
+    strategy = martingales()
+    for seed in range(25):
+        X = strategy.example(seed=seed)
+        assert X.properties.is_martingale, X
+        k1, k2 = X.cumulants(2)[1], X.cumulants(2)[2]
+        assert abs(k1) <= 1e-12 * (1 + np.sqrt(abs(k2))), (X, k1)
+
+
+def test_martingales_shrink_to_martingales() -> None:
+    tree = martingales().generate(np.random.default_rng(4))
+    seen = 0
+    for child in tree.children():
+        assert child.value.properties.is_martingale, child.value
+        seen += 1
+        if seen == 10:
+            break
+    assert seen > 0
+
+
+def test_generic_strategies_rarely_draw_martingales() -> None:
+    """Why martingales() exists: centred draws have probability zero otherwise."""
+    strategy = compositions(max_depth=1)
+    hits = sum(strategy.example(seed=s).properties.is_martingale for s in range(60))
+    assert hits == 0
