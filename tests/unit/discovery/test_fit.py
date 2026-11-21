@@ -245,3 +245,17 @@ def test_degeneracies() -> None:
         .degeneracies(boundary=9.0)[0]
         .startswith("NIG.alpha")
     )
+
+
+def test_degeneracies_survive_an_underflowed_rate() -> None:
+    # CI (Python 3.10, 3.11): a Gamma rate b ~ 1e-80 made b**4 underflow to 0.0,
+    # and degeneracies() raised ZeroDivisionError inside discover().
+    assert GAMMA.cumulants((1.0, 1e-80), 4)[3] == np.inf
+    m = Model(leaf(BROWNIAN) + leaf(GAMMA), [(0.15,), (1.0, 1e-80)])
+    reasons = _result(m).degeneracies()
+    assert any(r.startswith("Gamma.b at a boundary") for r in reasons), reasons
+    # b**2 underflows too: kappa_2 = inf, and no variance shares are reported
+    m = Model(leaf(BROWNIAN) + leaf(GAMMA), [(0.15,), (1.0, 1e-200)])
+    reasons = _result(m).degeneracies()
+    assert any(r.startswith("Gamma.b at a boundary") for r in reasons), reasons
+    assert not any("of the variance" in r for r in reasons)

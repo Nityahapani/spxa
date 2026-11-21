@@ -362,7 +362,8 @@ class FitResult:
                     parts.append((child.key(), float(sub.cumulants(2)[1])))
                 i += n
             total = sum(v for _, v in parts)
-            if len(parts) > 1 and total > 0:
+            # an infinite part (a rate that underflowed) is already at a boundary
+            if len(parts) > 1 and 0 < total < np.inf:
                 for key, v in parts:
                     if v / total < share:
                         out.append(f"{key} carries {100 * v / total:.2g}% of the variance")

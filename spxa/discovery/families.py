@@ -125,7 +125,11 @@ class Family:
         """Closed-form :math:`\\kappa_1, \\dots, \\kappa_{order}` of :math:`X_1`."""
         if order < 1:
             raise ValueError("order must be >= 1")
-        return np.asarray(self.cumulants_fn(self.validate(params), order), dtype=float)
+        # NumPy scalars, so a power that underflows to 0 (a Gamma rate b ~ 1e-80
+        # from a wandering fit) gives kappa = inf rather than ZeroDivisionError.
+        p = tuple(np.float64(x) for x in self.validate(params))
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            return np.asarray(self.cumulants_fn(p, order), dtype=float)
 
     def log_mgf(self, z: complex | np.ndarray, params: Sequence[float]) -> np.ndarray:
         """:math:`K(z) = \\log E[e^{zX_1}]` on the principal branch."""
