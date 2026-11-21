@@ -40,6 +40,7 @@ def test_grid_and_piecewise_levels() -> None:
 
 
 def _check_slice(x: np.ndarray, c: np.ndarray) -> None:
+    assert c[0] == 1.0 - x[0] and c[-1] == 0.0  # Dirichlet ends are exact
     assert np.all(c >= np.maximum(1.0 - x, 0.0) - 1e-14)
     assert np.all(c <= 1.0 + 1e-14)
     assert np.all(np.diff(c) <= 1e-14)  # decreasing in strike

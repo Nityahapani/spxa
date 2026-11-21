@@ -75,22 +75,31 @@ def piecewise_constant_vol(nodes_y: Sequence[float], levels: Sequence[float], y:
 
 
 def _implicit_step(x: np.ndarray, c_prev: np.ndarray, var_dt: np.ndarray) -> np.ndarray:
-    """Solve ``[I - 1/2 var_dt x^2 D_xx] c = c_prev`` with Dirichlet ends."""
-    n = x.size
+    """Solve ``[I - 1/2 var_dt x^2 D_xx] c = c_prev`` with Dirichlet ends.
+
+    The boundary values are moved to the right-hand side and only the interior
+    nodes are solved for, so the ends equal ``1 - x[0]`` and ``0`` exactly.
+    Keeping the boundary rows in the banded system lets LAPACK's partial
+    pivoting swap them with a neighbouring row once the step's coefficients
+    exceed one, which leaves rounding error at the boundary nodes.
+    """
     h = np.diff(x)
     hm, hp = h[:-1], h[1:]  # left and right spacings at interior nodes
     a = 0.5 * var_dt[1:-1] * x[1:-1] ** 2
     lo = -a * 2.0 / (hm * (hm + hp))
     up = -a * 2.0 / (hp * (hm + hp))
-    diag = np.ones(n)
-    diag[1:-1] = 1.0 - lo - up
-    ab = np.zeros((3, n))
-    ab[1] = diag
-    ab[0, 2:] = up  # super-diagonal
-    ab[2, :-2] = lo  # sub-diagonal
-    rhs = c_prev.copy()
-    rhs[0], rhs[-1] = 1.0 - x[0], 0.0
-    return solve_banded((1, 1), ab, rhs)
+    left, right = 1.0 - x[0], 0.0
+    ab = np.zeros((3, lo.size))
+    ab[1] = 1.0 - lo - up
+    ab[0, 1:] = up[:-1]  # super-diagonal
+    ab[2, :-1] = lo[1:]  # sub-diagonal
+    rhs = c_prev[1:-1].copy()
+    rhs[0] -= lo[0] * left
+    rhs[-1] -= up[-1] * right
+    c = np.empty_like(c_prev)
+    c[0], c[-1] = left, right
+    c[1:-1] = solve_banded((1, 1), ab, rhs)
+    return c
 
 
 class AndreasenHugeSurface:
