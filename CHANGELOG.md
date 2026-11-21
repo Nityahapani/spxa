@@ -2,7 +2,7 @@
 
 All notable changes to spxa are documented here. Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] — 2026-11-21
 
 ### Added
 
@@ -78,6 +78,17 @@ Most of these were found by the law library while it was being written.
   - `X @ T` is simulated exactly instead of by interpolating the parent path.
   - GH increments use cf inversion with the continuous exponent.
   - One `simulate(n_steps, n_paths, T, rng)` signature for every Lévy primitive (Kou, GH, NTS).
+
+### Changed
+
+- `KouJumpDiffusion.simulate` and `GeneralizedHyperbolicProcess.simulate` take
+  `(n_steps, n_paths, T, rng)` positionally, like every other Lévy primitive. `dt` and
+  `time_horizon` are now keyword-only. A positional call such as `simulate(100, 0.01)`, which set
+  `dt` in 1.1.0, must become `simulate(100, dt=0.01)`. Keyword calls are unaffected.
+- `NormalTemperedStableProcess.simulate` takes `n_steps` first. A time grid passed as the first
+  argument is still accepted, and `t_grid=` is keyword-only.
+- `Process + number` raises `TypeError` that points to `Drift(c)`. In 1.1.0 it raised an
+  `AttributeError`.
 
 ## [1.1.0] — 2026-11-19
 

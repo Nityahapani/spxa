@@ -1,6 +1,6 @@
 # spxa API Reference
 
-Complete reference for spxa v1.1.0. Every entry here was verified against
+Complete reference for spxa v1.2.0. Every entry here was verified against
 the running library. All signatures are exact.
 
 ---
@@ -230,7 +230,7 @@ Everything in this section is importable directly from `spxa`.
 ```python
 import spxa
 
-spxa.__version__          # "1.1.0"
+spxa.__version__          # "1.2.0"
 
 # Core types
 spxa.Process
