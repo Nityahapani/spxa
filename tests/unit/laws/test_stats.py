@@ -82,3 +82,15 @@ def test_expect_not_rejected() -> None:
     expect_not_rejected(0.5)
     with pytest.raises(LawViolation, match="rejected"):
         expect_not_rejected(1e-9, what="cf")
+
+
+def test_cf_values_may_be_size_one_arrays() -> None:
+    # Process.char_func returns shape (1,) for scalar u; NumPy >= 2.4 refuses
+    # complex() of that, which made every SIMULATION law error on CI.
+    from spxa.laws.library.simulation import _phi
+    from spxa.laws.stats import ecf_test
+    from spxa.zoo.levy import Drift
+
+    assert _phi(Drift(mu=0.0), 1.0)(0.5) == 1.0 + 0.0j
+    x = np.zeros(100)
+    assert ecf_test(x, lambda u: np.array([1.0 + 0.0j]), [0.5, 2.0]) == 1.0

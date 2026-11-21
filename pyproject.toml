@@ -109,6 +109,10 @@ markers = [
     "exactness: marks tests that verify closed-form results against published formulas (never skip)",
     "slow: marks tests that take more than 5 seconds",
 ]
+# NumPy >= 2.4 raises on complex()/float() of a size-1 array; fail on older NumPy too
+filterwarnings = [
+    "error:Conversion of an array with ndim > 0 to a scalar:DeprecationWarning",
+]
 
 [tool.coverage.run]
 source = ["spxa"]

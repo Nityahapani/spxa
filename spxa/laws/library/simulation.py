@@ -69,7 +69,8 @@ def _scale(X: Process, t: float) -> float:
 
 
 def _phi(X: Process, t: float):  # type: ignore[no-untyped-def]
-    return lambda u: complex(char_func(X, u, t))
+    # char_func returns shape (1,) for scalar u; complex() of that errors in NumPy >= 2.4
+    return lambda u: complex(np.asarray(char_func(X, u, t)).reshape(-1)[0])
 
 
 @law(X=_X, T=_T, seed=_SEED, tags=("simulation", "cf"))

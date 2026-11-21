@@ -64,6 +64,14 @@ LEVEL = 1e-6
 _FLOOR = 1e-10
 
 
+def _scalar(value: object) -> complex:
+    """A cf value as a Python complex; accepts scalars and size-1 arrays (NumPy >= 2.4 safe)."""
+    arr = np.asarray(value)
+    if arr.size != 1:
+        raise ValueError(f"expected one characteristic-function value, got shape {arr.shape}")
+    return complex(arr.reshape(-1)[0])
+
+
 def _two_sided(z: float) -> float:
     return float(2.0 * _st.norm.sf(abs(z)))
 
@@ -90,7 +98,7 @@ def ecf_test(
     n = x.size
     pvalues = []
     for u in frequencies:
-        p, p2 = complex(char_func(u)), complex(char_func(2.0 * u))
+        p, p2 = _scalar(char_func(u)), _scalar(char_func(2.0 * u))
         m = complex(np.mean(np.exp(1j * u * x)))
         var_re = max((1.0 + p2.real) / 2.0 - p.real**2, 0.0) / n
         var_im = max((1.0 - p2.real) / 2.0 - p.imag**2, 0.0) / n
@@ -128,8 +136,8 @@ def independence_test(
     n = a.size
     pvalues = []
     for u, v in pairs:
-        p = complex(cf_a(u)) * complex(cf_b(v))
-        p2 = complex(cf_a(2.0 * u)) * complex(cf_b(2.0 * v))
+        p = _scalar(cf_a(u)) * _scalar(cf_b(v))
+        p2 = _scalar(cf_a(2.0 * u)) * _scalar(cf_b(2.0 * v))
         m = complex(np.mean(np.exp(1j * (u * a + v * b))))
         var_re = max((1.0 + p2.real) / 2.0 - p.real**2, 0.0) / n
         var_im = max((1.0 - p2.real) / 2.0 - p.imag**2, 0.0) / n
