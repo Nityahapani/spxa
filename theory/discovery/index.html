@@ -1,0 +1,1808 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/discovery/">
+      
+      
+        <link rel="prev" href="../calibration/">
+      
+      
+        <link rel="next" href="../laws/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Process discovery - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#process-discovery" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Process discovery
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Example gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process discovery
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-alphabet-primitive-families" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The alphabet: primitive families
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-grammar-which-structures-are-searched" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The grammar: which structures are searched
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-fitting-one-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Fitting one structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Fitting one structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-a-return-sample-a-smoothed-binned-likelihood" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From a return sample: a smoothed binned likelihood
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-summary-statistics-matching-cumulants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From summary statistics: matching cumulants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#from-option-prices-risk-neutral-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From option prices: risk-neutral structures
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-ranking-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Ranking structures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-how-sure-can-we-be" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. How sure can we be?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-when-no-levy-composition-fits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. When no Lévy composition fits
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-is-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What is tested
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../laws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Property-based laws
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="process-discovery">Process discovery</h1>
+<p><code>spxa.discovery</code> solves an inverse problem in stochastic algebra. Given data (a return series, its summary statistics, or option prices), it answers the question:</p>
+<blockquote>
+<p>Which composition of primitive processes explains the data, with which parameters, and how sure can we be?</p>
+</blockquote>
+<p>It searches over <em>structures</em> (the algebraic expression built from primitives with <code>+</code>, scaling and <code>@</code>), not only over parameters. In this respect it is symbolic regression for Lévy processes.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.discovery</span><span class="w"> </span><span class="kn">import</span> <span class="n">discover</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">report</span> <span class="o">=</span> <span class="n">discover</span><span class="p">(</span><span class="s2">"returns.csv"</span><span class="p">)</span>          <span class="c1"># or an array, a ReturnSeries, or summary statistics</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>                             <span class="c1"># headline, ranked table, warnings</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">report</span><span class="o">.</span><span class="n">uncertainty</span><span class="p">()</span><span class="o">.</span><span class="n">table</span><span class="p">()</span>              <span class="c1"># standard errors of the winner</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">report</span><span class="o">.</span><span class="n">compare</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>                      <span class="c1"># Vuong test, winner vs runner-up</span>
+</code></pre></div>
+<p>The same search runs from the shell: <code>spxa-discover returns returns.csv --families BM,VG,NIG,Gamma</code>. <a href="https://github.com/Nityahapani/spxa/blob/main/examples/08_process_discovery.py"><code>examples/08_process_discovery.py</code></a> walks through all of it.</p>
+<h2 id="1-the-alphabet-primitive-families">1. The alphabet: primitive families</h2>
+<p>Each primitive is a parametric Lévy family described by its cumulant exponent</p>
+<div class="arithmatex">\[
+K(z) = \log E\big[e^{zX_1}\big], \qquad \operatorname{Re} z \in (z_-, z_+),
+\]</div>
+<p>on the strip of finite exponential moments. Every family supplies <span class="arithmatex">\(K\)</span> in closed form, its cumulants <span class="arithmatex">\(\kappa_n = K^{(n)}(0)\)</span> to any order, the strip <span class="arithmatex">\((z_-, z_+)\)</span>, and a bijection from its parameters to <span class="arithmatex">\(\mathbb R^d\)</span> for unconstrained optimisation.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Name</th>
+<th style="text-align: left;">Family</th>
+<th style="text-align: left;">Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>Drift</code></td>
+<td style="text-align: left;">deterministic drift</td>
+<td style="text-align: left;"><span class="arithmatex">\(\mu\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>BM</code></td>
+<td style="text-align: left;">Brownian motion</td>
+<td style="text-align: left;"><span class="arithmatex">\(\sigma\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Gamma</code></td>
+<td style="text-align: left;">gamma subordinator</td>
+<td style="text-align: left;"><span class="arithmatex">\(a, b\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>IG</code></td>
+<td style="text-align: left;">inverse Gaussian subordinator</td>
+<td style="text-align: left;"><span class="arithmatex">\(\mu, \lambda\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>VG</code></td>
+<td style="text-align: left;">variance gamma (Madan, Carr &amp; Chang 1998)</td>
+<td style="text-align: left;"><span class="arithmatex">\(\sigma, \nu, \theta\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NIG</code></td>
+<td style="text-align: left;">normal inverse Gaussian (Barndorff-Nielsen 1997)</td>
+<td style="text-align: left;"><span class="arithmatex">\(\alpha, \beta, \delta\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Meixner</code></td>
+<td style="text-align: left;">Meixner (Schoutens &amp; Teugels 1998)</td>
+<td style="text-align: left;"><span class="arithmatex">\(\alpha, \beta, \delta\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Poisson</code></td>
+<td style="text-align: left;">Poisson process with fixed jump size</td>
+<td style="text-align: left;"><span class="arithmatex">\(\lambda, h\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NormalJumps</code></td>
+<td style="text-align: left;">compound Poisson, normal jumps (Merton 1976)</td>
+<td style="text-align: left;"><span class="arithmatex">\(\lambda, m, s\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>DoubleExpJumps</code></td>
+<td style="text-align: left;">compound Poisson, double-exponential jumps (Kou 2002)</td>
+<td style="text-align: left;"><span class="arithmatex">\(\lambda, p, \eta_1, \eta_2\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CGMY</code></td>
+<td style="text-align: left;">tempered stable (Carr, Geman, Madan &amp; Yor 2002)</td>
+<td style="text-align: left;"><span class="arithmatex">\(C, G, M, Y\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Families have no location parameter. Location is a single global <code>Drift</code> term appended to every candidate. Otherwise <code>VG + NIG</code> would have two interchangeable drifts and would not be identifiable.</p>
+<h2 id="2-the-grammar-which-structures-are-searched">2. The grammar: which structures are searched</h2>
+<p>A structure is a tree over three operations:</p>
+<ul>
+<li><span class="arithmatex">\(X + Y\)</span>, an independent sum: <span class="arithmatex">\(K = K_X + K_Y\)</span>.</li>
+<li><span class="arithmatex">\(cX\)</span>, scaling by a fixed constant: <span class="arithmatex">\(K(z) = K_X(cz)\)</span>.</li>
+<li><span class="arithmatex">\(X \circ T\)</span>, subordination by an independent subordinator: <span class="arithmatex">\(K = K_T \circ K_X\)</span> (Sato 1999, Thm 30.1).</li>
+</ul>
+<p>A <code>Grammar</code> lists <em>atoms</em>: families, signed subordinators such as <code>-Gamma</code> (negative jumps only), and optional subordinated structures such as <code>(Drift + BM) @ (Gamma + Poisson)</code>. Candidates are sums of at most <code>max_terms</code> atoms.</p>
+<p>The grammar also removes candidates whose law duplicates another candidate's:</p>
+<ul>
+<li><code>BM + BM</code> is <code>BM</code>.</li>
+<li><code>(Drift + BM) @ Gamma</code> is <code>VG</code>, <code>(Drift + BM) @ IG</code> is <code>NIG</code>, and <code>(Drift + BM) @ Poisson</code> is <code>NormalJumps</code>. Only the family form is generated.</li>
+<li>Sums are commutative and are put in canonical order, so each multiset of atoms is fitted once.</li>
+</ul>
+<p><strong>Search.</strong> <code>search="beam"</code> (the default) is forward selection with a beam. It fits every atom, then repeatedly extends the <code>beam_width</code> best structures by one atom each, warm-starting each extension from its parent's estimate. <code>search="exhaustive"</code> fits every structure. With a beam as wide as the atom list, both visit every structure and agree on the best BIC; this is tested.</p>
+<h2 id="3-fitting-one-structure">3. Fitting one structure</h2>
+<h3 id="from-a-return-sample-a-smoothed-binned-likelihood">From a return sample: a smoothed binned likelihood</h3>
+<p>At a sampling interval of a day or a week, many pure-jump laws have unbounded densities (VG with <span class="arithmatex">\(\Delta t/\nu &lt; 1/2\)</span>) or atoms (compound Poisson). A pointwise density likelihood is then unreliable. Instead, the increments are binned on bins fixed once per data set, finer in the body and merged in the tails. Data and model are both smoothed by the same narrow Gaussian kernel, and the model's bin probabilities come from a COS expansion of the smoothed law (Fang &amp; Oosterlee 2008):</p>
+<div class="arithmatex">\[
+\ell(\theta) = \sum_j \tilde c_j \log \tilde p_j(\theta).
+\]</div>
+<p>Because the bins and kernel are shared, log-likelihoods and therefore AIC and BIC are comparable across structures. Goodness of fit is a Wald-type statistic on the smoothed counts that accounts for their covariance. The report quotes its p-value and the largest gap between the model and empirical CDFs.</p>
+<p><strong>What the binned likelihood can see.</strong> Information beyond the outermost bins enters only through the tail-bin counts. A component that acts mainly through a few very large jumps is therefore hard to identify from a few thousand returns. One example is a gamma subordinator with low activity <span class="arithmatex">\(a\)</span>. The search then prefers the simpler structure, which is the correct inference from that sample. The bootstrap frequencies (§5) make this visible.</p>
+<h3 id="from-summary-statistics-matching-cumulants">From summary statistics: matching cumulants</h3>
+<p><code>from_statistics(mean, variance, skewness, excess_kurtosis, dt, n)</code> gives per-unit-time cumulants <span class="arithmatex">\(\hat\kappa_1, \dots, \hat\kappa_4\)</span>, and the fit minimises a weighted distance to the model's cumulants. Four cumulants identify at most three shape parameters, so several structures typically match exactly. The report says so explicitly and ranks the matching structures by simplicity. A return sample is needed to tell them apart.</p>
+<p>The <em>moment errors</em> (relative errors in variance, skewness and excess kurtosis over <span class="arithmatex">\(\Delta t\)</span>) are a diagnostic, not a ranking criterion. With heavy tails, the sample skewness and kurtosis are dominated by a handful of observations. A correct likelihood fit can miss them by tens of percent while every cumulant stays within one or two standard errors (<code>FitResult.cumulant_z_scores</code>). A regression test pins this case.</p>
+<h3 id="from-option-prices-risk-neutral-structures">From option prices: risk-neutral structures</h3>
+<p><code>cos_prices(model, spot, strikes, maturity, rate, dividend, call)</code> prices European options with the model as the driver of log-returns,</p>
+<div class="arithmatex">\[
+S_T = S_0 \exp\big((r - q)T + \omega T + X_T\big), \qquad \omega = -K_X(1),
+\]</div>
+<p>where <span class="arithmatex">\(\omega\)</span> is the martingale correction. It requires <span class="arithmatex">\(1 &lt; z_+\)</span>, i.e. <span class="arithmatex">\(E[e^{X_1}] &lt; \infty\)</span>, and raises an error otherwise. Prices come from the COS expansion of <span class="arithmatex">\(\log(S_T/S_0)\)</span>, with puts priced directly and calls from put–call parity. Against the Fang–Oosterlee VG reference values (with <span class="arithmatex">\(S_0 = 100\)</span>, <span class="arithmatex">\(K = 90\)</span>, <span class="arithmatex">\(r = 0.1\)</span>, <span class="arithmatex">\(\sigma = 0.12\)</span>, <span class="arithmatex">\(\nu = 0.2\)</span> and <span class="arithmatex">\(\theta = -0.14\)</span>), it gives 10.993703187 at <span class="arithmatex">\(T = 0.1\)</span> and 19.099354724 at <span class="arithmatex">\(T = 1\)</span>. Both values are tested.</p>
+<p><code>discover_from_options(quotes)</code> fits each structure by least squares on vega-weighted price errors, which to first order are implied-volatility errors (Cont &amp; Tankov 2004, §13.2). It reports the implied-volatility RMSE overall and per maturity. A Lévy model fixes how the smile scales with maturity, roughly as <span class="arithmatex">\(T^{-1/2}\)</span>. When the best structure's errors depend strongly on maturity, the report warns that the quotes do not follow a single Lévy law.</p>
+<h2 id="4-ranking-structures">4. Ranking structures</h2>
+<p>With a likelihood, candidates are ranked by BIC (or AIC). The weights</p>
+<div class="arithmatex">\[
+w_i \propto e^{-\Delta_i/2}, \qquad \Delta_i = \mathrm{IC}_i - \min_k \mathrm{IC}_k,
+\]</div>
+<p>give the relative support of each structure (Burnham &amp; Anderson 2002). The headline reports the winner, its CDF gap, its goodness-of-fit p-value and its lead over the runner-up:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&lt;expression&gt; matches your data within &lt;x&gt;% (largest gap between model and empirical CDFs;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>goodness-of-fit p = &lt;p&gt;); BIC lead over the runner-up &lt;Δ&gt;
+</code></pre></div>
+<p>Subordinators are shown as weighted unit-rate processes: <span class="arithmatex">\(c \cdot \Gamma(a, 1)\)</span> has the law of <span class="arithmatex">\(\Gamma(a, 1/c)\)</span>.</p>
+<p><strong>Near-equivalent structures.</strong> Different structures can have nearly the same law on a sample. On 5000 daily returns of VG + Gamma, the bilateral gamma <code>-Gamma + Gamma</code> and <code>VG + Gamma</code> are both within reach of the top. The recovery test therefore asserts only that these two are the top pair and that every other structure trails by more than 10 BIC.</p>
+<p><strong>Degenerate fits.</strong> Some fits are limiting cases of their structure, for example <code>NIG(alpha=9e5, beta≈alpha)</code> (a one-sided limit) or <code>BM(sigma=1e-10) + VG</code> (a summand that has vanished). <code>FitResult.degeneracies()</code> flags two signs:</p>
+<ul>
+<li>an unconstrained coordinate beyond <span class="arithmatex">\(\pm 9\)</span>, i.e. a parameter more than <span class="arithmatex">\(e^9\)</span> times away from 1 or within about <span class="arithmatex">\(10^{-4}\)</span> of an interval bound;</li>
+<li>a summand carrying less than <span class="arithmatex">\(10^{-4}\)</span> of the variance.</li>
+</ul>
+<p>Tables mark these fits with <code>!</code>, a warning names the best admissible structure when a degenerate fit leads, and <code>exclude_degenerate=True</code> removes them from the ranking. The boundary check depends on units: parameters are per unit time and returns are in decimals.</p>
+<h2 id="5-how-sure-can-we-be">5. How sure can we be?</h2>
+<p><strong>Standard errors.</strong> The smoothed counts are not multinomial, so the inverse Fisher information is not the right covariance. <code>parameter_uncertainty</code> uses the sandwich <span class="arithmatex">\(A^{-1} B A^{-1}\)</span> (Huber 1967; White 1982) with per-observation scores. For cumulant fits, it uses the GMM sandwich with the sampling covariance of the cumulant estimates. The GMM standard errors are asymptotic and optimistic in small samples with heavy tails.</p>
+<p><strong>Comparing two structures.</strong> Non-nested structures are compared with Vuong's (1989) test on the pointwise log-likelihoods, with an optional AIC or BIC correction. <code>report.compare(i, j)</code> runs it on the bins the search used.</p>
+<p><strong>Selection stability.</strong> <code>bootstrap(report, n_boot, top)</code> resamples the returns and refits the leading structures from their estimates. It records how often each one wins (the bootstrap analogue of an Akaike weight; Buckland, Burnham &amp; Augustin 1997) and percentile intervals for the parameters. <code>block_length &gt; 1</code> gives the moving-block bootstrap (Künsch 1989) for short-range dependence.</p>
+<h2 id="6-when-no-levy-composition-fits">6. When no Lévy composition fits</h2>
+<p>Lévy increments are i.i.d. <code>summarize</code> reports the autocorrelation of returns and of squared returns, with Ljung–Box tests. When volatility clusters, the search still runs, but the report warns that no composition in the grammar can explain dependence. Volatility models (<code>spxa.vol</code>) and rough models (<code>spxa.rough</code>) are the place to look then.</p>
+<h2 id="7-what-is-tested">7. What is tested</h2>
+<p>The tests simulate exact increments and check:</p>
+<ul>
+<li>Brownian motion is not overfitted;</li>
+<li>a Merton jump diffusion is recovered as <code>BM + NormalJumps</code>;</li>
+<li>VG beats its neighbours with weight above 0.95;</li>
+<li>a VG + Gamma sum is recovered up to near-equivalence;</li>
+<li>sandwich standard errors agree with the sampling spread of the estimates;</li>
+<li>the option fitter recovers VG parameters from a 27-quote surface;</li>
+<li>mixed quotes trigger the maturity warning.</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li>Barndorff-Nielsen, O. E. (1997). Normal inverse Gaussian distributions and stochastic volatility modelling. <em>Scand. J. Statist.</em> 24.</li>
+<li>Buckland, S. T., Burnham, K. P. &amp; Augustin, N. H. (1997). Model selection: an integral part of inference. <em>Biometrics</em> 53.</li>
+<li>Burnham, K. P. &amp; Anderson, D. R. (2002). <em>Model Selection and Multimodel Inference</em>, 2nd ed. Springer.</li>
+<li>Carr, P., Geman, H., Madan, D. &amp; Yor, M. (2002). The fine structure of asset returns. <em>J. Business</em> 75.</li>
+<li>Cont, R. &amp; Tankov, P. (2004). <em>Financial Modelling with Jump Processes</em>. Chapman &amp; Hall.</li>
+<li>Fang, F. &amp; Oosterlee, C. W. (2008). A novel pricing method for European options based on Fourier-cosine series expansions. <em>SIAM J. Sci. Comput.</em> 31.</li>
+<li>Huber, P. J. (1967). The behavior of maximum likelihood estimates under nonstandard conditions. <em>Proc. Fifth Berkeley Symp.</em> 1.</li>
+<li>Kou, S. G. (2002). A jump-diffusion model for option pricing. <em>Management Science</em> 48.</li>
+<li>Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. <em>Ann. Statist.</em> 17.</li>
+<li>Madan, D., Carr, P. &amp; Chang, E. (1998). The variance gamma process and option pricing. <em>European Finance Review</em> 2.</li>
+<li>Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. <em>J. Financial Economics</em> 3.</li>
+<li>Sato, K. (1999). <em>Lévy Processes and Infinitely Divisible Distributions</em>. Cambridge.</li>
+<li>Schoutens, W. &amp; Teugels, J. L. (1998). Lévy processes, polynomials and martingales. <em>Communications in Statistics. Stochastic Models</em> 14(1–2), 335–349.</li>
+<li>Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. <em>Econometrica</em> 57.</li>
+<li>White, H. (1982). Maximum likelihood estimation of misspecified models. <em>Econometrica</em> 50.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
