@@ -74,6 +74,20 @@ def piecewise_constant_vol(nodes_y: Sequence[float], levels: Sequence[float], y:
     return lev[np.searchsorted(edges, np.asarray(y, float), side="right")]
 
 
+def _validated_grid(grid: Optional[np.ndarray]) -> np.ndarray:
+    """Default grid, or ``grid`` checked to be 1-D, positive, increasing and >= 3 points."""
+    if grid is None:
+        return andreasen_huge_grid()
+    x = np.asarray(grid, float)
+    if x.ndim != 1 or x.size < 3:
+        raise ValueError(
+            "grid needs at least three points: two Dirichlet ends and one interior node"
+        )
+    if np.any(np.diff(x) <= 0) or x[0] <= 0:
+        raise ValueError("grid must be positive and strictly increasing")
+    return x
+
+
 def _implicit_step(x: np.ndarray, c_prev: np.ndarray, var_dt: np.ndarray) -> np.ndarray:
     """Solve ``[I - 1/2 var_dt x^2 D_xx] c = c_prev`` with Dirichlet ends.
 
@@ -136,9 +150,7 @@ class AndreasenHugeSurface:
         for lv in self.levels:
             if np.any(lv <= 0):
                 raise ValueError("local-vol levels must be positive")
-        self.x = andreasen_huge_grid() if grid is None else np.asarray(grid, float)
-        if np.any(np.diff(self.x) <= 0) or self.x[0] <= 0:
-            raise ValueError("grid must be positive and strictly increasing")
+        self.x = _validated_grid(grid)
         self.y = np.log(self.x)
         self._var = [
             piecewise_constant_vol(n, v, self.y) ** 2 for n, v in zip(self.nodes, self.levels)
@@ -228,7 +240,7 @@ def calibrate_andreasen_huge(
     from scipy.optimize import least_squares
 
     T = np.asarray(expiries, float)
-    x = andreasen_huge_grid() if grid is None else np.asarray(grid, float)
+    x = _validated_grid(grid)
     y = np.log(x)
     c_prev = np.maximum(1.0 - x, 0.0)
     t_prev = 0.0
