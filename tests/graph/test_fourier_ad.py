@@ -198,3 +198,26 @@ def test_refusals() -> None:
         price_and_gradient(dp, S, K, T, method="fft")
     x, w = fourier_nodes(10.0)
     assert x.min() > 0 and x.max() < 10 and w.sum() == pytest.approx(10.0, rel=1e-14)
+
+
+def test_cos_gradient_tracks_the_interval() -> None:
+    # VG's COS expansion is not converged to machine precision, so the interval's
+    # dependence on theta matters; the tracked derivative is that of cos_price itself
+    dp = DiffProcess(VarianceGamma(0.2, 0.3, -0.1) + Drift(0.01))
+    th = dp.values
+    Kq = np.array([80.0, 100.0, 120.0])
+    J = price_and_gradient(dp, S, Kq, 0.25, method="cos", rate=R, dividend=Q).jacobian
+    for k in range(len(th)):
+        h = 1e-3 * max(1.0, abs(th[k]))
+        e = np.eye(len(th))[k]
+
+        def d(hh: float) -> np.ndarray:
+            up = cos_price(dp, S, Kq, 0.25, R, Q, theta=th + hh * e)
+            dn = cos_price(dp, S, Kq, 0.25, R, Q, theta=th - hh * e)
+            return (up - dn) / (2 * hh)
+
+        np.testing.assert_allclose(J[:, k], (4 * d(h / 2) - d(h)) / 3, rtol=1e-7, atol=1e-10 * S)
+    frozen = price_and_gradient(
+        dp, S, Kq, 0.25, method="cos", rate=R, dividend=Q, track_interval=False
+    ).jacobian
+    np.testing.assert_allclose(frozen, J, rtol=0, atol=1e-5 * S)

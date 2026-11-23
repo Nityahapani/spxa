@@ -46,7 +46,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import numpy as np
 
 from spxa.graph.autodiff.exactness import GradientExactness
-from spxa.graph.autodiff.jet import Jet, stack, value_of, variable_vector
+from spxa.graph.autodiff.jet import Jet, stack, value_of, variable_vector, variables
 from spxa.graph.autodiff.process import DiffProcess, UnsupportedProcessError
 
 __all__ = [
@@ -138,18 +138,35 @@ def _theta_values(dp: DiffProcess, theta: Any) -> np.ndarray:
 
 
 def cos_interval(
-    dp: DiffProcess, maturity: float, rate: float, dividend: float, width: float, theta: Any = None
-) -> Tuple[float, float]:
-    """The COS truncation interval for ``log(S_T/S_0)`` (parameter values only)."""
-    th = _theta_values(dp, theta)
+    dp: DiffProcess,
+    maturity: float,
+    rate: float,
+    dividend: float,
+    width: float,
+    theta: Any = None,
+    track: bool = False,
+) -> Tuple[Any, Any]:
+    """
+    The COS truncation interval :math:`c_1 \\pm L\\sqrt{c_2 + \\sqrt{c_4}}` for ``log(S_T/S_0)``.
+
+    With ``track=True`` and a Jet ``theta`` the end points are jets (their
+    dependence on the parameters is differentiated); otherwise floats.
+    """
+    th = theta if (track and isinstance(theta, Jet)) else _theta_values(dp, theta)
     k = dp.cumulants(4, th)
-    omega = float(martingale_correction(dp, th))
+    omega = martingale_correction(dp, th)
     T = float(maturity)
     c1 = (rate - dividend + omega + k[0]) * T
-    c2, c4 = max(k[1], 0.0) * T, max(k[3], 0.0) * T
-    half = width * np.sqrt(c2 + np.sqrt(c4))
-    if not (np.isfinite(half) and half > 0):
+    c2, c4 = np.maximum(k[1], 0.0) * T, np.maximum(k[3], 0.0) * T
+    # sqrt is not differentiable at 0; a vanishing c4 (e.g. Brownian motion) is a
+    # constant zero there, so it is treated as such
+    sq4 = np.sqrt(c4) if float(np.real(value_of(c4))) > 0.0 else 0.0
+    half = width * np.sqrt(c2 + sq4)
+    hv = float(np.real(value_of(half)))
+    if not (np.isfinite(hv) and hv > 0):
         raise ValueError("degenerate COS interval (zero variance?)")
+    if isinstance(half, Jet) or isinstance(c1, Jet):
+        return c1 - half, c1 + half
     return float(c1 - half), float(c1 + half)
 
 
@@ -164,29 +181,61 @@ def cos_price(
     n_terms: int = 1024,
     width: float = 12.0,
     theta: Any = None,
+    track_interval: bool = True,
 ) -> Any:
-    """European prices by the COS method; a Jet when ``theta`` is a Jet."""
+    """
+    European prices by the COS method; a Jet when ``theta`` is a Jet.
+
+    With ``track_interval`` (default) the derivative includes the dependence
+    of :math:`[a, b]` on the parameters through the cumulants, so it is the
+    exact derivative of the price *as computed*; with ``False`` the interval is
+    frozen at the parameter values (the two agree once the expansion has
+    converged).
+    """
     _check(spot, maturity)
     K = _strikes(strikes)
     is_call = np.broadcast_to(np.asarray(call, dtype=bool), K.shape)
     T = float(maturity)
-    a, b = cos_interval(dp, T, rate, dividend, width, theta)
-    u = np.arange(int(n_terms)) * np.pi / (b - a)
+    a, b = cos_interval(dp, T, rate, dividend, width, theta, track=track_interval)
+    k_idx = np.arange(int(n_terms))
+    u = k_idx * np.pi / (b - a)
     phi = _cf_T(dp, u, T, rate, dividend, theta)
     coef = np.real(phi * np.exp(-1j * u * a))
-    half = np.ones(u.size)
+    disc = np.exp(-rate * T)
+    forward = spot * np.exp(-dividend * T) - K * np.exp(-rate * T)
+    shift = np.where(is_call, forward, 0.0)
+    if isinstance(a, Jet) and isinstance(coef, Jet) and coef.hess is None:
+        # The (M, N) payoff matrix depends on theta only through (a, b): carry
+        # two directions there and chain, instead of n directions on M x N.
+        A, B = variables([float(np.real(a.value)), float(np.real(b.value))])
+        P2 = _cos_payoff(K, spot, A, B, k_idx)
+        cv, cg = np.asarray(coef.value), np.asarray(coef.grad)
+        val = disc * (np.real(P2.value) @ cv) + shift
+        P2g = np.real(P2.grad)
+        grad = disc * (
+            (P2g[..., 0] @ cv)[:, None] * np.real(a.grad)[None, :]
+            + (P2g[..., 1] @ cv)[:, None] * np.real(b.grad)[None, :]
+            + np.real(P2.value) @ cg
+        )
+        return Jet(val, grad)
+    payoff = _cos_payoff(K, spot, a, b, k_idx)
+    return disc * (payoff @ coef) + shift
+
+
+def _cos_payoff(K: np.ndarray, spot: float, a: Any, b: Any, k_idx: np.ndarray) -> Any:
+    r"""Put payoff coefficients :math:`\frac{2}{b-a}(K\psi_k - S_0\chi_k)` (halved at k = 0)."""
+    u = k_idx * np.pi / (b - a)
+    half = np.ones(k_idx.size)
     half[0] = 0.5
-    kappa = np.clip(np.log(K / spot), a, b)
+    kappa = np.minimum(np.maximum(np.log(K / spot), a), b)  # np.clip with jet end points
     d = kappa[:, None]
     w = u[None, :]
+    first = (k_idx == 0)[None, :]
     arg_d = w * (d - a)
     chi = (np.cos(arg_d) * np.exp(d) - np.exp(a) + w * np.sin(arg_d) * np.exp(d)) / (1.0 + w**2)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        psi = np.where(w == 0, d - a, np.sin(arg_d) / np.where(w == 0, 1.0, w))
-    payoff = 2.0 / (b - a) * (K[:, None] * psi - spot * chi) * half[None, :]
-    put = np.exp(-rate * T) * (payoff @ coef)
-    forward = spot * np.exp(-dividend * T) - K * np.exp(-rate * T)
-    return put + np.where(is_call, forward, 0.0)
+    w_safe = w + first  # u_0 = 0 exactly (value and derivatives)
+    psi = np.where(first, d - a, np.sin(arg_d) / w_safe)
+    return 2.0 / (b - a) * (K[:, None] * psi - spot * chi) * half[None, :]
 
 
 # ── Carr–Madan (direct Simpson summation) ────────────────────────────────────

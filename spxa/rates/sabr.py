@@ -39,6 +39,7 @@ from typing import Any
 
 import numpy as np
 
+from spxa.graph.autodiff.jet import Jet, is_jet, value_of
 from spxa.market.black import bachelier_price, black_price
 
 __all__ = [
@@ -52,18 +53,29 @@ __all__ = [
 ]
 
 
+def _arr(x: Any) -> Any:
+    """``np.asarray(x, float)``, letting forward-mode jets through."""
+    return x if is_jet(x) else np.asarray(x, float)
+
+
+def _out(x: Any) -> Any:
+    if is_jet(x):
+        return x
+    return float(x) if np.ndim(x) == 0 else x
+
+
 def z_over_chi(z: Any, rho: float) -> Any:
     """:math:`z/\\chi(z)` with the near-zero series."""
-    zz = np.asarray(z, float)
-    small = np.abs(zz) < 1e-5
+    zz = _arr(z)
+    small = np.abs(np.asarray(value_of(zz), float)) < 1e-5
     zs = np.where(small, 1.0, zz)
     chi = np.log((np.sqrt(1.0 - 2.0 * rho * zs + zs * zs) + zs - rho) / (1.0 - rho))
     series = 1.0 - 0.5 * rho * zz + (2.0 - 3.0 * rho * rho) / 12.0 * zz * zz
-    out = np.where(small, series, zs / chi)
-    return float(out) if out.ndim == 0 else out
+    return _out(np.where(small, series, zs / chi))
 
 
 def _check(alpha: float, beta: float, rho: float, nu: float) -> None:
+    alpha, beta, rho, nu = (float(np.real(value_of(v))) for v in (alpha, beta, rho, nu))
     if alpha <= 0 or not 0 <= beta <= 1 or not -1 < rho < 1 or nu < 0:
         raise ValueError("need alpha > 0, 0 <= beta <= 1, -1 < rho < 1, nu >= 0")
 
@@ -76,7 +88,7 @@ def _parts(F: Any, K: Any, alpha: float, beta: float, rho: float, nu: float, shi
     ell = np.log(Fs / Ks)
     fk = Fs * Ks
     zc = z_over_chi(nu / alpha * fk ** ((1 - beta) / 2) * ell, rho)
-    return fk, ell, np.asarray(zc, float)
+    return fk, ell, _arr(zc)
 
 
 def _x_over_expm1(x: np.ndarray) -> np.ndarray:
@@ -122,9 +134,9 @@ def sabr_lognormal_vol(
         # F^b - K^b = K^b expm1(b ell); alpha b ell / (F^b - K^b) -> alpha / K^b expm1 ratio
         ratio = alpha * _x_over_expm1(b * ell) / Ks**b
         z = nu * ell / ratio
-        lead = ratio * np.asarray(z_over_chi(z, rho), float)
+        lead = ratio * _arr(z_over_chi(z, rho))
     out = lead * (1 + corr * np.asarray(T, float))
-    return float(out) if np.ndim(out) == 0 else out
+    return _out(out)
 
 
 def sabr_normal_vol(
@@ -141,7 +153,7 @@ def sabr_normal_vol(
     )
     corr = corr + (2 - 3 * rho * rho) / 24 * nu * nu
     out = alpha * fk ** (beta / 2) * num / den * zc * (1 + corr * np.asarray(T, float))
-    return float(out) if np.ndim(out) == 0 else out
+    return _out(out)
 
 
 @dataclass(frozen=True)
@@ -188,7 +200,21 @@ def alpha_from_atm(
     + \\bigl(1 + \\frac{2-3\\rho^2}{24}\\nu^2 T\\bigr)\\alpha - \\sigma f^{1-\\beta} = 0`
     with :math:`f = F + s`. The smallest positive real root is returned,
     polished by Newton steps on the formula itself.
+
+    If ``rho`` or ``nu`` is a forward-mode jet, the result is a jet whose
+    derivatives follow from the implicit function theorem applied to
+    :math:`g(\\alpha, \\rho, \\nu) = \\sigma_{ATM}(\\alpha, \\rho, \\nu) - \\sigma = 0`:
+    :math:`\\partial\\alpha = -\\partial g / g_\\alpha` (first order).
     """
+    if is_jet(rho) or is_jet(nu):
+        a0 = alpha_from_atm(atm_vol, F, T, beta, float(value_of(rho)), float(value_of(nu)), shift)
+        ref = rho if is_jet(rho) else nu
+        if ref.hess is not None:
+            raise NotImplementedError("second derivatives of the ATM-pinned alpha")
+        g = sabr_lognormal_vol(F, F, T, a0, beta, rho, nu, shift)  # jet in theta
+        (ja,) = (Jet(np.asarray(a0, float), np.ones(1)),)
+        ga = sabr_lognormal_vol(F, F, T, ja, beta, float(value_of(rho)), float(value_of(nu)), shift)
+        return Jet(np.asarray(a0, float), -np.asarray(g.grad) / float(np.asarray(ga.grad)[0]))
     f = F + shift
     if f <= 0 or atm_vol <= 0:
         raise ValueError("need F + shift > 0 and a positive ATM vol")
@@ -245,6 +271,7 @@ def calibrate_sabr(
     method: str = "hagan",
     weights: Any = None,
     atm_vol: Any = None,
+    jac: str = "exact",
 ) -> SABRFit:
     """Fit :math:`(\\alpha, \\rho, \\nu)` of one smile with :math:`\\beta` fixed.
 
@@ -253,9 +280,13 @@ def calibrate_sabr(
     given, :math:`\\alpha` is tied to it through :func:`alpha_from_atm`, so
     the ATM quote is matched exactly and only :math:`\\rho, \\nu` are free.
     Otherwise all three are fitted. The least-squares fit uses the
-    parametrisation :math:`\\rho = \\tanh a`, :math:`\\nu = e^b`.
+    parametrisation :math:`\\rho = \\tanh a`, :math:`\\nu = e^b`, with the exact
+    Jacobian (``jac="exact"``, default) or SciPy's differences (``"2-point"``).
     """
     from scipy.optimize import least_squares
+
+    if jac not in ("exact", "2-point"):
+        raise ValueError("jac must be 'exact' or '2-point'")
 
     K = np.asarray(strikes, float)
     v = np.asarray(vols, float)
@@ -279,11 +310,36 @@ def calibrate_sabr(
     def resid(x: np.ndarray) -> np.ndarray:
         return w * (model_vols(*unpack(x)) - v)
 
+    def jacobian(x: np.ndarray) -> np.ndarray:
+        # exact: forward-mode jets through Hagan's / Oblój's formula (and the
+        # implicit ATM alpha), see spxa.graph.autodiff.jet
+        from spxa.graph.autodiff.jet import variable_vector
+
+        xj = variable_vector(x)
+        rho, nu = np.tanh(xj[0]), np.exp(xj[1])
+        if atm_vol is not None:
+            alpha = alpha_from_atm(float(atm_vol), F, T, beta, rho, nu, shift)
+        else:
+            alpha = np.exp(xj[2])
+        if vol_type == "normal":
+            mv = sabr_normal_vol(F, K, T, alpha, beta, rho, nu, shift)
+        else:
+            mv = sabr_lognormal_vol(F, K, T, alpha, beta, rho, nu, shift, method)
+        return w[:, None] * np.asarray(np.real(mv.grad), float)
+
     f = F + shift
     i_atm = int(np.argmin(np.abs(K - F)))
     level = v[i_atm] * (f ** (1 - beta) if vol_type == "lognormal" else f ** (-beta))
     x0 = [0.0, np.log(0.3)] + ([] if atm_vol is not None else [np.log(level)])
-    sol = least_squares(resid, np.array(x0), method="lm", xtol=1e-15, ftol=1e-15, gtol=1e-15)
+    sol = least_squares(
+        resid,
+        np.array(x0),
+        jac=jacobian if jac == "exact" else "2-point",
+        method="lm",
+        xtol=1e-15,
+        ftol=1e-15,
+        gtol=1e-15,
+    )
     alpha, rho, nu = unpack(sol.x)
     err = model_vols(alpha, rho, nu) - v
     return SABRFit(SABR(alpha, beta, rho, nu, shift), err, float(np.sqrt(np.mean(err * err))))

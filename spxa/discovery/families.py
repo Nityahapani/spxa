@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import factorial
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 import numpy as np
 from numpy.polynomial import polynomial as P
@@ -36,6 +36,8 @@ from scipy.special import gamma as gamma_fn
 from scipy.special import gammaln
 
 from spxa.core.process import Process
+from spxa.graph.autodiff.jet import is_jet, value_of
+from spxa.graph.autodiff.taylor import TSeries
 
 Params = tuple[float, ...]
 
@@ -133,6 +135,12 @@ class Family:
 
     def log_mgf(self, z: complex | np.ndarray, params: Sequence[float]) -> np.ndarray:
         """:math:`K(z) = \\log E[e^{zX_1}]` on the principal branch."""
+        if any(_is_traced(x) for x in params) or _is_traced(z):
+            # differentiable evaluation (spxa.graph.autodiff.discovery): parameters
+            # are jets or z is a Taylor series / jet; validation needs plain floats
+            # and has been done on the parameter values by the caller
+            zz = z if _is_traced(z) else np.asarray(z, dtype=complex)
+            return self.log_mgf_fn(zz, tuple(params))  # type: ignore[arg-type]
         return self.log_mgf_fn(np.asarray(z, dtype=complex), self.validate(params))
 
     def char_exponent(self, u: float | np.ndarray, params: Sequence[float]) -> np.ndarray:
@@ -173,12 +181,18 @@ class Family:
 # ── transforms ────────────────────────────────────────────────────────────────
 
 
+def _is_traced(x: Any) -> bool:
+    return is_jet(x) or isinstance(x, TSeries)
+
+
 def _logit(p: float, lo: float, hi: float) -> float:
     s = (p - lo) / (hi - lo)
     return float(np.log(s) - np.log1p(-s))
 
 
-def _expit(x: float, lo: float, hi: float) -> float:
+def _expit(x: Any, lo: float, hi: float) -> Any:
+    if is_jet(x):  # exact derivatives for spxa.graph.autodiff.discovery
+        return lo + (hi - lo) / (1.0 + np.exp(-x))
     return lo + (hi - lo) / (1.0 + float(np.exp(-np.clip(x, -700.0, 700.0))))
 
 
@@ -211,7 +225,7 @@ DRIFT = Family(
     log_mgf_fn=lambda z, p: p[0] * z,
     strip_fn=lambda p: (-INF, INF),
     to_free_fn=lambda p: np.array([p[0]]),
-    from_free_fn=lambda x: (float(x[0]),),
+    from_free_fn=lambda x: (x[0],),
     process_fn=_drift_process,
     is_subordinator=False,
     validate_fn=lambda p: None,
@@ -239,7 +253,7 @@ BROWNIAN = Family(
     log_mgf_fn=lambda z, p: 0.5 * p[0] ** 2 * z**2,
     strip_fn=lambda p: (-INF, INF),
     to_free_fn=lambda p: np.log([p[0]]),
-    from_free_fn=lambda x: (float(np.exp(x[0])),),
+    from_free_fn=lambda x: (np.exp(x[0]),),
     process_fn=_bm_process,
     is_subordinator=False,
     validate_fn=_pos("sigma"),
@@ -271,7 +285,7 @@ GAMMA = Family(
     log_mgf_fn=lambda z, p: -p[0] * np.log(1.0 - z / p[1]),
     strip_fn=lambda p: (-INF, p[1]),
     to_free_fn=lambda p: np.log(p),
-    from_free_fn=lambda x: (float(np.exp(x[0])), float(np.exp(x[1]))),
+    from_free_fn=lambda x: (np.exp(x[0]), np.exp(x[1])),
     process_fn=_gamma_process,
     is_subordinator=True,
     validate_fn=_pos("a", "b"),
@@ -313,7 +327,7 @@ INVERSE_GAUSSIAN = Family(
     log_mgf_fn=lambda z, p: (p[1] / p[0]) * (1.0 - np.sqrt(1.0 - 2.0 * p[0] ** 2 * z / p[1])),
     strip_fn=lambda p: (-INF, p[1] / (2.0 * p[0] ** 2)),
     to_free_fn=lambda p: np.log(p),
-    from_free_fn=lambda x: (float(np.exp(x[0])), float(np.exp(x[1]))),
+    from_free_fn=lambda x: (np.exp(x[0]), np.exp(x[1])),
     process_fn=_ig_process,
     is_subordinator=True,
     validate_fn=_pos("mu", "lam"),
@@ -361,7 +375,7 @@ VARIANCE_GAMMA = Family(
     log_mgf_fn=lambda z, p: -np.log(1.0 - p[2] * p[1] * z - 0.5 * p[0] ** 2 * p[1] * z**2) / p[1],
     strip_fn=_vg_strip,
     to_free_fn=lambda p: np.array([np.log(p[0]), np.log(p[1]), p[2]]),
-    from_free_fn=lambda x: (float(np.exp(x[0])), float(np.exp(x[1])), float(x[2])),
+    from_free_fn=lambda x: (np.exp(x[0]), np.exp(x[1]), x[2]),
     process_fn=_vg_process,
     is_subordinator=False,
     validate_fn=_pos("sigma", "nu"),
@@ -417,9 +431,9 @@ NIG_FAMILY = Family(
     strip_fn=lambda p: (-p[0] - p[1], p[0] - p[1]),
     to_free_fn=lambda p: np.array([np.log(p[0]), np.arctanh(p[1] / p[0]), np.log(p[2])]),
     from_free_fn=lambda x: (
-        float(np.exp(x[0])),
-        float(np.exp(x[0]) * np.tanh(x[1])),
-        float(np.exp(x[2])),
+        np.exp(x[0]),
+        np.exp(x[0]) * np.tanh(x[1]),
+        np.exp(x[2]),
     ),
     process_fn=_nig_process,
     is_subordinator=False,
@@ -480,8 +494,12 @@ def _log_cos(w: np.ndarray) -> np.ndarray:
     so the imaginary part stays in :math:`(-\pi, \pi)` and this is the principal
     branch. ``np.cos`` overflows once :math:`\alpha u/2 \gtrsim 710`.
     """
-    zeta = 1j * np.asarray(w, dtype=complex)
-    s = np.where(zeta.real < 0, -1.0, 1.0)
+    if isinstance(w, TSeries):
+        zeta_s = 1j * w
+        sgn = -1.0 if np.real(value_of(zeta_s.coeffs[0])) < 0 else 1.0
+        return sgn * zeta_s + np.log1p(np.exp(-2.0 * sgn * zeta_s)) - np.log(2.0)
+    zeta = 1j * w if is_jet(w) else 1j * np.asarray(w, dtype=complex)
+    s = np.where(np.real(value_of(zeta)) < 0, -1.0, 1.0)
     return s * zeta + np.log1p(np.exp(-2.0 * s * zeta)) - np.log(2.0)
 
 
@@ -496,9 +514,9 @@ MEIXNER = Family(
     strip_fn=lambda p: ((-np.pi - p[1]) / p[0], (np.pi - p[1]) / p[0]),
     to_free_fn=lambda p: np.array([np.log(p[0]), _logit(p[1], -np.pi, np.pi), np.log(p[2])]),
     from_free_fn=lambda x: (
-        float(np.exp(x[0])),
-        _expit(float(x[1]), -np.pi, np.pi),
-        float(np.exp(x[2])),
+        np.exp(x[0]),
+        _expit(x[1], -np.pi, np.pi),
+        np.exp(x[2]),
     ),
     process_fn=_meixner_process,
     is_subordinator=False,
@@ -528,7 +546,7 @@ POISSON = Family(
     log_mgf_fn=lambda z, p: p[0] * np.expm1(p[1] * z),
     strip_fn=lambda p: (-INF, INF),
     to_free_fn=lambda p: np.log(p),
-    from_free_fn=lambda x: (float(np.exp(x[0])), float(np.exp(x[1]))),
+    from_free_fn=lambda x: (np.exp(x[0]), np.exp(x[1])),
     process_fn=_poisson_process,
     is_subordinator=True,
     validate_fn=_pos("rate", "jump_size"),
@@ -557,7 +575,7 @@ NORMAL_JUMPS = Family(
     log_mgf_fn=lambda z, p: p[0] * np.expm1(p[1] * z + 0.5 * p[2] ** 2 * z**2),
     strip_fn=lambda p: (-INF, INF),
     to_free_fn=lambda p: np.array([np.log(p[0]), p[1], np.log(p[2])]),
-    from_free_fn=lambda x: (float(np.exp(x[0])), float(x[1]), float(np.exp(x[2]))),
+    from_free_fn=lambda x: (np.exp(x[0]), x[1], np.exp(x[2])),
     process_fn=_cpn_process,
     is_subordinator=False,
     validate_fn=_pos("rate", "", "jump_std"),
@@ -608,10 +626,10 @@ DOUBLE_EXP_JUMPS = Family(
         [np.log(p[0]), _logit(p[1], 0.0, 1.0), np.log(p[2]), np.log(p[3])]
     ),
     from_free_fn=lambda x: (
-        float(np.exp(x[0])),
-        _expit(float(x[1]), 0.0, 1.0),
-        float(np.exp(x[2])),
-        float(np.exp(x[3])),
+        np.exp(x[0]),
+        _expit(x[1], 0.0, 1.0),
+        np.exp(x[2]),
+        np.exp(x[3]),
     ),
     process_fn=_cpde_process,
     is_subordinator=False,
@@ -658,7 +676,7 @@ CGMY_FAMILY = Family(
     cumulants_fn=_cgmy_cumulants,
     log_mgf_fn=lambda z, p: (
         p[0]
-        * float(gamma_fn(-p[3]))
+        * gamma_fn(-p[3])
         * ((p[2] - z) ** p[3] - p[2] ** p[3] + (p[1] + z) ** p[3] - p[1] ** p[3])
     ),
     strip_fn=lambda p: (-p[1], p[2]),
@@ -666,10 +684,10 @@ CGMY_FAMILY = Family(
         [np.log(p[0]), np.log(p[1]), np.log(p[2]), _logit(p[3], 0.0, 1.0)]
     ),
     from_free_fn=lambda x: (
-        float(np.exp(x[0])),
-        float(np.exp(x[1])),
-        float(np.exp(x[2])),
-        _expit(float(x[3]), 0.0, 1.0),
+        np.exp(x[0]),
+        np.exp(x[1]),
+        np.exp(x[2]),
+        _expit(x[3], 0.0, 1.0),
     ),
     process_fn=_cgmy_process,
     is_subordinator=False,

@@ -220,7 +220,11 @@ class Sum(Node):
         return total
 
     def _log_mgf(self, z: np.ndarray, params: list[tuple[float, ...]]) -> np.ndarray:
-        return sum((child._log_mgf(z, params) for child in self.children), np.zeros_like(z))
+        terms = [child._log_mgf(z, params) for child in self.children]
+        total = terms[0]
+        for term in terms[1:]:  # no zeros_like seed, so jets and Taylor series pass through
+            total = total + term
+        return total
 
     def _strip(self, params: list[tuple[float, ...]]) -> tuple[float, float]:
         strips = [child._strip(params) for child in self.children]

@@ -163,8 +163,17 @@ def fit_options(
     initial: Optional[Sequence[Sequence[float]]] = None,
     n_terms: int = 1024,
     maxiter: int = 300,
+    jac: str = "exact",
 ) -> FitResult:
-    """Fit ``structure`` to option quotes (see the module docstring)."""
+    """Fit ``structure`` to option quotes (see the module docstring).
+
+    ``jac="exact"`` (default) gives the optimiser the exact Jacobian of the
+    residuals (forward-mode jets through the closed-form exponents and the COS
+    pricer, :mod:`spxa.graph.autodiff.discovery`); ``"2-point"`` uses SciPy's
+    finite differences as in 1.2.
+    """
+    if jac not in ("exact", "2-point"):
+        raise ValueError("jac must be 'exact' or '2-point'")
     rng = rng if rng is not None else np.random.default_rng(0)
     iv_mkt = quotes.implied_vols()
     if np.all(~np.isfinite(iv_mkt)):
@@ -182,6 +191,19 @@ def fit_options(
         r = (p - quotes.prices) / vega
         return np.where(np.isfinite(r), r, np.sqrt(_PENALTY / len(quotes)))
 
+    def jacobian(x: np.ndarray) -> np.ndarray:
+        from spxa.graph.autodiff.discovery import options_residual_jacobian
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            try:
+                J = options_residual_jacobian(structure, quotes, x, vega, n_terms)
+            except (ValueError, FloatingPointError, ZeroDivisionError, OverflowError):
+                return np.zeros((len(quotes), x.size))
+        r = resid(x)
+        bad = ~np.isfinite(J).all(axis=1) | (np.abs(r) >= np.sqrt(_PENALTY / len(quotes)))
+        return np.where(bad[:, None], 0.0, J)
+
     x0 = Model(
         structure, initial if initial is not None else initial_params(structure, atm)
     ).to_free()
@@ -193,7 +215,14 @@ def fit_options(
         with warnings.catch_warnings():
             # finite differences straddling the penalty wall produce inf - inf
             warnings.simplefilter("ignore", RuntimeWarning)
-            res = optimize.least_squares(resid, s, method="trf", max_nfev=maxiter, x_scale="jac")
+            res = optimize.least_squares(
+                resid,
+                s,
+                jac=jacobian if jac == "exact" else "2-point",
+                method="trf",
+                max_nfev=maxiter,
+                x_scale="jac",
+            )
         if best is None or res.cost < best.cost:
             best = res
     if best is None:

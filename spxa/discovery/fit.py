@@ -515,6 +515,36 @@ class _Objective:
         except (ValueError, FloatingPointError, ZeroDivisionError, OverflowError):
             return _PENALTY
 
+    def value_and_grad(self, x: np.ndarray) -> tuple[float, np.ndarray]:
+        """The objective and its exact gradient (zero on the penalty plateau)."""
+        from spxa.graph.autodiff import discovery as ad
+
+        val = self(x)
+        if val >= _PENALTY:
+            return val, np.zeros_like(x)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                if self.method == "cumulants":
+                    _, g = ad.cumulant_value_and_grad(
+                        self.structure,
+                        self.target,
+                        x,
+                        self.summary.dt,
+                        self.weights,
+                        self.drift_at,
+                    )
+                else:
+                    assert self.binned is not None
+                    _, g = ad.likelihood_value_and_grad(self.structure, self.binned, x)
+        except (ValueError, FloatingPointError, ZeroDivisionError, OverflowError, TypeError):
+            g = np.full_like(x, np.nan)
+        if not np.all(np.isfinite(g)):
+            # the objective is finite but a derivative is not representable here
+            # (e.g. at a clip boundary); fall back to differences for this step
+            g = optimize.approx_fprime(x, self, 1.4901161193847656e-08)
+        return val, g
+
 
 def _unit(x: np.ndarray, i: int) -> np.ndarray:
     y = np.array(x, dtype=float)
@@ -533,6 +563,7 @@ def fit_structure(
     binned: Optional[BinnedData] = None,
     maxiter: int = 400,
     initial: Optional[Sequence[Sequence[float]]] = None,
+    gradient: str = "exact",
 ) -> FitResult:
     """Fit ``structure`` to ``summary``.
 
@@ -557,7 +588,13 @@ def fit_structure(
         used as the first starting point instead of the generic initial
         values. Beam search passes the parent's fit with the new atom's
         typical member.
+    gradient :
+        ``"exact"`` (default) passes L-BFGS-B the exact gradient of the
+        objective (:mod:`spxa.graph.autodiff.discovery`); ``"2-point"`` lets
+        SciPy difference it, as in 1.2.
     """
+    if gradient not in ("exact", "2-point"):
+        raise ValueError("gradient must be 'exact' or '2-point'")
     if location:
         structure = with_location(structure)
     if method == "likelihood":
@@ -590,7 +627,13 @@ def fit_structure(
         with warnings.catch_warnings():
             # finite differences straddling the penalty wall produce inf - inf
             warnings.simplefilter("ignore", RuntimeWarning)
-            res = optimize.minimize(obj, start, method="L-BFGS-B", options={"maxiter": maxiter})
+            res = optimize.minimize(
+                obj.value_and_grad if gradient == "exact" else obj,
+                start,
+                jac=gradient == "exact",
+                method="L-BFGS-B",
+                options={"maxiter": maxiter},
+            )
         if best is None or res.fun < best.fun:
             best = res
     if best is None:
