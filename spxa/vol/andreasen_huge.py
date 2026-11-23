@@ -75,7 +75,7 @@ def piecewise_constant_vol(nodes_y: Sequence[float], levels: Sequence[float], y:
 
 
 def _validated_grid(grid: Optional[np.ndarray]) -> np.ndarray:
-    """Default grid, or ``grid`` checked to be 1-D, positive, increasing and >= 3 points."""
+    """Default grid, or ``grid`` checked to be 1-D, finite, positive, increasing and >= 3 points."""
     if grid is None:
         return andreasen_huge_grid()
     x = np.asarray(grid, float)
@@ -83,6 +83,9 @@ def _validated_grid(grid: Optional[np.ndarray]) -> np.ndarray:
         raise ValueError(
             "grid needs at least three points: two Dirichlet ends and one interior node"
         )
+    # NaN fails every comparison, so the ordering test below cannot catch it.
+    if not np.all(np.isfinite(x)):
+        raise ValueError("grid values must be finite (no NaN or infinity)")
     if np.any(np.diff(x) <= 0) or x[0] <= 0:
         raise ValueError("grid must be positive and strictly increasing")
     return x

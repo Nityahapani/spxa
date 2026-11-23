@@ -107,6 +107,25 @@ def test_grid_without_interior_node_rejected(grid: list) -> None:
         calibrate_andreasen_huge([0.5], [[0.0]], [[0.2]], grid=np.asarray(grid, float))
 
 
+@pytest.mark.parametrize(
+    "grid",
+    [
+        [0.5, 1.0, np.nan],
+        [np.nan, 1.0, 2.0],
+        [0.5, np.nan, 2.0],
+        [0.5, 1.0, np.inf],
+        [-np.inf, 1.0, 2.0],
+    ],
+)
+def test_non_finite_grid_rejected(grid: list) -> None:
+    # Regression: NaN slipped past the ordering check and failed later inside
+    # SciPy, and [0.5, 1.0, inf] built a surface with calls [0.5, 0, 0].
+    with pytest.raises(ValueError, match="finite"):
+        AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.array(grid))
+    with pytest.raises(ValueError, match="finite"):
+        calibrate_andreasen_huge([0.5], [[0.0]], [[0.2]], grid=np.array(grid))
+
+
 def test_smallest_valid_grid_and_bad_grids() -> None:
     ah = AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.array([0.5, 1.0, 2.0]))
     c = ah.grid_calls(0.5)
