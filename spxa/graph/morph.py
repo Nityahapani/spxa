@@ -81,12 +81,13 @@ class QuadraticVarianceMorphNode(OperatorNode):
         def vjp(grad_out: Any, s0: Any, s1: Any, val_a: Any) -> tuple[Any, Any, Any]:
             var = (1.0 - val_a) * (s0**2) + val_a * (s1**2)
             sig = np.sqrt(np.maximum(1e-12, var))
+            live = np.asarray(var) > 1e-12  # the floor is flat: zero derivative below it
             # d_sig / d_s0 = (1-a)*s0 / sig
-            grad_s0 = grad_out * ((1.0 - val_a) * s0 / sig)
+            grad_s0 = grad_out * np.where(live, (1.0 - val_a) * s0 / sig, 0.0)
             # d_sig / d_s1 = a*s1 / sig
-            grad_s1 = grad_out * (val_a * s1 / sig)
+            grad_s1 = grad_out * np.where(live, val_a * s1 / sig, 0.0)
             # d_sig / d_a = (s1^2 - s0^2) / (2 sig)
-            grad_a = np.sum(grad_out * ((s1**2 - s0**2) / (2.0 * sig)))
+            grad_a = np.sum(grad_out * np.where(live, (s1**2 - s0**2) / (2.0 * sig), 0.0))
             return grad_s0, grad_s1, grad_a
 
         super().__init__(

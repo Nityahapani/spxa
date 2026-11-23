@@ -45,7 +45,12 @@ class MSELossNode(OperatorNode):
             if len(vals) > 2:
                 w = np.asarray(vals[2], dtype=float)
                 w_sum = float(np.sum(w))
-                return (grad_out * 2.0 * w * diff / w_sum, -grad_out * 2.0 * w * diff / w_sum)
+                loss = float(np.sum(w * diff**2)) / w_sum
+                return (
+                    grad_out * 2.0 * w * diff / w_sum,
+                    -grad_out * 2.0 * w * diff / w_sum,
+                    grad_out * (diff**2 - loss) / w_sum,
+                )
             return (grad_out * 2.0 * diff / n, -grad_out * 2.0 * diff / n)
 
         super().__init__(

@@ -14,6 +14,110 @@ from scipy.stats import norm
 from spxa.graph.node import Node, OperatorNode
 
 
+# ── exact VJP helpers ─────────────────────────────────────────────────────────
+
+
+def _pow_vjp(grad_out, a, b):  # type: ignore[no-untyped-def]
+    r"""VJP of :math:`a^b`: :math:`b a^{b-1}` and :math:`a^b\ln a`.
+
+    The exponent's cotangent is :math:`a^b\ln a` for :math:`a > 0`, its limit
+    :math:`0` at :math:`a = 0` (where :math:`a^b = 0` for :math:`b > 0`), and
+    NaN for :math:`a < 0` where :math:`a^b` is not differentiable in :math:`b`
+    (it only matters if the exponent depends on a source).
+    """
+    a_arr = np.asarray(a)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        da = grad_out * b * np.power(a, b - 1)
+        if np.iscomplexobj(a_arr):
+            db = grad_out * np.power(a, b) * np.log(a)
+        else:
+            pos = a_arr > 0
+            log_a = np.where(
+                pos, np.log(np.where(pos, a_arr, 1.0)), np.where(a_arr == 0, 0.0, np.nan)
+            )
+            db = grad_out * np.power(a, b) * log_a
+    return da, db
+
+
+def _sqrt_vjp(grad_out, a):  # type: ignore[no-untyped-def]
+    """VJP of ``sqrt(max(a, 0))``: 1/(2 sqrt a) for a > 0, 0 for a < 0, +inf at a = 0."""
+    a_arr = np.asarray(a, dtype=float)
+    with np.errstate(divide="ignore"):
+        d = np.where(
+            a_arr > 0, 0.5 / np.sqrt(np.maximum(a_arr, 0.0)), np.where(a_arr < 0, 0.0, np.inf)
+        )
+    return (grad_out * d,)
+
+
+def _expand_reduced(grad_out, a, axis):  # type: ignore[no-untyped-def]
+    """Broadcast the cotangent of a reduction over ``axis`` back to ``a``'s shape."""
+    shape = np.shape(a)
+    g = np.asarray(grad_out)
+    if axis is not None:
+        axes = (axis,) if np.ndim(axis) == 0 else tuple(axis)
+        axes = tuple(ax % len(shape) for ax in axes)
+        for ax in sorted(axes):
+            g = np.expand_dims(g, ax)
+    return np.array(np.broadcast_to(g, shape))
+
+
+def _reduced_count(a, axis):  # type: ignore[no-untyped-def]
+    shape = np.shape(a)
+    if axis is None:
+        return float(np.prod(shape)) if shape else 1.0
+    axes = (axis,) if np.ndim(axis) == 0 else tuple(axis)
+    return float(np.prod([shape[ax] for ax in axes]))
+
+
+def _matmul_vjp(grad_out, a, b):  # type: ignore[no-untyped-def]
+    """VJP of ``matmul`` including the 1-d (vector) cases, unbroadcast by the tape."""
+    a, b, g = np.asarray(a), np.asarray(b), np.asarray(grad_out)
+    if a.ndim == 1 and b.ndim == 1:  # inner product
+        return g * b, g * a
+    a2 = a[None, :] if a.ndim == 1 else a
+    b2 = b[:, None] if b.ndim == 1 else b
+    g2 = g
+    if a.ndim == 1:
+        g2 = np.expand_dims(g2, -2)
+    if b.ndim == 1:
+        g2 = np.expand_dims(g2, -1)
+    ga = np.matmul(g2, np.swapaxes(b2, -1, -2))
+    gb = np.matmul(np.swapaxes(a2, -1, -2), g2)
+    if a.ndim == 1:
+        ga = ga.reshape(ga.shape[:-2] + (ga.shape[-1],)) if ga.ndim > 2 else ga[0]
+    if b.ndim == 1:
+        gb = gb[..., 0]
+    return ga, gb
+
+
+def _cholesky_vjp(grad_out, a):  # type: ignore[no-untyped-def]
+    r"""
+    Exact VJP of ``np.linalg.cholesky`` (which reads the lower triangle only).
+
+    With :math:`A = LL^\top` and :math:`\Phi` taking the lower triangle with a
+    halved diagonal, :math:`P = \Phi(L^\top\bar L)` and
+    :math:`S = L^{-\top} P L^{-1}`; the cotangent of the lower triangle of
+    :math:`A` is :math:`\operatorname{tril}(S + S^\top) - \operatorname{diag}(S)`
+    and the strict upper triangle receives zero (Murray, 2016).
+    """
+    from scipy.linalg import solve_triangular
+
+    a = np.asarray(a)
+    Lb = np.asarray(grad_out)
+    if a.ndim > 2:  # batched: one VJP per matrix
+        Lb = np.broadcast_to(Lb, a.shape)
+        out = np.empty(a.shape, dtype=np.result_type(a, Lb, float))
+        for idx in np.ndindex(*a.shape[:-2]):
+            out[idx] = _cholesky_vjp(Lb[idx], a[idx])[0]
+        return (out,)
+    L = np.linalg.cholesky(a)
+    P = np.tril(L.T @ Lb)
+    P = P - 0.5 * np.diag(np.diag(P))
+    X = solve_triangular(L, P.T, lower=True, trans="T")  # X = L^{-T} P^T
+    S = solve_triangular(L, X.T, lower=True, trans="T")  # S = L^{-T} P L^{-1}
+    return (np.tril(S + S.T) - np.diag(np.diag(S)),)
+
+
 class AddNode(OperatorNode):
     r"""Elementwise addition node :math:`z = x + y`."""
 
@@ -70,10 +174,7 @@ class PowNode(OperatorNode):
             op_fn=lambda a, b: a**b,
             inputs=[x, y],
             name=name or f"Pow_{x.name}_{y.name}",
-            vjp_fn=lambda grad_out, a, b: (
-                grad_out * b * (a ** (b - 1)),
-                grad_out * (a**b) * np.log(np.maximum(a, 1e-12)),
-            ),
+            vjp_fn=_pow_vjp,
         )
 
 
@@ -109,7 +210,10 @@ class LogNode(OperatorNode):
             op_fn=lambda a: np.log(np.maximum(a, 1e-15)),
             inputs=[x],
             name=name or f"Log_{x.name}",
-            vjp_fn=lambda grad_out, a: (grad_out / np.maximum(a, 1e-15),),
+            # derivative of the floored log actually computed: 1/a above the floor, 0 below
+            vjp_fn=lambda grad_out, a: (
+                grad_out * np.where(np.asarray(a) > 1e-15, 1.0 / np.maximum(a, 1e-15), 0.0),
+            ),
         )
 
 
@@ -121,7 +225,7 @@ class SqrtNode(OperatorNode):
             op_fn=lambda a: np.sqrt(np.maximum(a, 0.0)),
             inputs=[x],
             name=name or f"Sqrt_{x.name}",
-            vjp_fn=lambda grad_out, a: (grad_out / (2.0 * np.sqrt(np.maximum(a, 1e-12))),),
+            vjp_fn=_sqrt_vjp,
         )
 
 
@@ -255,7 +359,7 @@ class SumNode(OperatorNode):
             op_fn=lambda a: np.sum(a, axis=axis),
             inputs=[x],
             name=name or f"Sum_{x.name}",
-            vjp_fn=lambda grad_out, a: (np.ones_like(a) * grad_out,),
+            vjp_fn=lambda grad_out, a: (_expand_reduced(grad_out, a, axis),),
         )
 
 
@@ -267,7 +371,9 @@ class MeanNode(OperatorNode):
             op_fn=lambda a: np.mean(a, axis=axis),
             inputs=[x],
             name=name or f"Mean_{x.name}",
-            vjp_fn=lambda grad_out, a: (np.ones_like(a) * (grad_out / np.size(a)),),
+            vjp_fn=lambda grad_out, a: (
+                _expand_reduced(grad_out, a, axis) / _reduced_count(a, axis),
+            ),
         )
 
 
@@ -309,10 +415,7 @@ class MatMulNode(OperatorNode):
             op_fn=lambda a, b: np.matmul(a, b),
             inputs=[x, y],
             name=name or f"MatMul_{x.name}_{y.name}",
-            vjp_fn=lambda grad_out, a, b: (
-                np.matmul(grad_out, np.swapaxes(b, -1, -2)),
-                np.matmul(np.swapaxes(a, -1, -2), grad_out),
-            ),
+            vjp_fn=_matmul_vjp,
         )
 
 
@@ -338,4 +441,5 @@ class CholeskyNode(OperatorNode):
             op_fn=lambda a: np.linalg.cholesky(a),
             inputs=[x],
             name=name or f"Cholesky_{x.name}",
+            vjp_fn=_cholesky_vjp,
         )

@@ -27,6 +27,7 @@ import math
 from typing import Any, Union
 
 from spxa.graph.node import ConstantNode, Node, OperatorNode
+from spxa.graph.autodiff.exactness import GradientExactness
 from spxa.graph.types import PortDescriptor
 from spxa.risk.instruments import EuropeanOption
 from spxa.vol.risk_adapter import surface_price
@@ -105,10 +106,13 @@ def surface_price_node(
         q = quote(s, dv)
         return [float(adj) * q.delta, float(adj) * q.vega]
 
-    return OperatorNode(
+    node = OperatorNode(
         op_fn=op,
         inputs=[_as_node(spot, f"{name}_spot"), _as_node(vol_shift, f"{name}_dvol")],
         name=name,
         output_descriptor=PortDescriptor(name="price", description=f"{option} on a surface"),
         vjp_fn=vjp,
     )
+    # spot delta is a central difference under the surface dynamics
+    node.gradient_exactness = GradientExactness.NUMERICAL  # type: ignore[attr-defined]
+    return node

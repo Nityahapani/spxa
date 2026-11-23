@@ -1429,8 +1429,14 @@ def _bilinear(op: Callable[[np.ndarray, np.ndarray], np.ndarray], a: Any, b: Any
     v = op(av, bv)
     nd = v.ndim
 
-    def lead(x: np.ndarray, k: int) -> np.ndarray:  # move the k trailing direction axes first
-        return np.moveaxis(x, list(range(x.ndim - k, x.ndim)), list(range(k)))
+    rank = max(av.ndim, bv.ndim)
+
+    def lead(x: np.ndarray, k: int) -> np.ndarray:
+        # move the k trailing direction axes first, then pad the value part with leading
+        # singletons so that batch axes of both operands stay right-aligned
+        y = np.moveaxis(x, list(range(x.ndim - k, x.ndim)), list(range(k)))
+        pad = rank - (x.ndim - k)
+        return y.reshape(y.shape[:k] + (1,) * pad + y.shape[k:]) if pad > 0 else y
 
     def trail(x: np.ndarray, k: int) -> np.ndarray:
         return np.moveaxis(x, list(range(k)), list(range(x.ndim - k, x.ndim)))

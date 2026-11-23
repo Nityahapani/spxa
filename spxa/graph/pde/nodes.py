@@ -20,6 +20,7 @@ from __future__ import annotations
 import math
 from typing import Any, Callable, Optional, Sequence, Union
 
+from spxa.graph.autodiff.exactness import GradientExactness
 from spxa.graph.node import ConstantNode, Node, OperatorNode
 from spxa.graph.types import PortDescriptor
 from spxa.pde.black_scholes import BlackScholesPDE
@@ -131,6 +132,8 @@ def bs_pde_price_node(
         vjp_fn=pricer.vjp,
     )
     node.pde_pricer = pricer  # type: ignore[attr-defined]
+    # grid Greeks and bumped sensitivities of a discretized solution
+    node.gradient_exactness = GradientExactness.NUMERICAL  # type: ignore[attr-defined]
     return node
 
 
@@ -180,4 +183,6 @@ def heston_pde_price_node(
         vjp_fn=pricer.vjp,
     )
     node.pde_pricer = pricer  # type: ignore[attr-defined]
+    # grid Greeks and bumped sensitivities of a discretized solution
+    node.gradient_exactness = GradientExactness.NUMERICAL  # type: ignore[attr-defined]
     return node

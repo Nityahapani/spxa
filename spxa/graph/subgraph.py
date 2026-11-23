@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from spxa.graph.autodiff.tape import GradientTape
 from spxa.graph.graph import ComputationalGraph
-from spxa.graph.node import Node, OperatorNode, ParameterNode, PortDescriptor
+from spxa.graph.node import Node, OperatorNode, PortDescriptor
 from spxa.graph.types import DType
 
 
@@ -35,9 +35,7 @@ class SubgraphNode(OperatorNode):
         def subgraph_forward(*input_vals: Any) -> Any:
             feed_dict: Dict[Node, Any] = {}
             for inner_node, val in zip(self.inner_input_nodes, input_vals):
-                feed_dict[inner_node] = val
-                if isinstance(inner_node, ParameterNode):
-                    inner_node.value = float(val)
+                feed_dict[inner_node] = val  # fed values override; nothing is mutated
 
             res = self.inner_graph.evaluate(feed_dict=feed_dict, return_outputs_only=True)
             return res[self.output_name]
@@ -46,16 +44,14 @@ class SubgraphNode(OperatorNode):
             feed_dict: Dict[Node, Any] = {}
             for inner_node, val in zip(self.inner_input_nodes, input_vals):
                 feed_dict[inner_node] = val
-                if isinstance(inner_node, ParameterNode):
-                    inner_node.value = float(val)
 
-            # Evaluate with feed dict
-            self.inner_graph.evaluate(feed_dict=feed_dict)
             inner_grads = self.tape.gradient(
                 self.output_name,
                 sources=self.inner_input_nodes,
+                feed_dict=feed_dict,
                 grad_output=grad_out,
             )
+            self.gradient_exactness = inner_grads.exactness
             return tuple(inner_grads.get(n, 0.0) for n in self.inner_input_nodes)
 
         super().__init__(
