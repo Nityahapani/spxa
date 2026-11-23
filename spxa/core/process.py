@@ -541,11 +541,9 @@ class _ScaledProcess(Process):
         return self._base._triplet().scale(self._scale)
 
     def _char_exponent(self, u: np.ndarray) -> np.ndarray:
-        try:
-            return super()._char_exponent(u)
-        except TripletUnavailableError:
-            # ψ_{cX}(u) = ψ_X(cu)
-            return self._base._char_exponent(self._scale * np.asarray(u, dtype=complex))
+        # ψ_{cX}(u) = ψ_X(cu) exactly. The scaled triplet would instead integrate
+        # the scaled Lévy measure numerically (an error of 1.4e-8 for 0.5 * NIG).
+        return self._base._char_exponent(self._scale * np.asarray(u, dtype=complex))
 
     def _exact_cumulants(self, order: int) -> dict[int, float]:
         r"""
@@ -613,10 +611,9 @@ class _ComposedProcess(Process):
         if self._operation == "@":
             # ψ_Z(u) = ψ_T(-i ψ_X(u)): E[e^{iuX_{T_t}}] = E[e^{T_t ψ_X(u)}], Re ψ_X ≤ 0
             return self._right._char_exponent(-1j * self._left._char_exponent(u))
-        try:
-            return super()._char_exponent(u)
-        except TripletUnavailableError:
-            return self._left._char_exponent(u) + self._right._char_exponent(u)
+        # ψ_{X+Y} = ψ_X + ψ_Y exactly for independent summands; the children's
+        # exponents are closed forms where the summed triplet would be a quadrature.
+        return self._left._char_exponent(u) + self._right._char_exponent(u)
 
     def _exact_cumulants(self, order: int) -> dict[int, float]:
         if self._operation == "@":

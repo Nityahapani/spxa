@@ -77,6 +77,96 @@ def _gig_moments(lam: float, delta: float, gamma: float) -> Tuple[float, float, 
     return m1, m2, m3, m4
 
 
+def _gh_small_s_tail(nu: float, t_cut: float) -> float:
+    r"""
+    :math:`\int_{t_{cut}}^\infty 2/(\pi^2 (J_\nu^2 + Y_\nu^2)(e^{-t}))\,dt` by small-argument forms.
+
+    :math:`J_{\pm\nu}(s) = (s/2)^{\pm\nu}/\Gamma(1\pm\nu)` and
+    :math:`Y_\nu = (J_\nu\cos\nu\pi - J_{-\nu})/\sin\nu\pi`, with
+    :math:`Y_0 = (2/\pi)(\log(s/2) + \gamma_E)` at :math:`\nu = 0`, where the tail is
+    :math:`\tfrac12 - \arctan(2(t_{cut} + \log 2 - \gamma_E)/\pi)/\pi` in closed form.
+    The integrand decays only like :math:`1/t^2` (:math:`\nu = 0`) or
+    :math:`e^{-2\nu t}`, which is why it is not left to a numerical quadrature.
+    """
+    if nu < 1e-7:
+        c = math.log(2.0) - float(np.euler_gamma)
+        return 0.5 - math.atan(2.0 * (t_cut + c) / math.pi) / math.pi
+    from scipy.special import gammaln  # type: ignore[import-untyped]
+
+    g_plus, g_minus = float(gammaln(1.0 + nu)), float(gammaln(1.0 - nu)) if nu < 1.0 else 0.0
+    sin_, cos_ = math.sin(nu * math.pi), math.cos(nu * math.pi)
+    if nu >= 1.0 or abs(sin_) < 1e-12:
+        # integer or large order: Y_nu ~ -Gamma(nu)/pi (2/s)^nu dominates; J^2 is O(s^{4 nu}) smaller
+        lg = float(gammaln(nu))
+        return float(2.0 ** (1.0 - 2.0 * nu) * math.exp(-2.0 * lg - 2.0 * nu * t_cut) / (2.0 * nu))
+
+    def g(t: float) -> float:
+        lp = -nu * (t + math.log(2.0))  # log (s/2)^nu
+        # J^2 + Y^2 = J_{-nu}^2 [r^2 + (r cos - 1)^2 / sin^2], r = J_nu / J_{-nu}
+        r = math.exp(2.0 * lp - g_plus + g_minus)
+        bracket = r * r + (r * cos_ - 1.0) ** 2 / sin_**2
+        return 2.0 * math.exp(2.0 * lp + 2.0 * g_minus) / (math.pi**2 * bracket)
+
+    return float(integrate.quad(g, t_cut, np.inf, limit=200, epsabs=0.0, epsrel=1e-12)[0])
+
+
+def _gh_levy_bracket(ax: float, lam: float, alpha: float, delta: float) -> float:
+    r"""
+    :math:`e^{\alpha|x|}|x|e^{-\beta x}\,\nu(x)` for the GH Lévy density, :math:`|x| = ax > 0`.
+
+    With :math:`s = \delta\sqrt{2y}` the integral is
+    :math:`\int_0^\infty 2\,e^{-(\sqrt{s^2/\delta^2+\alpha^2}-\alpha)|x|}
+    /(\pi^2 s\,(J_{|\lambda|}^2(s)+Y_{|\lambda|}^2(s)))\,ds`. The integrand
+    behaves like :math:`s^{2|\lambda|-1}` (:math:`1/(s\log^2 s)` at :math:`\lambda=0`)
+    near 0, handled on :math:`[0,1]` by :math:`s = e^{-t}`, and like
+    :math:`e^{-s|x|/\delta}/\pi` at infinity, split at multiples of :math:`\delta/|x|`.
+    """
+    from scipy.special import jv, yv  # type: ignore[import-untyped]
+
+    nu = abs(lam)
+
+    def f(s: float) -> float:
+        if s <= 0.0:
+            return 0.0
+        with np.errstate(over="ignore"):
+            q = np.float64(jv(nu, s)) ** 2 + np.float64(yv(nu, s)) ** 2
+        if not np.isfinite(q):  # Y_nu(s)^2 overflows only where the integrand is ~ 0
+            return 0.0
+        return (
+            2.0
+            * math.exp(-(math.sqrt((s / delta) ** 2 + alpha**2) - alpha) * ax)
+            / (math.pi**2 * s * float(q))
+        )
+
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", integrate.IntegrationWarning)
+        # s in [e^{-T}, 1] numerically (s = e^{-t}); below e^{-T} the small-argument
+        # forms of J and Y are exact to O(e^{-2T}) and the factor
+        # exp(-(sqrt(s^2/delta^2 + alpha^2) - alpha)|x|) is 1 to O(e^{-2T}).
+        t_cut = 40.0
+        head = sum(
+            integrate.quad(
+                lambda t: f(math.exp(-t)) * math.exp(-t),
+                lo,
+                hi,
+                limit=200,
+                epsabs=0.0,
+                epsrel=1e-11,
+            )[0]
+            for lo, hi in ((0.0, 5.0), (5.0, 15.0), (15.0, t_cut))
+        )
+        head += _gh_small_s_tail(nu, t_cut)
+        scale = delta / ax
+        edges = [1.0] + [k * scale for k in (1.0, 4.0, 16.0, 64.0) if k * scale > 1.0]
+        body = 0.0
+        for lo, hi in zip(edges[:-1], edges[1:]):
+            body += integrate.quad(f, lo, hi, limit=200, epsabs=0.0, epsrel=1e-11)[0]
+        body += integrate.quad(f, edges[-1], np.inf, limit=200, epsabs=0.0, epsrel=1e-11)[0]
+    return head + body + max(lam, 0.0)
+
+
 def _gh_levy_measure(
     lambda_param: float, alpha: float, beta: float, delta: float
 ) -> DensityLevyMeasure:
@@ -104,38 +194,27 @@ def _gh_levy_measure(
     def moment_4() -> float:
         return 3.0 * var_z + 6.0 * (beta**2) * mu3_z + (beta**4) * k4_z
 
-    # Density function evaluation
-    is_nig = math.isclose(lambda_param, -0.5, abs_tol=1e-7)
+    # Lévy density (Raible 2000, Thm 1.43; Eberlein & v. Hammerstein 2004, eq. 2.19):
+    #   nu(x) = e^{beta x}/|x| [ int_0^inf exp(-sqrt(2y + alpha^2)|x|)
+    #           / (pi^2 y (J_|l|^2(delta sqrt(2y)) + Y_|l|^2(delta sqrt(2y)))) dy
+    #           + max(l, 0) e^{-alpha |x|} ].
+    # (Up to 1.2.0 this returned the GH *probability* density, which is not the
+    # Lévy density; the triplet's exponent was then off by O(1).)
+    is_nig = math.isclose(lambda_param, -0.5, abs_tol=1e-12)
 
     def density(x: np.ndarray) -> np.ndarray:
+        x = np.asarray(x, dtype=float)
         out = np.zeros_like(x, dtype=float)
         nz = x != 0
         xv = x[nz]
         if is_nig:
-            # Closed-form NIG density: (alpha delta / pi) * K_1(alpha sqrt(delta^2 + x^2)) / sqrt(delta^2 + x^2) * exp(beta x)
-            hypot_term = np.sqrt(delta**2 + xv**2)
-            k1_vals = bessel_kv(1.0, alpha * hypot_term)
-            out[nz] = (alpha * delta / np.pi) * (k1_vals / hypot_term) * np.exp(beta * xv)
-        else:
-            # Numerical integration of normal-GIG variance mixture representation
-            for idx, x_val in enumerate(xv):
-
-                def integrand(y: float) -> float:
-                    # GIG subordinator density kernel
-                    gig_kernel = (y ** (lambda_param - 1.0)) * math.exp(
-                        -0.5 * ((delta**2) / y + (gamma**2) * y)
-                    )
-                    norm_kernel = (1.0 / math.sqrt(2.0 * math.pi * y)) * math.exp(
-                        -0.5 * ((x_val - beta * y) ** 2) / y
-                    )
-                    return gig_kernel * norm_kernel
-
-                res, _ = integrate.quad(integrand, 1e-6, np.inf, limit=100)
-                # Normalize by 2 K_lambda(delta gamma) / gamma^lambda
-                norm_const = (
-                    2.0 * float(bessel_kv(lambda_param, delta * gamma)) / (gamma**lambda_param)
-                )
-                out[np.where(nz)[0][idx]] = res / norm_const if norm_const > 0 else 0.0
+            # J_{1/2}^2 + Y_{1/2}^2 = 2/(pi z): nu(x) = (alpha delta/pi) e^{beta x} K_1(alpha|x|)/|x|
+            ax = np.abs(xv)
+            out[nz] = (alpha * delta / np.pi) * np.exp(beta * xv) * bessel_kv(1.0, alpha * ax) / ax
+            return out
+        vals = [_gh_levy_bracket(abs(float(xi)), lambda_param, alpha, delta) for xi in xv]
+        ax = np.abs(xv)
+        out[nz] = np.exp(beta * xv - alpha * ax) / ax * np.asarray(vals, dtype=float)
         return out
 
     def tail(xv: float) -> float:
@@ -326,6 +405,11 @@ class GeneralizedHyperbolicProcess(Process):
     # ------------------------------------------------------------------
     # Characteristic Function & Exponent
     # ------------------------------------------------------------------
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        # The closed form (used by compositions such as GH + Drift and c * GH);
+        # the inherited default would integrate the Lévy measure numerically.
+        return self.char_exponent(u)
 
     def char_exponent(self, u: Union[float, complex, np.ndarray]) -> np.ndarray:
         r"""

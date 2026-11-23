@@ -435,6 +435,8 @@ class Jet:
 
     # -- protocols ---------------------------------------------------------
     def __array_ufunc__(self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any) -> Any:
+        if any(getattr(type(i), "__taylor__", False) for i in inputs):
+            return NotImplemented  # Taylor series hold jets as coefficients, not vice versa
         out = kwargs.get("out")
         if out is not None and not (isinstance(out, tuple) and all(o is None for o in out)):
             raise JetError(f"in-place {ufunc.__name__}(out=...) is not supported on Jets")
@@ -466,6 +468,8 @@ class Jet:
         raise JetError(f"{ufunc.__name__}.{method} is not supported on Jets")
 
     def __array_function__(self, func: Any, types: Any, args: Any, kwargs: Any) -> Any:
+        if any(getattr(t, "__taylor__", False) for t in types):
+            return NotImplemented
         impl = _FUNCTIONS.get(func)
         if impl is None:
             raise JetError(f"np.{getattr(func, '__name__', func)} has no Jet implementation")
