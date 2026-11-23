@@ -2,6 +2,25 @@
 
 All notable changes to spxa are documented here. Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `zoo/beyond/mg1_workload.py` — M/G/1 workload process, a reflected compound Poisson process
+  (`MG1WorkloadProcess`, `JobSizeDistribution`):
+  Poisson arrivals at rate $\lambda$ with i.i.d. job sizes $S$, unit drain and reflection at 0,
+  $W_t = X_t + \sup_{s \le t}(-X_s)^+$; exact Pollaczek–Khinchine stationary mean, variance and idle
+  probability $1 - \rho$ for $\rho = \lambda E[S] < 1$; checks that the job-size moments are
+  consistent; and exact Lindley-recursion simulation between arrivals.
+
+### Fixed
+
+- `vol.andreasen_huge`: the implicit step now solves only the interior nodes and sets the Dirichlet
+  ends exactly. Keeping the boundary rows in the banded solve let LAPACK's partial pivoting leave
+  rounding error of about $10^{-14}$ at $x_0$, so long-maturity calls fell just below the intrinsic
+  bound $(1 - x)^+$. Custom grids must now be 1-D, finite, positive and strictly increasing, with
+  at least three points; shorter or non-finite grids raised `IndexError` or failed inside SciPy.
+
 ## [1.2.0] — 2026-11-21
 
 ### Added
