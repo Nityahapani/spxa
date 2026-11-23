@@ -7,7 +7,7 @@ Run with: python examples/kou_example.py
 import math
 import numpy as np
 
-from spxa import BrownianMotion, Kou72, KouJumpDiffusion
+from spxa import BrownianMotion, KouJumpDiffusion
 
 print("=" * 72)
 print("spxa — Kou (2002) Double Exponential Jump-Diffusion Process Demo")
@@ -34,13 +34,13 @@ print("\n── 1. Model Definition & Exact Triplet ──")
 print(f"  Model               : {kou}")
 print(f"  Exactness Level     : {kou.exactness.name}")
 print(f"  Continuous Drift    : {kou.drift:.4f}")
-print(f"  Diffusion Vol σ     : {kou.sigma*100:.1f}%")
+print(f"  Diffusion Vol σ     : {kou.sigma * 100:.1f}%")
 print(f"  Jump Rate λ         : {kou.rate:.2f} jumps/yr")
-print(f"  Prob Up Jump p      : {kou.p*100:.1f}%")
-print(f"  Up Decay Rate η_1   : {kou.eta1:.1f} (mean up jump: +{1/kou.eta1*100:.1f}%)")
-print(f"  Down Decay Rate η_2 : {kou.eta2:.1f} (mean down jump: -{1/kou.eta2*100:.1f}%)")
-print(f"  Overall Jump Mean   : {kou.jump_mean*100:.2f}% (negative skew)")
-print(f"  Expected Rel Jump   : {kou.expected_relative_jump*100:.2f}% (E[exp(Y) - 1])")
+print(f"  Prob Up Jump p      : {kou.p * 100:.1f}%")
+print(f"  Up Decay Rate η_1   : {kou.eta1:.1f} (mean up jump: +{1 / kou.eta1 * 100:.1f}%)")
+print(f"  Down Decay Rate η_2 : {kou.eta2:.1f} (mean down jump: -{1 / kou.eta2 * 100:.1f}%)")
+print(f"  Overall Jump Mean   : {kou.jump_mean * 100:.2f}% (negative skew)")
+print(f"  Expected Rel Jump   : {kou.expected_relative_jump * 100:.2f}% (E[exp(Y) - 1])")
 print(f"  Triplet Drift b     : {kou.triplet.b:.6f} (truncation cutoff=1.0)")
 print(f"  Triplet σ²          : {kou.triplet.sigma_sq:.6f}")
 print(f"  Total Jump Mass     : {kou.triplet.nu.total_mass():.4f} (finite activity)")
@@ -61,7 +61,9 @@ z = kou + 0.5 * bm
 print("\n── 3. Algebraic Composition: Z = Kou + 0.5 * BM ──")
 print(f"  Composed Process    : {z}")
 print(f"  Exactness Level     : {z.exactness.name}")
-print(f"  Combined σ²         : {z.triplet.sigma_sq:.6f} (theory: {kou.sigma**2 + 0.25*bm.sigma**2:.6f})")
+print(
+    f"  Combined σ²         : {z.triplet.sigma_sq:.6f} (theory: {kou.sigma**2 + 0.25 * bm.sigma**2:.6f})"
+)
 
 # 4. European Option Pricing & Implied Volatility
 S0 = 100.0
@@ -75,12 +77,14 @@ put_prices = kou.put_price(strikes, T=T, S0=S0, r=r, q=q)
 implied_vols = kou.implied_vol_smile(strikes, T=T, S0=S0, r=r, q=q)
 
 print(f"\n── 4. Kou Option Pricing & Implied Volatility (T = {T:.1f} yr) ──")
-print(f"  {'Strike K':>8} | {'Call':>9} | {'Put':>9} | {'C - P Parity Diff':>18} | {'Implied Vol':>12}")
+print(
+    f"  {'Strike K':>8} | {'Call':>9} | {'Put':>9} | {'C - P Parity Diff':>18} | {'Implied Vol':>12}"
+)
 print("  " + "-" * 66)
 for K, c, p, iv in zip(strikes, call_prices, put_prices, implied_vols):
     parity_theor = S0 * math.exp(-q * T) - K * math.exp(-r * T)
     parity_diff = abs((c - p) - parity_theor)
-    print(f"  {K:>8.1f} | {c:>9.4f} | {p:>9.4f} | {parity_diff:>18.2e} | {iv*100:>11.2f}%")
+    print(f"  {K:>8.1f} | {c:>9.4f} | {p:>9.4f} | {parity_diff:>18.2e} | {iv * 100:>11.2f}%")
 
 # 5. Exact Monte Carlo Simulation
 print("\n── 5. Exact Monte Carlo Path Simulation ──")
@@ -96,9 +100,15 @@ th_mean = k[1] * T
 mc_var = np.var(final_vals)
 th_var = k[2] * T
 
-print(f"  Simulated Paths     : {n_paths:,} paths across {n_steps} steps (zero discretization error)")
-print(f"  Sample Mean X_T     : {mc_mean:.4f} (analytical: {th_mean:.4f}, diff: {abs(mc_mean - th_mean):.4f})")
-print(f"  Sample Var X_T      : {mc_var:.4f} (analytical: {th_var:.4f}, rel diff: {abs(mc_var - th_var)/th_var*100:.2f}%)")
+print(
+    f"  Simulated Paths     : {n_paths:,} paths across {n_steps} steps (zero discretization error)"
+)
+print(
+    f"  Sample Mean X_T     : {mc_mean:.4f} (analytical: {th_mean:.4f}, diff: {abs(mc_mean - th_mean):.4f})"
+)
+print(
+    f"  Sample Var X_T      : {mc_var:.4f} (analytical: {th_var:.4f}, rel diff: {abs(mc_var - th_var) / th_var * 100:.2f}%)"
+)
 
 print("\n" + "=" * 72)
 print("Demo finished successfully.")

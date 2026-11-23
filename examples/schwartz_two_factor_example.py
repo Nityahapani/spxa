@@ -17,7 +17,7 @@ import numpy as np
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from spxa import SchwartzTwoFactor, Schwartz97, Schwartz2F
+from spxa import SchwartzTwoFactor
 
 
 def main() -> None:
@@ -70,7 +70,9 @@ def main() -> None:
     # 3. Commodity Futures Term Structure
     maturities = [0.25, 0.50, 1.0, 2.0, 3.0, 5.0]
     print("\nFutures Term Structure F(S_0, δ_0, T):")
-    print(f"  {'Maturity (yr)':<15} {'Futures Price':<18} {'Basis (F - S0)':<16} {'Market Regime':<15}")
+    print(
+        f"  {'Maturity (yr)':<15} {'Futures Price':<18} {'Basis (F - S0)':<16} {'Market Regime':<15}"
+    )
     print("  " + "-" * 64)
     for mat in maturities:
         fwd = s2f.futures_price(tau=mat)
@@ -89,7 +91,9 @@ def main() -> None:
     print(f"\nEuropean Options on Spot at Strike K = ${strike:.2f} (T = {t:.1f} yr):")
     print(f"  Call Price:                    ${call:.4f}")
     print(f"  Put Price:                     ${put:.4f}")
-    print(f"  Put-Call Parity: (C - P) = ${parity_lhs:.6f}, e^(-rT)(F - K) = ${parity_rhs:.6f} (Diff: {abs(parity_lhs - parity_rhs):.2e})")
+    print(
+        f"  Put-Call Parity: (C - P) = ${parity_lhs:.6f}, e^(-rT)(F - K) = ${parity_rhs:.6f} (Diff: {abs(parity_lhs - parity_rhs):.2e})"
+    )
 
     # 5. Joint Path Simulation
     n_paths = 30_000
@@ -101,8 +105,12 @@ def main() -> None:
     mc_spot = float(np.mean(s_paths[:, -1]))
     mc_yield = float(np.mean(d_paths[:, -1]))
 
-    print(f"  Empirical Mean Spot S_T:       ${mc_spot:.4f} (Theoretical F: ${fwd_1y:.4f}, error: {abs(mc_spot - fwd_1y):.4e})")
-    print(f"  Empirical Mean Yield δ_T:      {mc_yield:.4%} (Theoretical: {y_mean:.4%}, error: {abs(mc_yield - y_mean):.4e})")
+    print(
+        f"  Empirical Mean Spot S_T:       ${mc_spot:.4f} (Theoretical F: ${fwd_1y:.4f}, error: {abs(mc_spot - fwd_1y):.4e})"
+    )
+    print(
+        f"  Empirical Mean Yield δ_T:      {mc_yield:.4%} (Theoretical: {y_mean:.4%}, error: {abs(mc_yield - y_mean):.4e})"
+    )
     print(f"  All simulated spot prices > 0: {bool(np.all(s_paths > 0.0))}")
 
     print("\nDemonstration completed successfully.")

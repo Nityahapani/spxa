@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff mypy
-      - run: ruff check spxa tests
-      - run: ruff format --check spxa tests
+      - run: ruff check spxa tests audits
+      - run: ruff format --check spxa tests audits
       - run: mypy spxa --ignore-missing-imports
 
   test:
@@ -70,3 +70,16 @@ jobs:
         run: |
           pytest tests/exactness -v --tb=short -p no:xfail --strict-markers
           python scripts/check_exactness_markers.py
+
+  audits:
+    name: Mathematical audits (all 69 processes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Run full mathematical audit suite
+        run: python audits/run_master_audit.py

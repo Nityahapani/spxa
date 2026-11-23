@@ -1555,42 +1555,40 @@ def sample_gh(
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths
 
-    # General GH via Gil-Pelaez CDF inversion
+    # General GH: FFT inversion of the characteristic function. The Bessel
+    # term uses kve, so its logarithm is continuous (see GH.char_exponent).
     from scipy.special import kv as bessel_kv  # type: ignore[import-untyped]
+    from scipy.special import kve as bessel_kve  # type: ignore[import-untyped]
+
+    from spxa.sim.cf_sampling import sample_from_cf
 
     dg = delta * gamma
     k0 = float(bessel_kv(lambda_param, dg))
-    if k0 <= 0.0 or not math.isfinite(k0):
-        k0 = 1e-300
-
     scale = delta / gamma
     m1_z = scale * float(bessel_kv(lambda_param + 1.0, dg)) / k0
     m2_z = (scale**2) * float(bessel_kv(lambda_param + 2.0, dg)) / k0
-    var_z = m2_z - m1_z**2
-
     k1 = mu + beta * m1_z
-    k2 = m1_z + (beta**2) * var_z
+    k2 = m1_z + (beta**2) * (m2_z - m1_z**2)
+    k0e = float(bessel_kve(lambda_param, dg))
 
-    std_dt = max(math.sqrt(dt * k2), 1e-6)
-    mean_dt = dt * k1
+    def cf(u: np.ndarray) -> np.ndarray:
+        zeta = np.sqrt(alpha**2 - (beta + 1j * u) ** 2)
+        psi = (
+            1j * mu * u
+            + lambda_param * np.log(gamma / zeta)
+            + np.log(bessel_kve(lambda_param, delta * zeta) / k0e)
+            - delta * (zeta - gamma)
+        )
+        return np.exp(dt * psi)
 
-    x_grid = np.linspace(mean_dt - 10.0 * std_dt, mean_dt + 10.0 * std_dt, 1200)
-    u_grid = np.linspace(1e-4, min(100.0 / std_dt, 800.0), 1000)
-
-    zeta = np.sqrt(alpha**2 - (beta + 1j * u_grid) ** 2)
-    k_zeta = bessel_kv(lambda_param, delta * zeta)
-    psi = 1j * mu * u_grid + lambda_param * np.log(gamma / zeta) + np.log(k_zeta / k0)
-    cf_vals = np.exp(dt * psi)
-
-    integrand = cf_vals[None, :] * np.exp(-1j * u_grid[None, :] * x_grid[:, None])
-    pdf = np.trapezoid(integrand.real, u_grid, axis=1) / np.pi
-    pdf = np.maximum(pdf, 0.0)
-    dx = x_grid[1] - x_grid[0]
-    cdf = np.cumsum(pdf) * dx
-    cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-    u_unif = rng.uniform(size=(n_paths, n_steps))
-    increments = np.interp(u_unif, cdf, x_grid)
+    increments = sample_from_cf(
+        cf,
+        mean=dt * k1,
+        std=math.sqrt(dt * k2),
+        size=(n_paths, n_steps),
+        rng=rng,
+        tail_decay=alpha - abs(beta),
+    )
 
     paths[:, 1:] = np.cumsum(increments, axis=1)
     return paths

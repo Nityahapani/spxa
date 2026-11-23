@@ -34,7 +34,13 @@ class _ZeroLevyMeasure(DensityLevyMeasure):
             _total_mass=0.0,
             _tail_fn=lambda x: 0.0,
             _moment_fns={n: (lambda: 0.0) for n in range(1, 9)},
+            _jump_exponent_fn=lambda u: 0j,
         )
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        return 0.0
 
 
 class BrownianMotion(Process):
@@ -92,7 +98,8 @@ class BrownianMotion(Process):
             is_martingale=(self.mu == 0.0),
             has_finite_variance=True,
             has_finite_mean=True,
-            self_similarity_index=0.5,
+            # B_{ct} + μct ∼ c^{1/2}(B_t + μt) only when μ = 0
+            self_similarity_index=0.5 if self.mu == 0.0 else None,
             tail_index=None,
             is_subordinator=False,
             hurst_index=None,
@@ -110,6 +117,14 @@ class BrownianMotion(Process):
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: mu*t + sigma*sqrt(t)*Z."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        return self.mu * t + self.sigma * np.sqrt(t) * rng.standard_normal(t.shape)
 
     def simulate(
         self,

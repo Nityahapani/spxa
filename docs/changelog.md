@@ -2,7 +2,95 @@
 
 All notable changes to spxa are documented here. Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] — 2026-11-21
+
+### Added
+
+- `discovery/` — process discovery, or inverse stochastic algebra (`spxa.discovery`). It searches
+  compositions of Lévy primitives (`+`, scaling, `@`) for the one that explains the data:
+  - **Inputs.** Return series and CSV files (`load_returns`, with prices or returns and dates),
+    summary statistics (`from_statistics`), or European option quotes (`OptionQuotes`).
+  - **Families and structures.** Eleven primitive families with closed-form cumulant exponents,
+    exact cumulants and exponential-moment strips. `Model` and `recognize(process)` convert to and
+    from zoo expressions, with exact cumulants for `@`.
+  - **Fitting.** A smoothed binned likelihood with COS bin probabilities, cumulant matching, and
+    vega-weighted option fits priced by COS (`cos_prices` reproduces the Fang–Oosterlee VG values).
+  - **Search and ranking.** A `Grammar` without duplicate laws, beam or exhaustive search, BIC/AIC
+    weights, goodness-of-fit p-values, CDF gaps, and flags for degenerate fits. `DiscoveryReport`
+    gives the headline "… matches your data within x%", a table and JSON.
+  - **Uncertainty.** Sandwich and GMM standard errors, Vuong tests, and bootstrap selection
+    frequencies, including the moving-block bootstrap.
+  - **Interfaces.** The `spxa-discover` command line, `examples/08_process_discovery.py`,
+    `docs/theory/discovery.md` and section 23 of the API reference.
+- `laws/` — property-based testing for stochastic algebra (`spxa.laws`):
+  - **Strategies.** Floats, integers, tuples, dictionaries and builds, with integrated (rose-tree)
+    shrinking. Process strategies cover every Lévy family, compositions, martingales and opt-in
+    α-stables.
+  - **Laws.** `@law`, `Law.check` (verified, falsified, error or unsatisfiable, with reproducible
+    seeds and shrunk counterexamples), `expect_close`, `expect`, `implies` and `assume`.
+  - **Statistical expectations.** `spxa.laws.stats` provides empirical-cf, mean, variance and
+    independence tests at a known false-alarm rate, and `expect_not_rejected`.
+  - **Library.** 46 laws in `AXIOMS`, `ALGEBRA`, `SUBORDINATION`, `TRIPLET`, `CUMULANTS`,
+    `PROPERTIES` and `SIMULATION`.
+  - **Running laws.** `Suite` and `SuiteReport` (text, Markdown, JSON), `law_tests` and
+    `assert_holds` for pytest, and the `spxa-laws` command line.
+  - **Documentation.** `examples/09_property_based_laws.py`, `docs/theory/laws.md` and section 24
+    of the API reference.
+- `Drift(mu)`, the deterministic Lévy process. Use `X + Drift(c)` for a constant drift; adding a
+  plain number to a process now raises `TypeError`.
+- `Process.sample_at(times, rng)`: independent draws of $X_t$ at given times. Direct samplers exist
+  for fifteen Lévy families and for their sums, multiples and time changes.
+- `spxa.sim.cf_sampling`: sampling by FFT inversion of a characteristic function, with refinement
+  until the cf has decayed and `CdfUnderResolvedWarning` when it cannot.
+- `Process._char_exponent`, with closed forms for Gamma, IG, VG, NIG, Meixner, tempered stable, NTS
+  and CGMY (including the poles $Y = 0, 1$).
+
+### Fixed
+
+Most of these were found by the law library while it was being written.
+
+- **Triplets and Lévy measures.**
+  - Drift corrections in `LevyTriplet.scale`, and in the Gamma, Poisson and Meixner triplets.
+  - The inverse Gaussian Lévy measure.
+  - The NTS triplet now carries the NTS measure.
+  - The α-stable triplet now matches its exponent: constants $c_\pm$ and truncation drift.
+  - Negative binomial and compound Poisson measures now work inside sums and scalings.
+  - Meixner density overflow.
+  - The jump exponent off the real axis returned NaN.
+- **Characteristic functions and cumulants.**
+  - The cf and cumulants of `X @ T`, and of composites containing it, raised.
+  - `char_exp_subordinated` took $\psi_X$ from the principal logarithm.
+  - The GH exponent wrapped by $2\pi$, which flipped the sign of $\varphi(u, t)$ at non-integer $t$.
+  - The Meixner cf collapsed to 0 past the overflow of $\cosh$.
+  - The Meixner fourth and higher cumulants.
+  - Cumulants of `X + Y` and `c * X` come from the parts' cumulants instead of the summed triplet's
+    quadrature, so means that cancel give exactly $\kappa_1 = 0$.
+  - Poisson and compound Poisson Laplace exponents overflow to $+\infty$ instead of NaN.
+- **Property flags.**
+  - Self-similarity is flagged only for strictly self-similar processes.
+  - Martingales on integrable clocks, and sums whose means cancel, are now flagged as martingales.
+  - A subordinator run on a subordinator clock is now flagged as a subordinator.
+- **Simulation.**
+  - CGMY, Meixner and tempered stable no longer use fixed-grid cf inversion.
+  - Exact tempered stable draws by tilted stable rejection. This also makes the NTS clock exact,
+    and CGMY draws exact for $0 < Y < 1$.
+  - The α = 1 stable simulator now adds the $\frac{2}{\pi}\beta\sigma t\log t$ shift.
+  - `X @ T` is simulated exactly instead of by interpolating the parent path.
+  - GH increments use cf inversion with the continuous exponent.
+  - One `simulate(n_steps, n_paths, T, rng)` signature for every Lévy primitive (Kou, GH, NTS).
+
+### Changed
+
+- `KouJumpDiffusion.simulate` and `GeneralizedHyperbolicProcess.simulate` take
+  `(n_steps, n_paths, T, rng)` positionally, like every other Lévy primitive. `dt` and
+  `time_horizon` are now keyword-only. A positional call such as `simulate(100, 0.01)`, which set
+  `dt` in 1.1.0, must become `simulate(100, dt=0.01)`. Keyword calls are unaffected.
+- `NormalTemperedStableProcess.simulate` takes `n_steps` first. A time grid passed as the first
+  argument is still accepted, and `t_grid=` is keyword-only.
+- `Process + number` raises `TypeError` that points to `Drift(c)`. In 1.1.0 it raised an
+  `AttributeError`.
+
+## [1.1.0] — 2026-11-19
 
 ### Added
 
@@ -47,6 +135,71 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
       trees, perpetual put, Lewis with Heston/Lévy characteristic functions, Merton series,
       Vasicek/CIR bonds and options, Margrabe, spread options.
   - **Documentation.** See `docs/theory/pde.md` and section 19 of the API reference.
+- `market/` — market conventions shared by `spxa.rates` and `spxa.vol` (`spxa.market`):
+  - Dates and tenors; day counts `ACT/360`, `ACT/365F`, `ACT/ACT ISDA/ICMA`, the 30/360 family and
+    `BUS/252`; `TARGET`, US, UK and joint calendars with Easter rules.
+  - Business-day adjustment and `Schedule` with front/back, short/long stubs and end-of-month rolls.
+  - `YieldCurve`, `FlatCurve`, `InterpolatedDiscountCurve` and `EquityForward` (dividend yields, repo,
+    escrowed discrete dividends).
+  - Black, Bachelier, shifted-Black and Black–Scholes prices and Greeks; machine-precision implied
+    Black and normal volatilities.
+  - Option quotes and chains, static-arbitrage checks, put-call-parity forwards and implied carry.
+  - See `docs/theory/market.md` and section 20 of the API reference.
+- `rates/` — interest rates on real calendar dates (`spxa.rates`, `spxa.graph.rates`):
+  - **Instruments.** Overnight and term indices with ISDA compounding (lookback, lockout,
+    observation shift); fixed, IBOR and overnight legs; deposits, FRAs, futures with Hull–White
+    convexity; OIS, vanilla, basis and amortising swaps; fixed-rate bonds.
+  - **Curves.** Dual-curve bootstrapping and global fits with log-linear, cubic, monotone cubic and
+    Hagan–West monotone convex interpolation; turns of year, meeting-date curves, Nelson–Siegel–
+    Svensson and curve sets. Node, quote and key-rate deltas, hedging, gamma, P&L explain and PCA.
+  - **Volatility products.** Caps, floors, swaptions (physical and cash) and CMS by replication;
+    SABR (Hagan and Obłój), the arbitrage-free SABR density PDE, SABR Monte Carlo, caplet stripping
+    and a swaption cube.
+  - **Short-rate models.** Hull–White with piecewise volatility (closed forms, exact simulation,
+    trinomial tree, PDE, bootstrap and global calibration), G2++ and its Hull–White two-factor form,
+    Black–Karasinski and CIR++.
+  - **HJM and Cheyette.** Gaussian HJM with exponential and humped volatilities; Cheyette with skew,
+    Monte Carlo, a split 2D PDE (semi-Lagrangian in $y$,
+    Crank–Nicolson in $x$), swaption approximation and calibration.
+  - **Market models.** LIBOR market model with abcd volatilities, Rebonato correlations, rank
+    reduction, predictor–corrector simulation and caplet/swaption calibration; the forward market
+    model for backward-looking rates; SABR-LMM.
+  - **Bermudan swaptions.** Co-terminal contracts valued by PDE, tree and least-squares Monte Carlo,
+    with Andersen–Broadie upper bounds.
+  - **Inflation.** CPI fixings and indices with TIPS reference-CPI interpolation; seasonality
+    estimated from history; inflation curves bootstrapped from zero-coupon swaps; zero-coupon and
+    year-on-year swaps; TIPS-style linkers with Treasury's price and settlement formulas and the
+    deflation floor; Jarrow–Yildirim closed forms, caplets, Monte Carlo and calibration.
+  - **Connections.** `curve_price`/`curve_pricing_fn` value `spxa.risk` swaps on curves for
+    `StressTestingEngine`; `spxa.graph.rates` zero-curve nodes give key rates in one reverse pass.
+  - See `docs/theory/rates.md` and section 21 of the API reference; examples
+    `examples/rates_*_example.py`.
+- `vol/` — implied-volatility surfaces and the models calibrated to them (`spxa.vol`,
+  `spxa.graph.vol`):
+  - **Surfaces.** Raw, natural and jump-wings SVI; SSVI and eSSVI with their no-arbitrage
+    conditions; quasi-explicit, butterfly-free and surface calibration; Durrleman, calendar and
+    wing diagnostics; price-interpolated surfaces and implied distributions.
+  - **From quotes.** `build_vol_surface` (parity forwards, SVI/SSVI/eSSVI fits, quality report),
+    arbitrage repair of call prices, Fengler smoothing, `VolSurface` with sticky-strike and
+    sticky-moneyness Greeks, delta conventions, bucketed vega and JSON persistence.
+  - **Local volatility.** Dupire in implied variance with `spxa.pde` pricing, Andreasen–Huge
+    calibration, local-vol Monte Carlo, forward-start options and diagnostics.
+  - **Stochastic local volatility.** Heston, a 2D Fokker–Planck ADI forward solver, leverage by
+    forward induction and by particles, the mixing fraction, Monte Carlo with Brownian-bridge
+    barriers and an SLV PDE.
+  - **Rough volatility and VIX.** Rough Heston (fractional Riccati), lifted Heston, rough Bergomi
+    (hybrid scheme) and their calibration; VIX futures and options in Heston and rough Bergomi;
+    joint SPX/VIX calibration.
+  - **Martingale optimal transport.** Marginals from surfaces, LP bounds with dual super- and
+    sub-hedges, entropic (Sinkhorn) MOT, several dates, static replication and hedge backtests.
+  - **Variance and volatility swaps.** Carr–Madan fair variance, gamma swaps, forward-variance
+    curves, the model-free VIX, discrete monitoring, mark-to-market and Heston volatility swaps.
+  - **Model risk.** Cont's coherent and penalised measures over calibrated models (`ModelRisk`).
+  - **Connections.** `surface_price`/`surface_pricing_fn` value `spxa.risk` options on a surface
+    for `StressTestingEngine`; `process_vol_surface` and `Process.to_vol_surface` give the implied
+    surface of an exponential-Lévy zoo process; `spxa.graph.vol` adds SVI and surface-price nodes.
+  - See `docs/theory/vol.md` and section 22 of the API reference; examples
+    `examples/vol_*_example.py`.
 
 ### Fixed
 
@@ -70,6 +223,78 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
   morphs; time- and state-dependent schedules (`DynamicMorphedProcess`); `ModelBarycenter`,
   `ModelEnsemble` and `SurfaceMorphEngine`; and the `Process.morph` / `spxa.morph` API.
   See `docs/theory/model_morphing.md`.
+- `calibration/` — Comprehensive institutional-grade model calibration, time-series estimation, state filtering, and diagnostic validation suite (`spxa.calibration`):
+  - **Surface Calibration (`spxa.calibration.surface`)**:
+    - Data containers: `MarketQuote`, `MarketSlice`, and `MarketSurface` with 2D coordinate projections, smile interpolation, and discount curve support.
+    - Loss functions: `RMSELoss`, `VegaWeightedLoss`, `RelativeErrorLoss`, and `ArbitragePenalizedLoss` (penalising Feller-condition and correlation-bound violations).
+    - Optimizers: `LeastSquaresOptimizer` (Levenberg-Marquardt / Trust-Region Reflective), `DifferentialEvolutionOptimizer` (global stochastic optimization), and `HybridOptimizer` (global exploration followed by local refinement).
+    - Specialized surface calibrators: `SABRCalibrator` (Hagan et al. 2002 asymptotic formula), `HestonCalibrator` (Fourier call pricer with Feller regularization), `BatesCalibrator` (joint SV and compound Poisson jumps), `DoubleHestonCalibrator` (two-factor stochastic volatility), and `CEVHestonCalibrator` (local-stochastic volatility).
+  - **Time-Series Maximum Likelihood & GMM (`spxa.calibration.mle`)**:
+    - Closed-form Gaussian MLE: `OrnsteinUhlenbeckMLE` (`VasicekMLE`), `BrownianMotionMLE`, and `GeometricBrownianMotionMLE`.
+    - Exact transition density MLE: `CIRMaximumLikelihood` (`CIRMLE`) using non-central chi-square distribution with Bessel-scaled evaluation, and `BESQMaximumLikelihood` (`BESQMLE`).
+    - Heavy-tailed MLE: `StudentTInnovationsMLE` and `NormalInverseGaussianMLE` (`NIGMLE`).
+    - GMM & spectral HAC: `GeneralizedMethodOfMoments` (`GMMEstimator`, `GMM`), `newey_west_hac` robust covariance estimator with Bartlett kernel, `hansen_j_test` test of overidentifying restrictions, `OrnsteinUhlenbeckGMM`, and `CIRGMM`.
+    - `ECFEstimator`: Empirical Characteristic Function estimator minimizing continuum integrated weighted distance.
+  - **Latent State Filtering (`spxa.calibration.filter`)**:
+    - `MerweScaledSigmaPoints`: Scaled unscented transformation with parameters $(\alpha, \beta, \kappa)$.
+    - `UnscentedKalmanFilter` (`UKF`): Nonlinear state filtering with innovation Gaussian pseudo log-likelihood.
+    - `QuasiMaximumLikelihoodEstimator` (`QMLE`): Calibrating state-space parameters using UKF prediction errors.
+    - Sequential Monte Carlo: `BootstrapParticleFilter` (`ParticleFilter`, `SequentialMonteCarlo`) with systematic, stratified, and multinomial resampling schemes, and ESS tracking.
+    - Domain filters: `HestonVarianceFilter` (recovering latent variance $v_t = \exp(x_t) > 0$ from returns via log-variance UKF), `SchwartzTwoFactorFilter` (filtering unobserved commodity convenience yield from futures curves), and `DefaultIntensityFilter` (filtering hazard rates from CDS spreads).
+  - **Diagnostics, Standard Errors, & Reporting (`spxa.calibration.diagnostics`)**:
+    - `compute_numerical_hessian`, `fisher_information_matrix`, and `sandwich_covariance_matrix` (Godambe robust covariance).
+    - `compute_parameter_inference`: Standard errors, $t$-statistics, $p$-values, Wald confidence intervals, and parameter correlation matrix.
+    - Information criteria: AIC, AICc, BIC, HQIC, and `ModelComparisonTable` with relative Akaike weights.
+    - Residual diagnostics: `compute_residual_diagnostics` (Ljung-Box autocorrelation test, Jarque-Bera normality test), `analyze_surface_residuals` (RMSE, MAE, butterfly and calendar arbitrage checks), `compute_profile_likelihood`, and `evaluate_pit_diagnostics` (uniformity and Berkowitz 2001 LR test).
+    - `CalibrationReport`: Institutional summary report generator exporting formatted ASCII text tables and GitHub-flavored Markdown tables.
+    - Visualization helpers: `plot_smile_overlay`, `plot_surface_error_heatmap`, and `plot_filtered_trajectory`.
+- `control/` — Continuous-time stochastic optimal control module (`spxa.control`):
+  - Base abstractions `ControlProblem` and `ControlledTrajectory` for stochastic optimal control, value functions, running/terminal costs, and Monte Carlo trajectory evaluation.
+  - `LinearQuadraticGaussian` (`LQG`, `LinearQuadraticRegulator`): Multi-dimensional LQG regulator with backward matrix differential Riccati ODE solver, Continuous Algebraic Riccati Equation (CARE) solver, optimal state-feedback gain $u^*(t, x) = -R^{-1}B^T P(t)x$, and analytical quadratic value function $V(t, x) = x^T P(t) x + s(t)$.
+  - `MertonPortfolioControl` (`MertonControl`, `MertonPortfolio`, `OptimalConsumptionInvestment`): Merton optimal lifetime asset allocation and consumption under CRRA utility, constant Merton fraction $\alpha^* = \frac{\mu - r}{\gamma \sigma^2}$, finite-horizon consumption propensity $\kappa(t)$, exact closed-form HJB verification, and positivity-preserving log-Euler simulation.
+  - `AlmgrenChrissExecution` (`AlmgrenChriss`, `AlmgrenChrissModel`, `OptimalExecution`): Optimal liquidation under permanent and temporary market impact, urgency parameter $\kappa = \sqrt{\lambda \sigma^2 / \eta}$, hyperbolic optimal inventory trajectory $q^*(t) = Q_0 \frac{\sinh(\kappa(T - t))}{\sinh(\kappa T)}$, analytical expected shortfall and variance, and Pareto efficient execution frontier.
+  - `AvellanedaStoikovMarketMaker` (`AvellanedaStoikov`, `OptimalMarketMaking`, `HighFrequencyMarketMaker`): High-frequency limit order book quoting with inventory risk penalty, reservation price $R(s, q, t) = s - q \gamma \sigma^2 (T - t)$, inventory-invariant total bid-ask spread $s^*(t) = \frac{2}{\gamma}\ln(1 + \gamma/k) + \gamma \sigma^2 (T - t)$, inventory-skewed quoting, and coupled jump-diffusion simulation.
+  - `FiniteDifferenceHJB` (`HJBSolver`, `HamiltonJacobiBellman`, `ViscosityHJBSolver`): Monotone upwind finite-difference viscosity solver for general 1D nonlinear Hamilton-Jacobi-Bellman PDEs with Barles-Souganidis convergence guarantee, vectorized policy optimization, and bivariate spline interpolation.
+- `zoo/beyond/cev_heston.py` — CEV-Heston local-stochastic volatility process (`CEVHestonProcess`, `CEVHeston`, `HestonCEV`, `SLVCEV`):
+  Combines Constant Elasticity of Variance (CEV) local volatility backbone $S_t^\gamma$ with CIR mean-reverting variance diffusion, exact Feller ratios, exact Heston affine characteristic function limit at $\gamma = 1$, European options via Fourier inversion, and full-truncation Euler simulation.
+- `zoo/beyond/cheyette.py` — Cheyette Quasi-Gaussian Markovian Heath-Jarrow-Morton process (`CheyetteProcess`, `Cheyette`, `CheyetteModel`, `QuasiGaussianHJM`):
+  Finite-dimensional Markovian realization of HJM with exponential volatility decay $\sigma e^{-\kappa(T - t)}$, exact deterministic auxiliary variance state $y(t) = \frac{\sigma^2}{2\kappa}(1 - e^{-2\kappa t})$, closed-form zero-coupon bond pricing $P(t, T)$, Jamshidian European bond option formulas, and bivariate simulation.
+- `zoo/beyond/duffie_singleton.py` — Duffie-Singleton hazard-rate default intensity credit model (`DuffieSingletonProcess`, `DuffieSingleton`, `DefaultIntensityDiffusion`, `HazardRateDiffusion`):
+  Square-root default intensity diffusion $\lambda_t$ under Recovery of Market Value (RMV), exact closed-form survival probability $S(0, T) = A(T)e^{-B(T)\lambda_0}$, defaultable discount bond pricing, analytical credit spreads, CDS par spread calculation, and exact non-central chi-square simulation with Poisson default times.
+- `zoo/beyond/telegraph.py` — Kac's Telegraph process / persistent random walk (`TelegraphProcess`, `Telegraph`, `KacTelegraph`, `PersistentRandomWalk`):
+  Stochastic motion with finite propagation speed $c$ and Poisson direction reversals $\lambda$, hyperbolic wave equation density, compact support $[X_0 - ct, X_0 + ct]$, exact variance transition from ballistic ($t^2$) to diffusive ($t$) regimes, analytical characteristic function, and event-driven simulation without discretization error.
+- `zoo/beyond/quadratic_rough_heston.py` — Quadratic Rough Heston model with Zumbach volatility feedback (`QuadraticRoughHestonProcess`, `QuadraticRoughHeston`, `QRHeston`, `RoughZumbach`):
+  Instantaneous variance as a quadratic polynomial of a rough Volterra process $V_t = a(Z_t - b)^2 + c$, generating the structural Zumbach effect and leverage skew, power-law ATM implied volatility skew blow-up $|\partial \sigma_{\mathrm{IV}} / \partial \ln K| \sim T^{H - 1/2}$, and fractional convolution simulation.
+- `zoo/beyond/two_factor_cir.py` — Two-Factor Cox-Ingersoll-Ross (CIR2++) short-rate process (`TwoFactorCIRProcess`, `TwoFactorCIR`, `CIR2PlusPlus`):
+  Two independent CIR state variables driving short rate $r(t) = x(t) + y(t) + \phi$, exact zero-coupon bond pricing $P(t, T) = A_x(\tau)A_y(\tau)e^{-B_x(\tau)x_t - B_y(\tau)y_t - \phi\tau}$, yield curve analytics, and exact non-central chi-square path simulation without discretization error.
+- `zoo/beyond/shifted_cir.py` — Shifted Cox-Ingersoll-Ross (CIR++) short-rate process (`ShiftedCIRProcess`, `ShiftedCIR`, `CIRPlusPlus`):
+  Deterministic yield curve shift extension $\phi(t)$ calibrating exactly to market zero-coupon curves, closed-form European bond option pricing via non-central chi-square distributions, and exact non-central chi-square path simulation.
+- `zoo/beyond/double_heston.py` — Double Heston two-factor stochastic volatility model (`DoubleHestonProcess`, `DoubleHeston`, `TwoFactorHeston`):
+  Superposition of fast and slow mean-reverting CIR variance factors, exact bivariate affine characteristic function factoring both continuous Riccati solutions, European call/put options via Gil-Pelaez Fourier inversion with exact put-call parity, and full-truncation Euler simulation.
+- `zoo/beyond/heston_nandi.py` — Heston-Nandi continuous-time GARCH diffusion limit (`HestonNandiProcess`, `HestonNandi`, `HNGARCH`):
+  Continuous limit of the discrete Heston-Nandi affine GARCH model with asymmetric leverage $\gamma$, exact affine log-price characteristic function, European option pricing via Fourier inversion, and Euler-Maruyama simulation.
+- `zoo/beyond/vgsa.py` — Variance Gamma with Stochastic Arrival (VGSA) model (`VGSAProcess`, `VGSA`, `VarianceGammaStochasticArrival`):
+  Subordinated Variance Gamma process with CIR integrated rate-of-time-change clock $Y(t) = \int_0^t y(s) ds$, exact closed-form characteristic function via CIR Laplace transform, exact conditional moments, and clock-subordinated path simulation.
+- `zoo/beyond/jump_ou.py` — Mean-reverting Ornstein-Uhlenbeck process with compound Poisson jumps (`JumpOUProcess`, `JumpOU`, `ExpOUJump`, `EnergyOU`):
+  Energy and commodity price model coupling Gaussian mean reversion with Poisson jumps, exact conditional mean and variance, long-run stationary moments, analytical characteristic function via Campbell's theorem, and exact spike simulation.
+- `zoo/beyond/multivariate_ou.py` — Multivariate Ornstein-Uhlenbeck vector Gaussian diffusion (`MultivariateOUProcess`, `MultivariateOU`, `VectorOU`):
+  $d$-dimensional mean-reverting vector process with positive-stable drift matrix $\mathbf{K}$, stationary covariance solving the continuous-time Lyapunov equation $\mathbf{K}\mathbf{V} + \mathbf{V}\mathbf{K}^T = \mathbf{\Sigma}\mathbf{\Sigma}^T$, exact conditional covariance matrix, and exact Gaussian vector step simulation.
+- `zoo/beyond/bessel_bridge.py` — Bessel and Squared Bessel Bridge process (`BesselBridge`, `BesselBridgeProcess`, `BESQBridge`):
+  $d$-dimensional squared Bessel diffusion pinned to start at $x_0$ and end at $x_T$ at terminal horizon $T$, exact conditional moments from the Pitman-Yor (1982) bridge decomposition, and pinned simulation.
+- `zoo/beyond/wright_fisher.py` — Wright-Fisher gene frequency diffusion process with mutation (`WrightFisherProcess`, `WrightFisher`, `GeneFrequencyDiffusion`):
+  Population genetics diffusion on $[0, 1]$ with two-way mutation drift and state-dependent volatility $\sigma\sqrt{X(1-X)}$, exact stationary $\text{Beta}(2\alpha/\sigma^2, 2\beta/\sigma^2)$ distribution, boundary non-attainability classification, and boundary-preserving Milstein simulation.
+- `zoo/beyond/logistic_diffusion.py` — Stochastic Logistic (Verhulst) population growth diffusion (`LogisticDiffusion`, `LogisticGrowthProcess`, `VerhulstDiffusion`):
+  Multiplicative environmental noise on logistic carrying capacity, persistence condition $r > \frac{1}{2}\sigma^2$, exact stationary Gamma distribution $\Gamma(\frac{2r}{\sigma^2}-1, \frac{2r}{\sigma^2 K})$, and strictly positive log-transformed Euler simulation.
+- `zoo/beyond/merton_firm_value.py` — Merton (1974) structural credit risk and firm value process (`MertonFirmValueProcess`, `MertonDefaultModel`, `StructuralCreditModel`):
+  Corporate asset value diffusion with debt threshold $D$, analytical distance to default (DD), physical and risk-neutral default probabilities, equity call option valuation, risky bond pricing, and exact credit spread term structure.
+- `zoo/beyond/brennan_schwartz.py` — Brennan-Schwartz (1985) two-factor commodity and convenience yield model (`BrennanSchwartzProcess`, `BrennanSchwartz`, `CommodityConvenienceModel`):
+  Spot commodity price coupled with proportional mean-reverting convenience yield $\delta(t)$, exact conditional convenience yield expectation, futures curve pricing $F(t, T)$, and bivariate correlated simulation.
+- `zoo/beyond/kesten.py` — Kesten multiplicative noise diffusion process (`KestenProcess`, `KestenDiffusion`, `MultiplicativeNoiseDiffusion`):
+  Continuous-time limit of Kesten recurrence with linear drift and multiplicative noise $\sigma X_t$, exact Inverse-Gamma stationary law with Pareto power-law tail exponent $\alpha = 2b/\sigma^2 + 1$, and positive-preserving log-Euler simulation.
+- `zoo/beyond/hyperbolic_diffusion.py` — Hyperbolic invariant diffusion process with exponential tails (`HyperbolicDiffusion`, `HyperbolicOU`, `HyperbolicInvariantDiffusion`):
+  Continuous diffusion with bounded nonlinear drift producing an exact Hyperbolic stationary distribution, normalization via modified Bessel $K_1(\delta\gamma)$, exact stationary mean and variance, and Milstein simulation.
+- `zoo/beyond/quadratic_diffusion.py` — Quadratic Pearson / Wong polynomial diffusion process (`QuadraticDiffusion`, `QuadraticPearsonDiffusion`, `WongDiffusion`):
+  Pearson diffusion family with affine drift and quadratic variance $c + d X + e X^2$, exact polynomial moment hierarchy via triangular eigenvalue recursion $\lambda_m = m b + \frac{1}{2}m(m-1)e$, exact stationary moments, and Milstein simulation.
 - `zoo/beyond/multivariate_hawkes.py` — Multivariate Hawkes mutually exciting point process (`MultivariateHawkesProcess`, `MultivariateHawkes`, `MHawkes`):
   $M$-dimensional Hawkes intensity $\lambda_m(t)$, branching infectivity matrix $\mathbf{\Gamma}$, spectral radius stationarity condition $\rho(\mathbf{\Gamma}) < 1$, exact expected arrival intensity $\mathbf{\lambda}_\infty = (\mathbf{I} - \mathbf{\Gamma})^{-1} \mathbf{\mu}$, and Ogata thinning event simulation.
 - `zoo/levy/nts.py` — Normal Tempered Stable (NTS) Lévy process (`NormalTemperedStableProcess`, `NormalTemperedStable`, `NTSProcess`):

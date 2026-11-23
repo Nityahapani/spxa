@@ -1,6 +1,5 @@
 r"""Mathematical Audit for Fractional Brownian Motion and Bridge Processes."""
 
-import math
 import numpy as np
 
 from audits.core.audit_harness import (

@@ -2,6 +2,7 @@
 
 from spxa.zoo.levy.brownian import BrownianMotion
 from spxa.zoo.levy.cgmy import CGMY
+from spxa.zoo.levy.drift import Drift
 from spxa.zoo.levy.compound_poisson import (
     CompoundPoisson,
     DiscreteJump,
@@ -40,6 +41,7 @@ __all__ = [
     "CGMY",
     "CompoundPoisson",
     "DiscreteJump",
+    "Drift",
     "DoubleExponentialJump",
     "ExponentialJump",
     "GammaProcess",

@@ -117,12 +117,11 @@ class GammaProcess(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy.special import expi  # type: ignore[import-untyped]
-
         nu = _gamma_levy_measure(self.a, self.b)
-        # ∫_0^1 a·e^{-bx}/x dx = a · E_1(b) where E_1 is the exponential integral.
-        # expi(-b) = -E_1(b) for b > 0, so E_1(b) = -expi(-b).
-        b_drift = -self.a * float(expi(-self.b))
+        # With truncation x·1{|x| ≤ 1} the drift of a driftless subordinator is
+        # ∫_0^1 x ν(dx) = a ∫_0^1 e^{-bx} dx = a(1 - e^{-b})/b, so that
+        # κ_1 = b_drift + ∫_1^∞ x ν(dx) = a(1 - e^{-b})/b + a e^{-b}/b = a/b.
+        b_drift = self.a * float(-np.expm1(-self.b)) / self.b
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
@@ -189,6 +188,28 @@ class GammaProcess(Process):
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = -a\log(1 - iu/b)`, the closed form.
+
+        In the strip :math:`\operatorname{Im}u > -b`, where :math:`E[e^{iuX_1}]`
+        converges, :math:`1 - iu/b` has a positive real part, so the principal
+        logarithm is the analytic continuation from the real axis.
+        """
+        u = np.asarray(u, dtype=complex)
+        return -self.a * np.log(1.0 - 1j * u / self.b)
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: Gamma(shape a*t, rate b)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        out = np.zeros(t.shape)
+        pos = t > 0
+        out[pos] = rng.gamma(self.a * t[pos], 1.0 / self.b)
+        return out
 
     def simulate(
         self,

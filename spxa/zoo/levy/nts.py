@@ -227,25 +227,60 @@ class NormalTemperedStableProcess(Process):
     # Process Overrides
     # ------------------------------------------------------------------
 
-    def _triplet(self) -> LevyTriplet:
-        c1 = self.cumulant(1)
+    def _levy_density(self, x: np.ndarray) -> np.ndarray:
+        r"""
+        Lévy density of :math:`X`, mixing Gaussian jumps over the clock's measure.
 
-        def density_fn(x: np.ndarray) -> np.ndarray:
-            x_arr = np.asarray(x, dtype=np.float64)
-            out = np.zeros_like(x_arr)
-            nonzero = x_arr != 0.0
-            out[nonzero] = (
-                self.delta
-                * np.exp(-self.lambd * np.abs(x_arr[nonzero]))
-                / (np.abs(x_arr[nonzero]) ** (1.0 + self.alpha))
-            )
-            return out
+        .. math::
+            k(x) = \int_0^\infty \frac{e^{-(x-\theta s)^2/(2\sigma^2 s)}}{\sigma\sqrt{2\pi s}}
+                   \,\delta s^{-1-\alpha}e^{-\lambda s}\,ds
+                 = \frac{2\delta}{\sigma\sqrt{2\pi}}\,e^{\theta x/\sigma^2}
+                   \Big(\frac{|x|}{\sigma\sqrt{2b}}\Big)^{-(\alpha+1/2)}
+                   K_{\alpha+1/2}\Big(\frac{|x|\sqrt{2b}}{\sigma}\Big),
 
-        measure = DensityLevyMeasure(
-            _density_fn=density_fn,
-            _total_mass=np.inf,
+        with :math:`b = \theta^2/(2\sigma^2) + \lambda`. This uses
+        :math:`\int_0^\infty s^{\nu-1}e^{-a/s-bs}ds = 2(a/b)^{\nu/2}K_\nu(2\sqrt{ab})`.
+        It is evaluated with ``kve``, so the two exponentials combine into
+        :math:`\exp(\theta x/\sigma^2 - |x|\sqrt{2b}/\sigma)`, which decays on
+        both sides.
+        """
+        from scipy.special import kve  # type: ignore[import-untyped]
+
+        x = np.asarray(x, dtype=float)
+        out = np.zeros_like(x)
+        nz = x != 0.0
+        ax = np.abs(x[nz])
+        rate = np.sqrt(2.0 * (self.theta**2 / (2.0 * self.sigma**2) + self.lambd)) / self.sigma
+        order = self.alpha + 0.5
+        out[nz] = (
+            2.0
+            * self.delta
+            / (self.sigma * np.sqrt(2.0 * np.pi))
+            * (ax / (self.sigma**2 * rate)) ** (-order)  # sigma*sqrt(2b) = sigma^2 * rate
+            * kve(order, ax * rate)
+            * np.exp(self.theta * x[nz] / self.sigma**2 - ax * rate)
         )
-        return LevyTriplet(b=c1, sigma_sq=0.0, nu=measure)
+        return out
+
+    def _triplet(self) -> LevyTriplet:
+        r"""
+        :math:`(b, 0, \nu)`, with :math:`\nu` from :meth:`_levy_density`.
+
+        The drift is :math:`b = \kappa_1 - \int_{|x|>1}x\,\nu(dx)` for the
+        truncation :math:`\mathbb 1_{|x|\le1}`. The measure's moments of
+        order 2 to 4 are the exact cumulants. Its jump exponent is the closed
+        form :math:`\psi(u) - ibu`.
+        """
+        measure = DensityLevyMeasure(
+            _density_fn=self._levy_density,
+            _total_mass=np.inf,
+            _moment_fns={n: (lambda n=n: self.cumulant(n)) for n in (2, 3, 4)},
+        )
+        b = self.cumulant(1) - measure.first_moment_between(1.0, np.inf)
+        measure._jump_exponent_fn = lambda u: complex(
+            self._char_exponent(np.array([u]))[0] - 1j * b * u
+        )
+        return LevyTriplet(b=b, sigma_sq=0.0, nu=measure)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -264,17 +299,45 @@ class NormalTemperedStableProcess(Process):
             ],
         )
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = \delta\Gamma(-\alpha)\big[(\lambda - \psi_{BM}(u))^\alpha - \lambda^\alpha\big]`.
+
+        Here :math:`\psi_{BM}(u) = i\theta u - \tfrac12\sigma^2u^2`, since NTS is
+        Brownian motion on a tempered-stable clock. Where
+        :math:`E[e^{iuX_1}]` converges, :math:`\lambda - \psi_{BM}(u)` has a
+        positive real part, so the principal power is analytic there.
+        """
+        u = np.asarray(u, dtype=complex)
+        z = self.lambd - 1j * self.theta * u + 0.5 * self.sigma**2 * u**2
+        c = self.delta * gamma(1.0 - self.alpha) / self.alpha  # = -delta * Gamma(-alpha)
+        return -c * (z**self.alpha - self.lambd**self.alpha)
+
     def simulate(
         self,
-        t_grid: Optional[np.ndarray] = None,
+        n_steps: Optional[int | np.ndarray] = None,
         n_paths: int = 1,
-        rng: Optional[np.random.Generator] = None,
-        n_steps: Optional[int] = None,
         T: float = 1.0,
+        rng: Optional[np.random.Generator] = None,
+        *,
+        t_grid: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         r"""
-        Vectorized simulation of NTS paths via subordinator discretization.
+        Simulate NTS paths: :math:`X = \theta\,\Delta T + \sigma\sqrt{\Delta T}\,Z` per step.
+
+        The subordinator increments :math:`\Delta T` are exact draws of the
+        NTS clock, TemperedStable(α, δ, λ) at time Δt
+        (:func:`~spxa.zoo.levy.tempered_stable.sample_tempered_stable`), so
+        the paths are exact. Previously the clock came from a Gamma matched
+        only to the first two moments.
+
+        The positional order ``(n_steps, n_paths, T, rng)`` is the one shared by
+        every :class:`~spxa.core.process.Process`. Pass a time grid as
+        ``t_grid=``. For backward compatibility, an array in first position is
+        also read as a grid.
         """
+        if isinstance(n_steps, np.ndarray) and t_grid is None:
+            t_grid, n_steps = n_steps, None
         if t_grid is None:
             steps = n_steps if n_steps is not None else 100
             t_grid = np.linspace(0.0, T, steps + 1)
@@ -291,18 +354,16 @@ class NormalTemperedStableProcess(Process):
         n_steps = len(t_grid)
         paths = np.zeros((n_paths, n_steps), dtype=np.float64)
 
-        mean_dt_sub = self.subordinator_cumulant(1)
-        var_dt_sub = self.subordinator_cumulant(2)
+        from spxa.zoo.levy.tempered_stable import TemperedStable
+
+        clock = TemperedStable(self.alpha, self.delta, self.lambd)
 
         for i in range(1, n_steps):
             dt = t_grid[i] - t_grid[i - 1]
             if dt <= 0:
                 raise ValueError("t_grid must be strictly increasing")
 
-            # Gamma moment-matched subordinator increments
-            shape = ((mean_dt_sub * dt) ** 2) / (var_dt_sub * dt)
-            scale = (var_dt_sub * dt) / (mean_dt_sub * dt)
-            delta_T = rng.gamma(shape=shape, scale=scale, size=n_paths)
+            delta_T = clock.sample_at(np.full(n_paths, float(dt)), rng)
 
             # Normal draw given delta_T
             z = rng.standard_normal(size=n_paths)
@@ -310,6 +371,17 @@ class NormalTemperedStableProcess(Process):
             paths[:, i] = paths[:, i - 1] + dx
 
         return paths
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        r"""Independent exact draws of X_t: :math:`\theta S + \sigma\sqrt{S}Z` with S the clock at t."""
+        from spxa.zoo.levy.tempered_stable import TemperedStable
+
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        s = TemperedStable(self.alpha, self.delta, self.lambd).sample_at(t, rng)
+        return self.theta * s + self.sigma * np.sqrt(s) * rng.standard_normal(t.shape)
 
     def __repr__(self) -> str:
         return (

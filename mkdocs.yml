@@ -71,11 +71,14 @@ nav:
       - Interest rates: theory/rates.md
       - Volatility: theory/vol.md
       - Estimation & calibration: theory/calibration.md
+      - Process discovery: theory/discovery.md
+      - Property-based laws: theory/laws.md
   - Tutorials:
       - First composition: tutorials/01_first_composition.ipynb
       - Finance models: tutorials/02_finance_models.ipynb
       - Physics applications: tutorials/03_physics_applications.ipynb
   - API reference: api.md
+  - Example gallery: gallery.md
   - Differentiable SDEs: diff.md
   - Portfolio & Risk: risk.md
   - Stochastic Calculus: calculus.md

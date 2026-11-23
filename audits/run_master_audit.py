@@ -229,7 +229,9 @@ def run_master_audit() -> bool:
 
     elapsed = time.time() - start_time
     print("=" * 90)
-    print(f"AUDIT SUMMARY: {suites_passed}/{total_suites} SUITES PASSED in {elapsed:.2f}s".center(90))
+    print(
+        f"AUDIT SUMMARY: {suites_passed}/{total_suites} SUITES PASSED in {elapsed:.2f}s".center(90)
+    )
     print("=" * 90 + "\n")
 
     return suites_passed == total_suites

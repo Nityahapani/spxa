@@ -57,6 +57,20 @@ python -m pytest tests/ -q
 
 All 235+ tests must pass. Never submit a PR that breaks existing tests.
 
+### Mathematical audits
+
+`spxa` ships an exhaustive mathematical audit suite under `audits/`
+that verifies all 69 stochastic processes against closed-form theory
+(cumulants, characteristic functions, martingale parity, positivity).
+Run it before and after any change:
+
+```bash
+python audits/run_master_audit.py
+```
+
+All 8 audit suites must pass. The same suite runs in CI on every push
+and pull request (the `audits` job).
+
 ---
 
 ## Codebase map

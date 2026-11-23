@@ -87,28 +87,32 @@ def char_exp_subordinated(
     u: float | np.ndarray,
     t: float = 1.0,
 ) -> np.ndarray:
-    """
-    Evaluate the characteristic function of Z_t = X_{T_t} at frequency u.
+    r"""
+    Evaluate the characteristic function of :math:`Z_t = X_{T_t}` at frequency u.
 
-    Uses the composition formula:
-        φ_Z(u; t) = exp(t · ψ_Z(u))
-        ψ_Z(u)   = -φ_T(-ψ_X(u); 1) ... wait, more precisely:
-        φ_Z(u; t) = L_T(-ψ_X(u); t)
+    Conditioning on the clock gives
 
-    where L_T(λ; t) = E[e^{-λ T_t}] is the Laplace transform of T_t,
-    evaluated at λ = -ψ_X(u).
+    .. math::
+        \varphi_Z(u; t) = E\big[e^{T_t\psi_X(u)}\big] = e^{t\,\psi_T(-i\psi_X(u))},
 
-    Since T is a subordinator with Laplace exponent φ:
-        L_T(λ; t) = e^{-t·φ(λ)}
-    and the result is:
-        φ_Z(u; t) = exp(-t · φ(-ψ_X(u)))
+    where :math:`\psi_X` and :math:`\psi_T` are the characteristic exponents
+    (:math:`E[e^{iuX_t}] = e^{t\psi_X(u)}`). Since :math:`\operatorname{Re}\psi_X
+    \le 0`, the clock's exponent is evaluated where its Laplace transform
+    converges. Equivalently, with the Bernstein function :math:`\phi` of
+    :math:`T`, :math:`\varphi_Z(u; t) = e^{-t\phi(-\psi_X(u))}`.
+
+    :math:`\psi_X` is computed from the triplet, not as
+    :math:`\log\varphi_X`. The principal logarithm is wrong whenever
+    :math:`|\operatorname{Im}\psi_X(u)| > \pi`, e.g. for a drift
+    :math:`\mu` once :math:`|\mu u| > \pi`. This is the same as
+    ``(parent @ subordinator).char_func(u, t)``.
 
     Parameters
     ----------
     parent :
-        Parent process X. Must support char_func.
+        Parent process X. Must be EXACT.
     subordinator :
-        Subordinator T. Must support char_func.
+        Subordinator T. Must be EXACT.
     u :
         Frequency argument(s).
     t :
@@ -125,27 +129,7 @@ def char_exp_subordinated(
     """
     if not subordinator.properties.is_subordinator:
         raise ValueError(f"{type(subordinator).__name__} is not a subordinator.")
-
-    u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-
-    # ψ_X(u): characteristic exponent of parent at time 1
-    # φ_X(u; 1) = exp(ψ_X(u)) → ψ_X(u) = log(φ_X(u; 1))
-    cf_X = parent.char_func(u=u_arr, t=1.0)
-    psi_X = np.log(cf_X + 1e-300)  # ψ_X(u)
-
-    # Laplace exponent of T: φ_T(λ) = -log E[e^{-λ T_1}]
-    # E[e^{-λ T_1}] = char_func of T at u = -iλ
-    # For λ = -ψ_X(u), we need E[e^{ψ_X(u) T_1}]
-    # = char_func_T(-i·ψ_X(u)/i ... more carefully:
-    # char_func_T(u_T; 1) = E[e^{i u_T T_1}]
-    # We want E[e^{-λ T_1}] = char_func_T(u_T=iλ; 1)
-    # λ = -ψ_X(u) so u_T = -i·ψ_X(u)
-    u_T = -1j * psi_X
-    cf_T_laplace = subordinator.char_func(u=u_T, t=1.0)
-
-    # φ_Z(u; t) = exp(-t · φ_T(-ψ_X(u))) = (E[e^{ψ_X(u) T_1}])^t
-    result = cf_T_laplace**t
-    return result if result.shape != (1,) else result[0]
+    return (parent @ subordinator).char_func(u, t)
 
 
 def bernstein_function(subordinator: Process, lam: float | np.ndarray) -> np.ndarray:

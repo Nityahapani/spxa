@@ -9,7 +9,6 @@ This script illustrates:
 5. Exact non-central chi-squared path simulation with compound Poisson jump shocks.
 """
 
-import math
 import sys
 from pathlib import Path
 import numpy as np
@@ -17,7 +16,7 @@ import numpy as np
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from spxa import JCIR, JCIRProcess, JumpCIRProcess, JCIRModel
+from spxa import JCIRProcess
 
 
 def main() -> None:
@@ -46,13 +45,17 @@ def main() -> None:
     print(f"  Diffusion Mean (θ):          {jcir.theta:.4f}")
     print(f"  Volatility (σ):              {jcir.sigma:.4f}")
     print(f"  Jump Intensity (λ_J):        {jcir.lambda_j:.2f} jumps/year")
-    print(f"  Mean Jump Size (μ_J):        {jcir.mu_j:.4f} ({jcir.mu_j*10000:.0f} bps)")
+    print(f"  Mean Jump Size (μ_J):        {jcir.mu_j:.4f} ({jcir.mu_j * 10000:.0f} bps)")
     print(f"  Initial Short Rate (r_0):    {jcir.r0:.4f}")
-    print(f"  Diffusion Feller Ratio:      {jcir.feller_ratio:.2f} (Satisfied: {jcir.feller_satisfied})")
+    print(
+        f"  Diffusion Feller Ratio:      {jcir.feller_ratio:.2f} (Satisfied: {jcir.feller_satisfied})"
+    )
 
     # 2. Stationary and Conditional Moments
     print("\nMoment Dynamics:")
-    print(f"  Stationary Mean θ_∞:         {jcir.stationary_mean:.4f} (baseline θ: {jcir.theta:.4f})")
+    print(
+        f"  Stationary Mean θ_∞:         {jcir.stationary_mean:.4f} (baseline θ: {jcir.theta:.4f})"
+    )
     print(f"  Stationary Variance:         {jcir.stationary_variance:.6f}")
     print(f"  Stationary Std Dev:          {jcir.stationary_std:.4f}")
 
@@ -66,7 +69,9 @@ def main() -> None:
     # 3. Term Structure & Bond Pricing
     maturities = [0.25, 0.5, 1.0, 2.0, 5.0, 10.0]
     print("\nTerm Structure of Zero-Coupon Bonds & Yields:")
-    print(f"  {'Maturity (yr)':<15} {'Bond Price P(0, T)':<20} {'Yield y(0, T)':<18} {'Forward Rate f(0, T)':<20}")
+    print(
+        f"  {'Maturity (yr)':<15} {'Bond Price P(0, T)':<20} {'Yield y(0, T)':<18} {'Forward Rate f(0, T)':<20}"
+    )
     print("  " + "-" * 73)
     for mat in maturities:
         price = jcir.bond_price(mat)
@@ -90,8 +95,12 @@ def main() -> None:
     mc_mean = float(np.mean(paths[:, -1]))
     mc_var = float(np.var(paths[:, -1]))
 
-    print(f"  Empirical Mean:              {mc_mean:.4f} (Theoretical: {cond_mean:.4f}, error: {abs(mc_mean - cond_mean):.4e})")
-    print(f"  Empirical Variance:          {mc_var:.6f} (Theoretical: {cond_var:.6f}, error: {abs(mc_var - cond_var):.4e})")
+    print(
+        f"  Empirical Mean:              {mc_mean:.4f} (Theoretical: {cond_mean:.4f}, error: {abs(mc_mean - cond_mean):.4e})"
+    )
+    print(
+        f"  Empirical Variance:          {mc_var:.6f} (Theoretical: {cond_var:.6f}, error: {abs(mc_var - cond_var):.4e})"
+    )
     print(f"  All simulated rates non-negative: {bool(np.all(paths >= 0.0))}")
 
     print("\nDemonstration completed successfully.")

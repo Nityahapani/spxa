@@ -4,7 +4,7 @@ spxa — Stochastic Process Algebra
 Stochastic processes as first-class algebraic objects.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.2.0"
 
 from spxa.core import (
     ExactnessError,
@@ -66,6 +66,7 @@ from spxa.zoo import (
     CompoundPoisson,
     CorrelatedLevy,
     DiscreteJump,
+    Drift,
     DoubleExponentialJump,
     ExponentialJump,
     ExtendedVasicek,
@@ -493,6 +494,7 @@ __all__ = [
     "CompoundPoisson",
     "CorrelatedLevy",
     "DiscreteJump",
+    "Drift",
     "DoubleExponentialJump",
     "ExponentialJump",
     "ExtendedVasicek",
@@ -864,6 +866,8 @@ __all__ = [
     "market",
     "rates",
     "vol",
+    "discovery",
+    "laws",
 ]
 
 
@@ -882,6 +886,8 @@ def __getattr__(name: str):
         "market",
         "rates",
         "vol",
+        "discovery",
+        "laws",
     ):
         import importlib
 

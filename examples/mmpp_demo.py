@@ -30,5 +30,7 @@ paths = p.simulate(n_steps=50, n_paths=5000, T=t, rng=np.random.default_rng(0))
 print(f"simulated mean/var : {paths[:, -1].mean():.4f}, {paths[:, -1].var():.4f}")
 
 events = p.simulate_events(T=t, rng=np.random.default_rng(1))
-print(f"one sample path    : {events.arrival_count} arrivals, "
-      f"{events.transition_times.size - 1} regime switches")
+print(
+    f"one sample path    : {events.arrival_count} arrivals, "
+    f"{events.transition_times.size - 1} regime switches"
+)

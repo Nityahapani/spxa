@@ -41,44 +41,52 @@ from spxa.story.narrator import CompositionNode, NodeKind
 
 
 def _ig_levy_measure(mu: float, lam: float) -> DensityLevyMeasure:
-    """
-    Lévy measure of IG process.
+    r"""
+    Lévy measure of the IG process with :math:`X_1 \sim IG(\mu, \lambda)`.
 
-    k(x) = sqrt(λ/(2π)) · x^{-3/2} · exp(-λ(x-μ)²/(2μ²x))  for x > 0
+    .. math:: k(x) = \sqrt{\lambda / (2\pi)}\; x^{-3/2} e^{-\eta x}, \qquad
+              \eta = \lambda / (2\mu^2), \quad x > 0.
 
-    Cont & Tankov (2004), Table 4.1.
+    This is the one-sided tempered stable measure with index 1/2. It is
+    determined by the Laplace exponent
+    :math:`(\lambda/\mu)(1 - \sqrt{1 + 2\mu^2 s/\lambda}) = \int (e^{-sx} - 1) k(x)\,dx`
+    (Cont & Tankov 2004, Table 4.4). Moments of every order are
+    :math:`\int x^n k = c\,\Gamma(n - 1/2)\,\eta^{1/2 - n} = (2n-3)!!\,\mu^{2n-1}/\lambda^{n-1}`.
     """
-    prefactor = np.sqrt(lam / (2 * np.pi))
+    from scipy.special import erfc, gammaln  # type: ignore[import-untyped]
+
+    c = np.sqrt(lam / (2 * np.pi))
+    eta = lam / (2 * mu**2)
 
     def density(x: np.ndarray) -> np.ndarray:
-        out = np.zeros_like(x, dtype=float)
-        pos = x > 0
-        xp = x[pos]
-        out[pos] = prefactor * xp ** (-1.5) * np.exp(-lam * (xp - mu) ** 2 / (2 * mu**2 * xp))
+        x_arr = np.asarray(x, dtype=float)
+        out = np.zeros_like(x_arr)
+        pos = x_arr > 0
+        xp = x_arr[pos]
+        out[pos] = c * xp ** (-1.5) * np.exp(-eta * xp)
         return out
 
     def tail(xv: float) -> float:
-        from scipy import integrate  # type: ignore[import-untyped]
-
-        result, _ = integrate.quad(
-            lambda t: prefactor * t ** (-1.5) * np.exp(-lam * (t - mu) ** 2 / (2 * mu**2 * t)),
-            xv,
-            np.inf,
-            limit=200,
+        # c ∫_x^∞ t^{-3/2} e^{-ηt} dt = c η^{1/2} Γ(-1/2, ηx)
+        #                             = c [2 e^{-ηx}/√x − 2√(πη) erfc(√(ηx))]
+        if xv <= 0:
+            return float(np.inf)
+        return float(
+            c
+            * (
+                2 * np.exp(-eta * xv) / np.sqrt(xv)
+                - 2 * np.sqrt(np.pi * eta) * erfc(np.sqrt(eta * xv))
+            )
         )
-        return result
 
-    def moment_1() -> float:
-        return mu
-
-    def moment_2() -> float:
-        return mu**3 / lam + mu**2
+    def make_moment(n: int):  # type: ignore[no-untyped-def]
+        return lambda: float(c * np.exp(gammaln(n - 0.5)) * eta ** (0.5 - n))
 
     return DensityLevyMeasure(
         _density_fn=density,
         _total_mass=np.inf,
         _tail_fn=tail,
-        _moment_fns={1: moment_1, 2: moment_2},
+        _moment_fns={n: make_moment(n) for n in range(1, 21)},
     )
 
 
@@ -149,20 +157,12 @@ class InverseGaussianProcess(Process):
         super().__init__(exactness=ExactnessLevel.EXACT, _node=node)
 
     def _triplet(self) -> LevyTriplet:
-        from scipy import integrate  # type: ignore[import-untyped]
+        from scipy.special import erf  # type: ignore[import-untyped]
 
         nu = _ig_levy_measure(self.mu, self.lam)
-        prefactor = np.sqrt(self.lam / (2 * np.pi))
-        b_drift, _ = integrate.quad(
-            lambda x: (
-                prefactor
-                * x ** (-0.5)
-                * np.exp(-self.lam * (x - self.mu) ** 2 / (2 * self.mu**2 * x))
-            ),
-            0.0,
-            1.0,
-            limit=200,
-        )
+        # b = ∫_0^1 x k(x) dx = c η^{-1/2} γ(1/2, η) = μ erf(√η), with η = λ/(2μ²);
+        # the large-jump mean is then μ erfc(√η), and κ_1 = μ.
+        b_drift = self.mu * float(erf(np.sqrt(self.lam / (2 * self.mu**2))))
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
@@ -240,6 +240,28 @@ class InverseGaussianProcess(Process):
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = \frac{\lambda}{\mu}\big(1 - \sqrt{1 - 2i\mu^2u/\lambda}\big)`, the closed form.
+
+        The radicand has a positive real part in the convergence strip
+        :math:`\operatorname{Im}u > -\lambda/(2\mu^2)`, where the principal
+        square root is analytic.
+        """
+        u = np.asarray(u, dtype=complex)
+        return (self.lam / self.mu) * (1.0 - np.sqrt(1.0 - 2j * self.mu**2 * u / self.lam))
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: IG(mean mu*t, shape lam*t^2)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        out = np.zeros(t.shape)
+        pos = t > 0
+        out[pos] = rng.wald(self.mu * t[pos], self.lam * t[pos] ** 2)
+        return out
 
     def simulate(
         self,

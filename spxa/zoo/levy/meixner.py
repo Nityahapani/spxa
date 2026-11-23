@@ -45,26 +45,37 @@ from spxa.core.levy_measure import DensityLevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
+from spxa.sim.cf_sampling import sample_from_cf
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
 def _meixner_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMeasure:
-    """
-    Meixner Lévy density: k(x) = δ·exp(βx/α) / (x·sinh(πx/α)) for x ≠ 0.
+    r"""
+    Meixner Lévy density :math:`k(x) = \delta e^{\beta x/\alpha} / (x \sinh(\pi x/\alpha))`, :math:`x \ne 0`.
+
+    It is evaluated in the overflow-free form
+
+    .. math:: k(x) = \frac{2\delta\, e^{(\beta x - \pi|x|)/\alpha}}{|x|\,(1 - e^{-2\pi|x|/\alpha})},
+
+    because the naive quotient is ``inf/inf`` once :math:`\pi|x|/\alpha > 710`.
+    Moments of every order are the cumulants
+    :math:`\int x^n k = 2\delta(\alpha/2)^n P_{n-1}(\tan(\beta/2))`
+    (see :meth:`MeixnerProcess.cumulant_exact`).
 
     Schoutens (2002), p. 53.
     """
+    from numpy.polynomial import polynomial as P
 
     def density(x: np.ndarray) -> np.ndarray:
-        out = np.zeros_like(x, dtype=float)
-        nz = x != 0
-        xv = x[nz]
-        sinh_vals = np.sinh(np.pi * xv / alpha)
-        valid = np.abs(sinh_vals) > 1e-300
-        out[nz] = np.where(
-            valid,
-            delta * np.exp(beta * xv / alpha) / (xv * sinh_vals),
-            0.0,
+        x_arr = np.asarray(x, dtype=float)
+        out = np.zeros_like(x_arr)
+        nz = x_arr != 0
+        ax = np.abs(x_arr[nz])
+        out[nz] = (
+            2
+            * delta
+            * np.exp((beta * x_arr[nz] - np.pi * ax) / alpha)
+            / (-ax * np.expm1(-2 * np.pi * ax / alpha))
         )
         return out
 
@@ -72,26 +83,22 @@ def _meixner_levy_measure(alpha: float, beta: float, delta: float) -> DensityLev
         from scipy import integrate  # type: ignore[import-untyped]
 
         result, _ = integrate.quad(
-            lambda t: delta * np.exp(beta * t / alpha) / (t * np.sinh(np.pi * t / alpha)),
-            xv,
-            np.inf,
-            limit=200,
+            lambda t: float(density(np.array([t]))[0]), xv, np.inf, limit=200
         )
-        return result
+        return float(result)
 
-    # Cumulants via the known closed-form formulas (Schoutens & Teugels 1998)
-    def moment_1() -> float:
-        return delta * alpha * np.tan(beta / 2)
-
-    def moment_2() -> float:
-        cos2 = np.cos(beta / 2) ** 2
-        return delta * alpha**2 / (2 * cos2)
+    def make_moment(n: int):  # type: ignore[no-untyped-def]
+        poly = np.array([0.0, 1.0])
+        for _ in range(n - 1):
+            poly = P.polymul(P.polyder(poly), [1.0, 0.0, 1.0])
+        value = 2 * delta * (alpha / 2) ** n * float(P.polyval(np.tan(beta / 2), poly))
+        return lambda: value
 
     return DensityLevyMeasure(
         _density_fn=density,
         _total_mass=np.inf,
         _tail_fn=tail,
-        _moment_fns={1: moment_1, 2: moment_2},
+        _moment_fns={n: make_moment(n) for n in range(1, 21)},
     )
 
 
@@ -122,7 +129,8 @@ class MeixnerProcess(Process):
       κ₁ = δα tan(β/2) + m
       κ₂ = δα²/(2cos²(β/2))
       κ₃ = δα³ sin(β/2)/(2cos³(β/2))   [= δα³ tan(β/2)/(2cos²(β/2))]
-      κ₄ = δα⁴(2 + cos β)/(8cos⁴(β/2))
+      κ₄ = δα⁴(2 - cos β)/(4cos⁴(β/2))
+      κₙ = 2δ(α/2)ⁿ · dⁿ⁻¹/dyⁿ⁻¹ tan y at y = β/2, for every n ≥ 2
 
     Characteristic function (Schoutens & Teugels 1998, eq. 3):
       φ(u; t) = exp(imu) · (cos(β/2)/cosh((αu - iβ)/2))^{2δt}
@@ -175,20 +183,23 @@ class MeixnerProcess(Process):
         from scipy import integrate  # type: ignore[import-untyped]
 
         nu = _meixner_levy_measure(self.alpha, self.beta, self.delta)
+        a, b = self.alpha, self.beta
 
-        def integrand(x: float) -> float:
-            if abs(x) < 1e-10:
-                return 0.0
-            sinh_val = np.sinh(np.pi * x / self.alpha)
-            if abs(sinh_val) < 1e-300:
-                return 0.0
-            return self.delta * np.exp(self.beta * x / self.alpha) / np.sinh(np.pi * x / self.alpha)
+        # b = m + ∫_{|x|≤1} x k(x) dx. Pairing x with −x removes the 1/x
+        # singularity: x k(x) − x k(−x) = 2δ sinh(βx/α)/sinh(πx/α), which is
+        # evaluated as sign(β) e^{(|β|−π)x/α} (1 − e^{−2|β|x/α})/(1 − e^{−2πx/α}).
+        def paired(x: float) -> float:
+            return float(
+                2
+                * self.delta
+                * np.sign(b)
+                * np.exp((abs(b) - np.pi) * x / a)
+                * np.expm1(-2 * abs(b) * x / a)
+                / np.expm1(-2 * np.pi * x / a)
+            )
 
-        b_pos, _ = integrate.quad(integrand, 1e-8, 1.0, limit=200)
-        b_neg, _ = integrate.quad(integrand, -1.0, -1e-8, limit=200)
-        b_drift = self.m + b_pos + b_neg
-
-        return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu)
+        small, _ = integrate.quad(paired, 0.0, 1.0, limit=200)
+        return LevyTriplet(b=self.m + small, sigma_sq=0.0, nu=nu)
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
@@ -203,30 +214,18 @@ class MeixnerProcess(Process):
         )
 
     def char_func_exact(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
-        """
+        r"""
         Exact characteristic function.
 
         φ(u; t) = exp(imu) · (cos(β/2) / cosh((αu - iβ)/2))^{2δt}
 
-        Schoutens & Teugels (1998), equation (3).
+        Schoutens & Teugels (1998), equation (3). Evaluated as
+        :math:`e^{t\psi(u)}` with the overflow-free exponent of
+        :meth:`_char_exponent`.
         """
         u_arr = np.atleast_1d(np.asarray(u, dtype=complex))
-        cos_half = np.cos(self.beta / 2)
-        z = (self.alpha * u_arr - 1j * self.beta) / 2.0
-        # log cosh(z) via the identity log cosh(z) = log(e^z + e^{-z}) - log 2
-        # Use logsumexp-style: for Re(z)>=0, factor out e^z:
-        #   log cosh(z) = z + log(1 + e^{-2z}) - log 2
-        # The issue is e^{-2z} may overflow when Re(z) << 0.
-        # Robust: compute log(e^z + e^{-z}) - log 2 via the real-part stable form.
-        # Since cosh(z) = cosh(x)cos(y) + i sinh(x)sin(y) for z=x+iy,
-        # and |cosh(z)|² = cosh²(x) - sin²(y), we can compute directly for
-        # the moderate values we encounter (|Re(z)| = α|u|/2 ≤ α·u_max/2).
-        # For the FFT grid u_max is chosen so that α·u_max/2 ≈ 20σ which is safe.
-        cosh_z = np.cosh(z)
-        log_cosh = np.log(np.where(np.abs(cosh_z) > 1e-300, cosh_z, 1e-300 + 0j))
-        log_ratio = np.log(cos_half + 0j) - log_cosh
-        exponent = 1j * self.m * t * u_arr + 2 * self.delta * t * log_ratio
-        result = np.exp(exponent)
+        # the overflow-free exponent: np.cosh overflows once alpha |u| / 2 > 710
+        result = np.exp(t * self._char_exponent(u_arr))
         return result if result.shape != (1,) else result[0]
 
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
@@ -234,37 +233,58 @@ class MeixnerProcess(Process):
 
     def cumulant_exact(self, n: int, t: float = 1.0) -> float:
         """
-        Exact cumulants (Schoutens & Teugels 1998, equations 5–8).
+        Exact cumulants of every order.
+
+        On its strip the cumulant exponent is
+        K(z) = mz + 2δ[log cos(β/2) − log cos((αz + β)/2)], so
 
         κ₁ = δα tan(β/2) + m
+        κₙ = 2δ(α/2)ⁿ Pₙ₋₁(tan(β/2))   for n ≥ 2,
+
+        where dᵏ/dyᵏ tan y = Pₖ(tan y), P₀(T) = T, Pₖ₊₁ = Pₖ′(T)(1 + T²). In closed form:
+
         κ₂ = δα²/(2cos²(β/2))
         κ₃ = δα³ sin(β/2)/(2cos³(β/2))
-        κ₄ = δα⁴(2 + cosβ)/(8cos⁴(β/2))
+        κ₄ = δα⁴(2 − cos β)/(4cos⁴(β/2))
+
+        The excess kurtosis is therefore κ₄/κ₂² = (2 − cos β)/δ
+        (Schoutens 2003, Table 5.5).
         """
+        if n < 1:
+            raise ValueError(f"cumulant order must be >= 1, got {n}")
+        from numpy.polynomial import polynomial as P
+
         a, b, d = self.alpha, self.beta, self.delta
-        cos_h = np.cos(b / 2)
-        sin_h = np.sin(b / 2)
+        poly = np.array([0.0, 1.0])
+        for _ in range(n - 1):
+            poly = P.polymul(P.polyder(poly), [1.0, 0.0, 1.0])
+        kappa = 2.0 * d * (a / 2.0) ** n * float(P.polyval(np.tan(b / 2.0), poly))
         if n == 1:
-            return t * (d * a * np.tan(b / 2) + self.m)
-        if n == 2:
-            return t * d * a**2 / (2 * cos_h**2)
-        if n == 3:
-            return t * d * a**3 * sin_h / (2 * cos_h**3)
-        if n == 4:
-            return t * d * a**4 * (2 + np.cos(b)) / (8 * cos_h**4)
-        # Higher orders via numerical differentiation of log char_func
-        from scipy.misc import derivative  # type: ignore[import-untyped]
-
-        def log_cf(u_val: float) -> complex:
-            return np.log(complex(self.char_func_exact(u_val, t=t)) + 1e-300)
-
-        kappa = (1j) ** (-n) * derivative(
-            lambda u: log_cf(u).real if n % 2 == 0 else log_cf(u).imag, 0.0, dx=1e-4, n=n
-        )
-        return float(kappa.real)
+            kappa += self.m
+        return float(t * kappa)
 
     def cumulants(self, order: int) -> dict[int, float]:
         return {n: self.cumulant_exact(n) for n in range(1, order + 1)}
+
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = 2\delta\big[\log\cos(\beta/2) - \log\cosh\big(\tfrac{\alpha u - i\beta}{2}\big)\big] + imu`.
+
+        With :math:`w = (\alpha u - i\beta)/2 = a + ib`,
+        :math:`\operatorname{Re}\cosh w = \cosh a\cos b > 0` whenever
+        :math:`|b| < \pi/2`. That covers the real axis (:math:`|\beta| < \pi`)
+        and the whole convergence strip, so the principal logarithm is
+        analytic there. It is evaluated as
+        :math:`\log\cosh w = s w + \log(1 + e^{-2sw}) - \log 2`, with
+        :math:`s = \operatorname{sign}(a)`, which never overflows. Both
+        imaginary parts lie in :math:`(-\pi, \pi)` and agree modulo
+        :math:`2\pi`, so they are equal.
+        """
+        u = np.asarray(u, dtype=complex)
+        w = (self.alpha * u - 1j * self.beta) / 2.0
+        s = np.where(w.real >= 0, 1.0, -1.0)
+        log_cosh = s * w + np.log1p(np.exp(-2.0 * s * w)) - np.log(2.0)
+        return 2.0 * self.delta * (np.log(np.cos(self.beta / 2.0)) - log_cosh) + 1j * self.m * u
 
     def simulate(
         self,
@@ -274,15 +294,13 @@ class MeixnerProcess(Process):
         rng: Optional[np.random.Generator] = None,
     ) -> np.ndarray:
         """
-        Simulation via FFT-based CDF inversion (Gil-Pelaez).
+        Simulation by FFT inversion of the characteristic function.
 
-        For each increment of length Δt, samples from the Meixner(α,β,δΔt,mΔt)
-        distribution by:
-          1. Computing the CDF via the exact characteristic function on a grid.
-          2. Sampling uniform variates and inverting the CDF via interpolation.
-
-        This is exact in distribution (up to grid resolution) and always
-        terminates. Accuracy improves with n_fft.
+        Each increment of length Δt is drawn from Meixner(α, β, δΔt, mΔt):
+        the CDF is recovered from the exact characteristic function on a grid
+        covering the slower exponential tail, rate (π − |β|)/α (see
+        :mod:`spxa.sim.cf_sampling`), then inverted at uniform variates.
+        Accurate up to the grid discretisation.
 
         Parameters
         ----------
@@ -296,33 +314,15 @@ class MeixnerProcess(Process):
         """
         rng = rng or np.random.default_rng()
         dt = T / n_steps
-
-        # Build CDF via Gil-Pelaez inversion on a fine x-grid
-        std_dt = max(np.sqrt(self.cumulant_exact(2, t=dt)), 1e-6)
-        mean_dt = self.cumulant_exact(1, t=dt)
-        n_x = 2000
-        x_half = max(12 * std_dt, 1e-4)
-        x_grid = np.linspace(mean_dt - x_half, mean_dt + x_half, n_x)
-
-        # Integrate the imaginary part of CF to get PDF via Gil-Pelaez:
-        # f(x) = 1/π ∫_0^∞ Re[e^{-iux} φ(u)] du
-        n_u = 2000
-        u_max = min(200.0 / self.alpha, 800.0)
-        u_grid = np.linspace(1e-6, u_max, n_u)
-        cf_vals = self.char_func_exact(u=u_grid, t=dt)
-        pdf = np.zeros(n_x)
-        for j, x in enumerate(x_grid):
-            integrand = (cf_vals * np.exp(-1j * u_grid * x)).real
-            pdf[j] = float(np.trapezoid(integrand, u_grid)) / np.pi
-
-        pdf = np.maximum(pdf, 0.0)
-        dx = x_grid[1] - x_grid[0]
-        cdf = np.cumsum(pdf) * dx
-        cdf = np.clip(cdf / (cdf[-1] + 1e-300), 0.0, 1.0)
-
-        u_unif = rng.uniform(size=(n_paths, n_steps))
-        increments = np.interp(u_unif, cdf, x_grid)
-
+        k = self.cumulants(2)
+        increments = sample_from_cf(
+            lambda u: self.char_func(u, dt),
+            mean=k[1] * dt,
+            std=float(np.sqrt(k[2] * dt)),
+            size=(n_paths, n_steps),
+            rng=rng,
+            tail_decay=(np.pi - abs(self.beta)) / self.alpha,
+        )
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)
         return paths

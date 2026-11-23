@@ -102,6 +102,67 @@ class LevyMeasure(abc.ABC):
         r"""Return True iff ν(ℝ \ {0}) < ∞ (compound Poisson case)."""
         return np.isfinite(self.total_mass())
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        r"""
+        Return :math:`\int_{a < |x| \le b} x \, \nu(dx)` for :math:`0 < a < b \le \infty`.
+
+        This is the quantity the truncation function :math:`x\mathbb 1_{|x| \le 1}`
+        brings into the drift. With :math:`a = 1, b = \infty` it is the large-jump
+        mean in :math:`\kappa_1 = b + \int_{|x|>1} x\,\nu(dx)`. Under scaling the
+        drift picks up an integral over :math:`1 < |x| \le 1/|c|` or over
+        :math:`1/|c| < |x| \le 1`.
+
+        The default integrates the density. Measures without a density
+        (point masses, discrete jump laws) or with a closed form override it.
+        """
+        from scipy import integrate  # type: ignore[import-untyped]
+
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+
+        def integrand(x: float) -> float:
+            return x * float(self.density(np.array([x]))[0])
+
+        pos, _ = integrate.quad(integrand, a, b, limit=200)
+        neg, _ = integrate.quad(integrand, -b, -a, limit=200)
+        return float(pos + neg)
+
+    def jump_exponent(self, u: complex) -> complex:
+        r"""
+        Return :math:`\int (e^{iux} - 1 - iux\mathbb 1_{|x| \le 1})\, \nu(dx)`.
+
+        This is the jump part of the Lévy–Khintchine exponent. The default
+        integrates the density on :math:`(-\infty, -10^{-8}]` and
+        :math:`[10^{-8}, \infty)`. Measures with atoms or a closed form
+        override it.
+
+        Complex :math:`u` is allowed wherever the integral converges, i.e.
+        :math:`\int_{|x|>1} e^{-\operatorname{Im}(u)x}\,\nu(dx) < \infty`. This
+        gives the Laplace exponent :math:`\psi(-iz)` of a subordinator for
+        :math:`\operatorname{Re} z \le 0`. The product :math:`e^{iux}k(x)`
+        is formed in log space and is zero where :math:`k(x) = 0`. A direct
+        product would give :math:`\infty\cdot 0 = \text{NaN}` where
+        :math:`e^{iux}` overflows on a half-line that carries no mass.
+        """
+        from scipy import integrate  # type: ignore[import-untyped]
+
+        def integrand(x: float) -> complex:
+            if x == 0.0:
+                return complex(0.0)
+            k = float(self.density(np.array([x]))[0])
+            if k == 0.0:
+                return complex(0.0)
+            with np.errstate(over="ignore"):
+                weighted = np.exp(1j * u * x + np.log(k))
+            return complex(weighted - (1 + 1j * u * x * (abs(x) <= 1)) * k)
+
+        parts = [
+            integrate.quad(lambda x, f=f: f(integrand(x)), lo, hi, limit=200)[0]
+            for f in (lambda z: z.real, lambda z: z.imag)
+            for lo, hi in ((-np.inf, -1e-8), (1e-8, np.inf))
+        ]
+        return complex(parts[0] + parts[1], parts[2] + parts[3])
+
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         """Add two Lévy measures. Used when adding independent Lévy processes."""
         return CompoundLevyMeasure([self, other])
@@ -134,6 +195,12 @@ class CompoundLevyMeasure(LevyMeasure):
     def moment(self, n: int) -> float:
         return sum(c.moment(n) for c in self.components)
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        return float(sum(c.first_moment_between(a, b) for c in self.components))
+
+    def jump_exponent(self, u: complex) -> complex:
+        return complex(sum(c.jump_exponent(u) for c in self.components))
+
     def __add__(self, other: LevyMeasure) -> CompoundLevyMeasure:
         if isinstance(other, CompoundLevyMeasure):
             return CompoundLevyMeasure(self.components + other.components)
@@ -158,12 +225,16 @@ class DensityLevyMeasure(LevyMeasure):
         Callable mapping x > 0 to ν((x, ∞)). If None, computed numerically.
     _moment_fns :
         Optional dict mapping moment order n to an exact formula for ∫ xⁿ ν(dx).
+    _jump_exponent_fn :
+        Optional closed form of :meth:`LevyMeasure.jump_exponent`. Without
+        it the exponent is computed by quadrature.
     """
 
     _density_fn: Callable[[np.ndarray], np.ndarray]
     _total_mass: float
     _tail_fn: Callable[[float], float] | None = None
     _moment_fns: dict[int, Callable[[], float]] = field(default_factory=dict)
+    _jump_exponent_fn: Callable[[complex], complex] | None = None
 
     def density(self, x: ArrayLike) -> np.ndarray:
         return self._density_fn(np.asarray(x, dtype=float))
@@ -183,6 +254,11 @@ class DensityLevyMeasure(LevyMeasure):
         if n in self._moment_fns:
             return self._moment_fns[n]()
         return super().moment(n)
+
+    def jump_exponent(self, u: complex) -> complex:
+        if self._jump_exponent_fn is not None:
+            return complex(self._jump_exponent_fn(complex(u)))
+        return super().jump_exponent(u)
 
 
 @dataclass
@@ -220,3 +296,20 @@ class ScaledLevyMeasure(LevyMeasure):
 
     def moment(self, n: int) -> float:
         return (self.scale**n) * self.base.moment(n)
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        # ∫_{a<|x|≤b} x ν_Z(dx) = ∫_{a<|cy|≤b} cy ν_X(dy)
+        c = abs(self.scale)
+        return float(self.scale * self.base.first_moment_between(a / c, b / c))
+
+    def jump_exponent(self, u: complex) -> complex:
+        # ∫ (e^{iucy} − 1 − iucy 1{|cy| ≤ 1}) ν_X(dy)
+        #   = J_X(cu) − iu · c ∫ y (1{|cy| ≤ 1} − 1{|y| ≤ 1}) ν_X(dy)
+        c = self.scale
+        if abs(c) < 1:
+            shift = c * self.base.first_moment_between(1.0, 1.0 / abs(c))
+        elif abs(c) > 1:
+            shift = -c * self.base.first_moment_between(1.0 / abs(c), 1.0)
+        else:
+            shift = 0.0
+        return complex(self.base.jump_exponent(c * u) - 1j * u * shift)

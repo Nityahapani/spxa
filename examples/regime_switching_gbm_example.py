@@ -27,10 +27,12 @@ def main() -> None:
     # Transition rates:
     # λ_{01} = 0.40 (annual rate of entering recession)
     # λ_{10} = 1.20 (annual rate of exiting recession, mean duration 10 months)
-    q_rates = np.array([
-        [-0.40, 0.40],
-        [1.20, -1.20],
-    ])
+    q_rates = np.array(
+        [
+            [-0.40, 0.40],
+            [1.20, -1.20],
+        ]
+    )
 
     rs_gbm = RegimeSwitchingGBM(
         mu=[0.10, -0.06],
@@ -73,7 +75,9 @@ def main() -> None:
     put = rs_gbm.put_price(strike=strike, time_to_maturity=tau, discount_rate=r_discount)
     parity_disc_forward = np.exp(-r_discount * tau) * (mean_1 - strike)
 
-    print(f"\nEuropean Options (Strike = ${strike:.2f}, Horizon = {tau:.1f} yr, r = {r_discount:.2%}):")
+    print(
+        f"\nEuropean Options (Strike = ${strike:.2f}, Horizon = {tau:.1f} yr, r = {r_discount:.2%}):"
+    )
     print(f"  Call Price:                   ${call:.4f}")
     print(f"  Put Price:                    ${put:.4f}")
     print(f"  Call - Put:                   ${call - put:.4f}")
@@ -95,7 +99,9 @@ def main() -> None:
 
     print(f"  Empirical Mean:               ${emp_mean:.4f} (Theoretical: ${mean_1:.4f})")
     print(f"  Empirical Variance:            {emp_var:.4f} (Theoretical: {var_1:.4f})")
-    print(f"  Terminal Bear Fraction:        {terminal_bear_freq:.2%} (Theoretical: {p_tau[0, 1]:.2%})")
+    print(
+        f"  Terminal Bear Fraction:        {terminal_bear_freq:.2%} (Theoretical: {p_tau[0, 1]:.2%})"
+    )
 
     print("\nDemonstration completed successfully.")
     print("=" * 72)

@@ -10,7 +10,6 @@ Demonstrates:
   5. High-order Milstein path simulation with non-negative reflection.
 """
 
-import math
 import numpy as np
 
 from spxa import CBISubordinator
@@ -34,10 +33,14 @@ def main() -> None:
     )
 
     print(f"\nModel Configuration: {cbi}")
-    print(f"  Branching Drift (b):                   {cbi.b:.2f} (Subcritical: {cbi.is_subcritical})")
+    print(
+        f"  Branching Drift (b):                   {cbi.b:.2f} (Subcritical: {cbi.is_subcritical})"
+    )
     print(f"  Branching Diffusion (c):               {cbi.c:.2f}")
     print(f"  Continuous Immigration Rate (a):       {cbi.a:.4f}")
-    print(f"  Jump Immigration Rate (λ_J):           {cbi.lambda_j:.2f} (Mean Jump: {1.0/cbi.eta:.4f})")
+    print(
+        f"  Jump Immigration Rate (λ_J):           {cbi.lambda_j:.2f} (Mean Jump: {1.0 / cbi.eta:.4f})"
+    )
     print(f"  Stationary Mean:                       {cbi.stationary_mean:.4f}")
     print(f"  Stationary Variance:                   {cbi.stationary_variance:.6f}")
 
@@ -63,7 +66,9 @@ def main() -> None:
     # 4. Extinction Probability (Pure CSBP)
     pure_csbp = CBISubordinator(a=0.0, b=0.5, c=0.2, lambda_j=0.0, x0=0.05)
     p_ext = pure_csbp.extinction_probability(t=2.0)
-    print(f"\nPure CSBP Extinction (X0 = {pure_csbp.x0}, a = 0, b = {pure_csbp.b}, c = {pure_csbp.c}):")
+    print(
+        f"\nPure CSBP Extinction (X0 = {pure_csbp.x0}, a = 0, b = {pure_csbp.b}, c = {pure_csbp.c}):"
+    )
     print(f"  Extinction Probability P(X_2 = 0):     {p_ext:.4%}")
 
     # 5. Simulation
@@ -81,7 +86,9 @@ def main() -> None:
 
     print(f"  Empirical Mean:                        {emp_mean:.4f} (Theoretical: {mean_val:.4f})")
     print(f"  Empirical Variance:                    {emp_var:.6f} (Theoretical: {var_val:.6f})")
-    print(f"  Empirical Laplace E[e^(-λ X_T)]:       {emp_laplace:.6f} (Theoretical: {laplace_val:.6f})")
+    print(
+        f"  Empirical Laplace E[e^(-λ X_T)]:       {emp_laplace:.6f} (Theoretical: {laplace_val:.6f})"
+    )
     print(f"  Paths strictly non-negative:           {np.all(paths >= 0.0)}")
 
     print("\nDemonstration completed successfully.")

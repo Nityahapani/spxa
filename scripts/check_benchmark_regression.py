@@ -39,8 +39,8 @@ def main() -> None:
         change = (current_mean - prev_mean) / prev_mean
         if change > args.threshold:
             regressions.append(
-                f"{name}: {prev_mean*1e3:.3f}ms -> {current_mean*1e3:.3f}ms "
-                f"(+{change*100:.1f}%, threshold {args.threshold*100:.0f}%)"
+                f"{name}: {prev_mean * 1e3:.3f}ms -> {current_mean * 1e3:.3f}ms "
+                f"(+{change * 100:.1f}%, threshold {args.threshold * 100:.0f}%)"
             )
 
     if regressions:
@@ -49,7 +49,7 @@ def main() -> None:
             print(f"  {r}")
         sys.exit(1)
 
-    print(f"No regressions above {args.threshold*100:.0f}% threshold.")
+    print(f"No regressions above {args.threshold * 100:.0f}% threshold.")
 
 
 if __name__ == "__main__":

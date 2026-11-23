@@ -14,6 +14,7 @@ Every process implemented in `spxa`. The exactness level, available cumulants, s
 | Class | Exactness | Cumulants | Simulation | Reference |
 |---|---|---|---|---|
 | `BrownianMotion` | EXACT | all orders | exact (Gaussian increments) | Wiener 1923; Bachelier 1900 |
+| `Drift` | EXACT | all orders ($\kappa_1 = \mu$, others 0) | exact (deterministic) | Sato 1999, Ex. 8.3 |
 | `PoissonProcess` | EXACT | all orders | exact (exponential inter-arrivals) | Poisson 1837 |
 | `CompoundPoisson` | EXACT | all orders ($\lambda t \mathbb{E}[Y^n]$) | exact (Poisson thinning & compounding) | Kingman 1993; Cont & Tankov 2004 |
 | `GammaProcess` | EXACT | all orders | exact (shape-rate parameterisation) | Moran 1968; Dufresne, Gerber & Shiu 1991 |

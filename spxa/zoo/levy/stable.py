@@ -14,7 +14,8 @@ The characteristic exponent (Zolotarev parametrisation, type S):
   ψ(u) = -σ^α |u|^α (1 - iβ sign(u) tan(πα/2)) + iμu   α ≠ 1
   ψ(u) = -σ|u|(1 + iβ (2/π) sign(u) log|u|) + iμu        α = 1
 
-Parameters follow the S₀ convention of Nolan (2020).
+This is the S₁ parametrisation (Nolan 2020 calls it S₁): for α > 1 the
+location μ is the mean, and the process is a martingale iff μ = 0.
 
 References
 ----------
@@ -33,58 +34,121 @@ from __future__ import annotations
 from typing import Optional
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from spxa.core.exactness import ExactnessLevel
-from spxa.core.levy_measure import DensityLevyMeasure
+from spxa.core.levy_measure import LevyMeasure
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind
 
 
-def _stable_levy_measure(alpha: float, beta: float, sigma: float) -> DensityLevyMeasure:
+class _StableLevyMeasure(LevyMeasure):
+    r"""
+    Lévy measure of the α-stable law with the exponent used by :class:`AlphaStable`.
+
+    .. math::
+        \nu(dx) = c_+x^{-1-\alpha}\mathbb 1_{x>0}\,dx + c_-|x|^{-1-\alpha}\mathbb 1_{x<0}\,dx,
+        \qquad c_\pm = \frac{\sigma^\alpha\Gamma(1+\alpha)\sin(\pi\alpha/2)}{\pi}(1 \pm \beta).
+
+    This normalisation reproduces :math:`-\sigma^\alpha|u|^\alpha`. For
+    :math:`\beta = 0`, :math:`2c\int_0^\infty(\cos ux - 1)x^{-1-\alpha}dx =
+    2c\,\Gamma(-\alpha)\cos(\pi\alpha/2)|u|^\alpha`, and the reflection
+    formula turns :math:`-1/(2\Gamma(-\alpha)\cos(\pi\alpha/2))` into the
+    constant above (Sato 1999, Thm 14.10; Samorodnitsky & Taqqu 1994,
+    Prop. 1.2.15). At :math:`\alpha = 1` it gives :math:`c_\pm = \sigma(1\pm\beta)/\pi`.
+
+    The jump exponent is exact: :math:`J(u) = \Phi(u) - iu\,\delta`, where
+    :math:`\Phi` is the closed-form exponent without the location term,
+    and :math:`\delta` is the drift that the truncation
+    :math:`\mathbb 1_{|x|\le1}` moves into :math:`b` (see :meth:`drift_shift`).
     """
-    Lévy measure of α-stable process.
 
-    ν(dx) = (c₊ x^{-α-1} 𝟙_{x>0} + c₋ |x|^{-α-1} 𝟙_{x<0}) dx
+    def __init__(self, alpha: float, beta: float, sigma: float) -> None:
+        from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
 
-    where c₊ = σ^α · (1+β)/2 · Γ(α+1)sin(πα/2)/π
-          c₋ = σ^α · (1-β)/2 · Γ(α+1)sin(πα/2)/π
+        self.alpha, self.beta, self.sigma = alpha, beta, sigma
+        factor = sigma**alpha * gamma_fn(alpha + 1) * np.sin(np.pi * alpha / 2) / np.pi
+        self.c_plus = float(factor * (1 + beta))
+        self.c_minus = float(factor * (1 - beta))
 
-    Samorodnitsky & Taqqu (1994), Property 1.2.15.
-    """
-    from scipy.special import gamma as gamma_fn  # type: ignore[import-untyped]
-
-    factor = sigma**alpha * gamma_fn(alpha + 1) * np.sin(np.pi * alpha / 2) / np.pi
-    c_plus = factor * (1 + beta) / 2
-    c_minus = factor * (1 - beta) / 2
-
-    def density(x: np.ndarray) -> np.ndarray:
-        out = np.zeros_like(x, dtype=float)
-        pos = x > 0
-        neg = x < 0
-        if c_plus > 0:
-            out[pos] = c_plus * x[pos] ** (-alpha - 1)
-        if c_minus > 0:
-            out[neg] = c_minus * np.abs(x[neg]) ** (-alpha - 1)
+    def density(self, x: ArrayLike) -> np.ndarray:
+        x = np.asarray(x, dtype=float)
+        out = np.zeros_like(x)
+        pos, neg = x > 0, x < 0
+        out[pos] = self.c_plus * x[pos] ** (-self.alpha - 1)
+        out[neg] = self.c_minus * np.abs(x[neg]) ** (-self.alpha - 1)
         return out
 
-    def tail(xv: float) -> float:
-        if c_plus <= 0 or xv <= 0:
-            return 0.0
-        return c_plus * xv ** (-alpha) / alpha
+    def total_mass(self) -> float:
+        return float("inf")
 
-    return DensityLevyMeasure(
-        _density_fn=density,
-        _total_mass=np.inf,
-        _tail_fn=tail,
-        _moment_fns={},
-    )
+    def tail(self, x: float) -> float:
+        if x <= 0:
+            raise ValueError("tail(x) needs x > 0")
+        return self.c_plus * x ** (-self.alpha) / self.alpha
+
+    def moment(self, n: int) -> float:
+        """Diverges for every n ≥ α: +inf for even n, NaN (undefined) for odd n."""
+        if n < 1:
+            raise ValueError("Moment order must be >= 1")
+        if n < self.alpha:  # only n = 1 with α > 1, where the integral converges at ∞
+            raise ValueError("the first moment of a stable measure diverges at 0")
+        return float("inf") if n % 2 == 0 else float("nan")
+
+    def first_moment_between(self, a: float, b: float) -> float:
+        r""":math:`(c_+ - c_-)\int_a^b x^{-\alpha}dx`; infinite :math:`b` needs :math:`\alpha > 1`."""
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        diff = self.c_plus - self.c_minus
+        if diff == 0:
+            return 0.0 if np.isfinite(b) or self.alpha > 1 else float("nan")
+        al = self.alpha
+        if np.isinf(b):
+            return float(diff * a ** (1 - al) / (al - 1)) if al > 1 else float("nan")
+        if abs(al - 1) <= 1e-12:
+            return float(diff * np.log(b / a))
+        return float(diff * (b ** (1 - al) - a ** (1 - al)) / (1 - al))
+
+    def drift_shift(self) -> float:
+        r"""
+        :math:`\delta = b - \mu`, the drift that the truncation moves into :math:`b`.
+
+        - :math:`\alpha < 1`: :math:`\Phi = \int(e^{iux}-1)\,\nu`, so
+          :math:`\delta = \int_{|x|\le1}x\,\nu = (c_+-c_-)/(1-\alpha)`.
+        - :math:`1 < \alpha < 2`: :math:`\Phi = \int(e^{iux}-1-iux)\,\nu`, so
+          :math:`\delta = -\int_{|x|>1}x\,\nu = -(c_+-c_-)/(\alpha-1)`.
+        - :math:`\alpha = 1`: :math:`\int(e^{iux}-1-iux\mathbb 1_{|x|\le1})\nu
+          = -\sigma|u| - i\tfrac2\pi\beta\sigma u\log|u| + iu(c_+-c_-)(1-\gamma_E)`,
+          using :math:`\int_0^\infty(\sin x - x\mathbb 1_{x\le1})x^{-2}dx = 1-\gamma_E`.
+          So :math:`\delta = -(c_+-c_-)(1-\gamma_E)`.
+        """
+        diff = self.c_plus - self.c_minus
+        if abs(self.alpha - 1) <= 1e-12:
+            return float(-diff * (1 - np.euler_gamma))
+        if self.alpha < 1:
+            return float(diff / (1 - self.alpha))
+        return float(-diff / (self.alpha - 1))
+
+    def jump_exponent(self, u: complex) -> complex:
+        u = complex(u)
+        if u.imag != 0:
+            raise ValueError("a stable measure has no exponential moments: u must be real")
+        x = u.real
+        if x == 0:
+            return 0j
+        al, be, sg = self.alpha, self.beta, self.sigma
+        if abs(al - 1) <= 1e-12:
+            phi = -sg * abs(x) * (1 + 1j * be * (2 / np.pi) * np.sign(x) * np.log(abs(x)))
+        else:
+            phi = -(sg**al) * abs(x) ** al * (1 - 1j * be * np.sign(x) * np.tan(np.pi * al / 2))
+        return complex(phi - 1j * u * self.drift_shift())
 
 
 class AlphaStable(Process):
     """
-    α-stable Lévy process (Lévy–Khintchine parametrisation, S₀ convention).
+    α-stable Lévy process (Samorodnitsky–Taqqu S₁ parametrisation).
 
     The only non-trivial class of Lévy processes stable under addition and
     scaling. For α < 2, moments of order ≥ α do not exist; for α = 2 this
@@ -165,17 +229,53 @@ class AlphaStable(Process):
 
             return LevyTriplet(b=self.mu, sigma_sq=2 * self.sigma**2, nu=_ZeroLevyMeasure())
 
-        nu = _stable_levy_measure(self.alpha, self.beta, self.sigma)
-        return LevyTriplet(b=self.mu, sigma_sq=0.0, nu=nu)
+        nu = _StableLevyMeasure(self.alpha, self.beta, self.sigma)
+        return LevyTriplet(b=self.mu + nu.drift_shift(), sigma_sq=0.0, nu=nu)
+
+    def cumulants(self, order: int) -> dict[int, float]:
+        """
+        κ_1 = μ when α > 1 (NaN for α ≤ 1, where the mean does not exist).
+
+        For α < 2 every higher cumulant diverges. Even orders are reported as
+        +inf and odd orders as NaN, matching the measure's moments. α = 2 is
+        Gaussian with variance 2σ².
+        """
+        if self.alpha == 2.0:
+            gauss = {1: self.mu, 2: 2 * self.sigma**2}
+            return {n: gauss.get(n, 0.0) for n in range(1, order + 1)}
+        out: dict[int, float] = {}
+        for n in range(1, order + 1):
+            if n == 1:
+                out[n] = float(self.mu) if self.alpha > 1 else float("nan")
+            else:
+                out[n] = float("inf") if n % 2 == 0 else float("nan")
+        return out
+
+    def _strictly_stable(self) -> bool:
+        r"""
+        Whether :math:`X_{ct} \sim c^{1/\alpha}X_t`.
+
+        With the exponent :math:`-\sigma^\alpha|u|^\alpha(1 - i\beta\,\mathrm{sgn}(u)
+        \tan\frac{\pi\alpha}2) + i\mu u`, the drift scales as :math:`c` and
+        the rest as :math:`c^{1/\alpha}`, so :math:`\mu` must vanish for
+        :math:`\alpha \ne 1`. For :math:`\alpha = 1`, the drift scales like
+        the rest, but the :math:`\beta\,|u|\log|u|` term gives an extra
+        :math:`\frac2\pi\beta\sigma\,c\log c`, so :math:`\beta` must vanish
+        (Samorodnitsky & Taqqu 1994, Prop. 1.2.1 and Def. 1.1.6).
+        """
+        if abs(self.alpha - 1.0) <= 1e-12:
+            return self.beta == 0.0
+        return self.mu == 0.0
 
     def _properties(self) -> ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
             has_independent_increments=True,
-            is_martingale=False,
+            # a Lévy process with E|X_1| < ∞ is a martingale iff E[X_1] = μ = 0
+            is_martingale=(self.alpha > 1.0 and self.mu == 0.0),
             has_finite_variance=(self.alpha == 2.0),
             has_finite_mean=(self.alpha > 1.0),
-            self_similarity_index=1.0 / self.alpha,
+            self_similarity_index=1.0 / self.alpha if self._strictly_stable() else None,
             tail_index=self.alpha if self.alpha < 2 else None,
             is_subordinator=False,
         )
@@ -221,6 +321,20 @@ class AlphaStable(Process):
     def char_func(self, u: float | np.ndarray, t: float = 1.0) -> np.ndarray:
         return self.char_func_exact(u=u, t=t)
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: t^(1/alpha)*S + mu*t (alpha != 1) or t*S + (2/pi)*beta*sigma*t*log(t) + mu*t (alpha = 1), S the mu = 0 law at time 1."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        flat = t.ravel()
+        base = AlphaStable(self.alpha, self.beta, self.sigma, 0.0)
+        s = base.simulate(1, max(flat.size, 1), 1.0, rng)[: flat.size, 1].reshape(t.shape)
+        if abs(self.alpha - 1.0) > 1e-12:
+            return t ** (1.0 / self.alpha) * s + self.mu * t
+        logt = np.where(t > 0, np.log(np.where(t > 0, t, 1.0)), 0.0)
+        return t * s + (2.0 / np.pi) * self.beta * self.sigma * t * logt + self.mu * t
+
     def simulate(
         self,
         n_steps: int,
@@ -239,7 +353,8 @@ class AlphaStable(Process):
           2. E ~ Exponential(1)
           3. For α ≠ 1:
              X = S · sin(α(U+B)) / cos(U)^{1/α} · (cos(U-α(U+B))/E)^{(1-α)/α}
-          4. Scale by σ·Δt^{1/α} and shift by μ·Δt
+          4. Scale by c = σ·Δt^{1/α} and shift by μ·Δt; at α = 1 also add
+             (2/π)βc·log c, because S1 is not scale-equivariant there
 
         Parameters
         ----------
@@ -273,7 +388,13 @@ class AlphaStable(Process):
                 - self.beta * np.log(np.pi / 2 * E * np.cos(U) / (np.pi / 2 + self.beta * U))
             )
 
-        increments = self.sigma * (dt ** (1 / self.alpha)) * increments + self.mu * dt
+        scale = self.sigma * dt ** (1 / self.alpha)
+        increments = scale * increments + self.mu * dt
+        if abs(self.alpha - 1.0) <= 1e-12:
+            # S1 at alpha = 1 is not scale-equivariant: if X ~ S1(1, beta, 1, 0), then
+            # cX ~ S1(1, beta, c, -(2/pi) beta c log c), so the shift must be added
+            # back (Weron 1996; Samorodnitsky & Taqqu 1994, Property 1.2.3).
+            increments = increments + (2 / np.pi) * self.beta * scale * np.log(scale)
 
         paths = np.zeros((n_paths, n_steps + 1))
         paths[:, 1:] = np.cumsum(increments, axis=1)

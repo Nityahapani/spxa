@@ -18,7 +18,7 @@ import numpy as np
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from spxa import BNS, BNSModel, BNSProcess
+from spxa import BNSModel
 
 
 def main() -> None:
@@ -51,7 +51,9 @@ def main() -> None:
 
     print(f"\nInitialized Model: {bns}")
     print(f"  Spot Asset Price (S_0):       ${bns.s0:.2f}")
-    print(f"  Initial Variance (σ_0²):      {bns.sigma0_sq:.4f} (Vol: {math.sqrt(bns.sigma0_sq):.2%})")
+    print(
+        f"  Initial Variance (σ_0²):      {bns.sigma0_sq:.4f} (Vol: {math.sqrt(bns.sigma0_sq):.2%})"
+    )
     print(f"  Variance Mean Reversion (λ):  {bns.lambda_param:.2f}")
     print(f"  BDLP Gamma Shape (α):         {bns.alpha:.2f}")
     print(f"  BDLP Gamma Rate (β_bdlp):     {bns.beta_bdlp:.2f}")
@@ -68,7 +70,9 @@ def main() -> None:
     int_var = bns.integrated_variance_mean(t=t)
 
     print(f"\nVariance Dynamics (horizon T = {t:.1f} yr):")
-    print(f"  Stationary Variance E[σ_∞²]:  {stat_var:.4f} (Long-term Vol: {math.sqrt(stat_var):.2%})")
+    print(
+        f"  Stationary Variance E[σ_∞²]:  {stat_var:.4f} (Long-term Vol: {math.sqrt(stat_var):.2%})"
+    )
     print(f"  Stationary Variance Std:      {stat_std:.4f}")
     print(f"  Expected Variance E[σ_T²]:    {cond_var:.4f}")
     print(f"  Expected Integrated Variance: {int_var:.4f}")
@@ -82,7 +86,9 @@ def main() -> None:
     # 4. European Options and Implied Volatility Smile
     strikes = [80.0, 90.0, 95.0, 100.0, 105.0, 110.0, 120.0]
     print(f"\nEuropean Options & Implied Volatility Surface (T = {t:.1f} yr):")
-    print(f"  {'Strike K':<12} {'Call Price':<14} {'Put Price':<14} {'Implied Vol':<14} {'Parity Error':<14}")
+    print(
+        f"  {'Strike K':<12} {'Call Price':<14} {'Put Price':<14} {'Implied Vol':<14} {'Parity Error':<14}"
+    )
     print("  " + "-" * 68)
 
     disc_r = math.exp(-rate * t)
@@ -106,8 +112,12 @@ def main() -> None:
     mc_var = float(np.mean(v_paths[:, -1]))
     expected_spot = s0 * math.exp((rate - dividend) * t)
 
-    print(f"  Empirical Mean Spot S_T:      ${mc_spot:.4f} (Theoretical E[S_T]: ${expected_spot:.4f}, error: {abs(mc_spot - expected_spot):.4e})")
-    print(f"  Empirical Mean Variance σ_T²: {mc_var:.4f} (Theoretical: {cond_var:.4f}, error: {abs(mc_var - cond_var):.4e})")
+    print(
+        f"  Empirical Mean Spot S_T:      ${mc_spot:.4f} (Theoretical E[S_T]: ${expected_spot:.4f}, error: {abs(mc_spot - expected_spot):.4e})"
+    )
+    print(
+        f"  Empirical Mean Variance σ_T²: {mc_var:.4f} (Theoretical: {cond_var:.4f}, error: {abs(mc_var - cond_var):.4e})"
+    )
     print(f"  All simulated variances non-negative: {bool(np.all(v_paths >= 0.0))}")
 
     print("\nDemonstration completed successfully.")

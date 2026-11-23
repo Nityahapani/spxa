@@ -41,7 +41,7 @@ from __future__ import annotations
 import abc
 import math
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Callable, Optional
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -476,8 +476,40 @@ class _CompoundPoissonLevyMeasure(LevyMeasure):
     def moment(self, n: int) -> float:
         return self.rate * self.jump_dist.moment(n)
 
+    def first_moment_between(self, a: float, b: float) -> float:
+        r"""λ E[Y 1{a < |Y| ≤ b}] from the jump law's truncated means (exact for discrete laws)."""
+        if not 0 < a < b:
+            raise ValueError(f"need 0 < a < b, got a={a}, b={b}")
+        upper = (
+            self.jump_dist.moment(1) if np.isinf(b) else self.jump_dist.truncation_mean(cutoff=b)
+        )
+        return float(self.rate * (upper - self.jump_dist.truncation_mean(cutoff=a)))
+
+    def jump_exponent(self, u: complex) -> complex:
+        """λ(φ_Y(u) − 1) − iuλ E[Y 1{|Y| ≤ 1}]."""
+        u = complex(u)
+        phi = complex(np.asarray(self.jump_dist.char_func(np.array([u]))).ravel()[0])
+        inside = self.rate * self.jump_dist.truncation_mean(cutoff=1.0)
+        if u.real == 0.0:
+            # u = -iz: E[e^{zY}] is real. Real arithmetic overflows to +inf;
+            # complex arithmetic gives NaN from 0 * inf.
+            z = -u.imag
+            return complex(self.rate * (phi.real - 1.0) - z * inside, 0.0)
+        return complex(self.rate * (phi - 1.0) - 1j * u * inside)
+
     def is_finite_activity(self) -> bool:
         return True
+
+
+def _compound_sums(counts: np.ndarray, draw: Callable[[int], np.ndarray]) -> np.ndarray:
+    """Sum ``counts[k]`` jumps for each k, drawing all jumps in one call."""
+    counts = np.asarray(counts, dtype=np.int64)
+    total = int(counts.sum())
+    if total == 0:
+        return np.zeros(counts.shape)
+    owner = np.repeat(np.arange(counts.size), counts.ravel())
+    sums = np.bincount(owner, weights=draw(total), minlength=counts.size)
+    return sums.reshape(counts.shape)
 
 
 class CompoundPoisson(Process):
@@ -628,6 +660,17 @@ class CompoundPoisson(Process):
     def cumulants(self, order: int) -> dict[int, float]:
         """Return exact cumulants κ_1, ..., κ_{order} for X_1."""
         return {n: self.cumulant_exact(n, t=1.0) for n in range(1, order + 1)}
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: a Poisson(rate*t) number of jumps from jump_dist."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        counts = rng.poisson(self.rate * t)
+        return _compound_sums(
+            counts, lambda n: np.asarray(self.jump_dist.sample(rng, n), dtype=float)
+        )
 
     def simulate(
         self,

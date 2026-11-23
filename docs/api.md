@@ -1,6 +1,6 @@
 # spxa API Reference
 
-Complete reference for spxa v1.0.1. Every entry here was verified against
+Complete reference for spxa v1.2.0. Every entry here was verified against
 the running library. All signatures are exact.
 
 ---
@@ -205,6 +205,22 @@ the running library. All signatures are exact.
    - [Variance & Volatility Swaps](#variance-volatility-swaps)
    - [Model Risk](#model-risk)
    - [Risk Adapter, Processes & Graph Nodes](#risk-adapter-processes-graph-nodes)
+23. [Process Discovery (`spxa.discovery`)](#process-discovery-spxadiscovery)
+   - [Families & Expressions](#families-expressions)
+   - [Data: Files, Summaries & Statistics](#data-files-summaries-statistics)
+   - [Fitting One Structure](#fitting-one-structure)
+   - [Search & Reports](#search-reports)
+   - [Inference: Standard Errors, Vuong & Bootstrap](#inference-standard-errors-vuong-bootstrap)
+   - [Option Prices](#option-prices)
+   - [Command Line](#command-line)
+24. [Property-Based Laws (`spxa.laws`)](#property-based-laws-spxalaws)
+   - [Strategies](#strategies)
+   - [Process Strategies](#process-strategies)
+   - [Laws & Expectations](#laws-expectations)
+   - [Quantities](#quantities)
+   - [Statistical Expectations](#statistical-expectations)
+   - [Library](#library)
+   - [Suites, pytest & the Shell](#suites-pytest-the-shell)
 
 ---
 
@@ -215,7 +231,7 @@ Everything in this section is importable directly from `spxa`.
 ```python
 import spxa
 
-spxa.__version__          # "1.0.1"
+spxa.__version__          # "1.2.0"
 
 # Core types
 spxa.Process
@@ -586,6 +602,7 @@ Z = X * c            # same as c * X
 Z = -X               # negation
 Z = X @ T            # subordination: Z_t = X_{T_t}  (T must be a subordinator)
 Z = sum([X, Y, ...]) # Python's built-in sum() works via __radd__
+Z = X + Drift(c)     # a deterministic drift c·t (X + c with a number raises TypeError)
 ```
 
 All operators propagate `ExactnessLevel` and `ProcessProperties` automatically.
@@ -618,6 +635,21 @@ process.simulate(
 Simulate sample paths. Returns shape `(n_paths, n_steps + 1)`. All paths
 start at 0: `paths[:, 0] == 0` always. For multivariate processes returns
 shape `(n_paths, n_steps + 1, d)`.
+
+```python
+process.sample_at(times: np.ndarray, rng: np.random.Generator | None = None) -> np.ndarray
+```
+Independent draws of $X_{t_k}$, one per entry of `times`, in the shape of
+`times`. This is what a random time change needs: given clock increments
+$\Delta T$, the increments of $X_T$ are $X_{\Delta T}$. Most Lévy families draw
+directly (Drift, Brownian motion, Gamma, IG, VG, NIG, Poisson, negative binomial,
+compound Poisson, Merton, Kou, α-stable, tempered stable, NTS, and CGMY with
+$0 < Y < 1$), as do their sums, multiples and time changes. Other processes
+call `simulate` once per distinct time, or once per dyadic length (21 batched calls) when
+there are more than 64 distinct times. Times are then resolved to $2^{-20}$
+(about $10^{-6}$) of the largest. `X @ T` draws each increment as $X$ at the clock's
+increment, through `sample_at` or by inverting its characteristic function.
+It never interpolates the parent path.
 
 ```python
 process.__story__() -> str
@@ -1067,7 +1099,8 @@ polynomial structure (Meixner–Pollaczek polynomials are eigenfunctions of its 
 - κ₁ = δα·tan(β/2) + m
 - κ₂ = δα²/(2cos²(β/2))
 - κ₃ = δα³·sin(β/2)/(2cos³(β/2))
-- κ₄ = δα⁴(2+cosβ)/(8cos⁴(β/2))
+- κ₄ = δα⁴(2−cosβ)/(4cos⁴(β/2)), so the excess kurtosis is (2−cosβ)/δ
+- κₙ for every n ≥ 2 from the derivatives of tan at β/2
 
 **Extra methods:**
 ```python
@@ -3620,7 +3653,10 @@ char_exp_subordinated(
 ) -> np.ndarray
 ```
 Characteristic function of Z = X @ T using the composition formula
-ψ_Z(u) = −φ(−ψ_X(u)) where φ is the Laplace exponent of T.
+ψ_Z(u) = −φ(−ψ_X(u)) where φ is the Laplace exponent of T. It delegates
+to `(parent @ subordinator).char_func(u, t)`. ψ_X comes from the exponent
+itself, not from the principal logarithm of φ_X, which wraps once
+|Im ψ_X(u)| > π.
 
 ```python
 bernstein_function(
@@ -5514,3 +5550,96 @@ This section covers arbitrage-free implied-volatility slices and surfaces in log
 - `spxa.graph.vol` nodes:
   - `svi_total_variance_node(a, b, rho, m, sigma, *, k)` has an analytic gradient.
   - `surface_price_node(spot, vol_shift=0.0, *, surface, strike, maturity, option="call", dynamics="sticky_strike")` uses the adapter's delta and vega as its vector–Jacobian product.
+
+## Process Discovery (`spxa.discovery`)
+
+Inverse stochastic algebra: given returns, summary statistics or option prices, find the compositions of Lévy primitives that explain them, with parameters, fit quality and uncertainty. The theory is in [Process discovery](theory/discovery.md).
+
+### Families & Expressions
+- `Family`: a primitive, defined by its cumulant exponent $K(z)$, exact cumulants, exponential-moment strip and an unconstrained parametrisation (`to_free`/`from_free`). Registry: `FAMILIES`, `get_family(name)`. Built-in families: `DRIFT`, `BROWNIAN`, `GAMMA`, `INVERSE_GAUSSIAN`, `VARIANCE_GAMMA`, `NIG_FAMILY`, `MEIXNER`, `POISSON`, `NORMAL_JUMPS`, `DOUBLE_EXP_JUMPS` and `CGMY_FAMILY`.
+- Structures: `leaf(F)`/`Leaf(F)`, `Sum(children)`, `Scale(c, child)` and `Subordinate(base, clock)`, built with `+`, `c * X`, unary `-` and `X @ T`. Each structure has `key()`, `leaves()` and `n_params`.
+- `Model(structure, params)` provides `log_mgf(z)`, `char_exponent(u)`, `cumulants(order=4, t=1.0)`, `cgf_series(order)`, `strip()`, `render(digits, weighted)`, `to_free()`/`Model.from_free(structure, x)` and `to_process()` (the equivalent zoo process).
+- `recognize(process)`: converts a zoo expression into a `Model`, which has exact cumulants even for `@`. It raises `NotRecognizedError` otherwise.
+- `CGFSeries(cumulants)`, `cumulants_to_moments(k)` and `moments_to_cumulants(m)`.
+
+### Data: Files, Summaries & Statistics
+- `load_returns(source, column=None, kind="auto"|"returns"|"prices", log=True, delimiter=None)` returns a `ReturnSeries(returns, dt, column, kind, dates)`. `dt` is inferred from ISO dates with `infer_dt(dates)`.
+- `summarize(returns, dt=1.0, max_lag=10, hac_lags=0)` returns an `EmpiricalSummary` with per-unit-time cumulants (from k-statistics), their covariance (from influence functions, Newey–West with `hac_lags`), autocorrelations of returns and squared returns, and rank Ljung–Box tests. It has the properties `mean` and `variance` and the methods `skewness(horizon=None)` and `excess_kurtosis(horizon=None)`.
+- `from_statistics(mean, variance, skewness=0.0, excess_kurtosis=0.0, dt=1.0, n=None)`: a summary from the moments of increments over `dt`, with no sample.
+- Helpers: `k_statistics(x)`, `cumulant_covariance(x, hac_lags=0)`, `acf(x, max_lag)`, `ljung_box(x, max_lag)` and `rank_ljung_box(x, max_lag, volatility=False)`.
+- `COSDistribution(char_func, cumulants, n_terms=1024, L=12.0, bounds=None)` and `model_distribution(model, t)`: COS density, CDF and bin probabilities.
+
+### Fitting One Structure
+- `BinnedData.from_sample(sample, dt)`: bins and a Gaussian smoothing kernel fixed once per data set. It provides `probabilities(model)`, `pointwise_loglik(model)`, `kernel_matrix()` and `gof_statistic(probabilities, n_params)`.
+- `fit_structure(structure, summary, method="likelihood"|"cumulants", *, location=True, n_starts=4, rng=None, binned=None, maxiter=400, initial=None)` returns a `FitResult`. `with_location(structure)` appends the drift leaf.
+- `FitResult` has:
+  - the fitted model, `loglik`, `aic`, `bic` and `n_params`;
+  - `g_statistic`, `g_pvalue`, `ks_distance` (the CDF gap) and `converged`;
+  - `model_cumulants`, `moment_errors`, `match_error` and `cumulant_z_scores`;
+  - `degeneracies(boundary=9, share=1e-4)` and `degenerate` (limiting-case fits).
+
+### Search & Reports
+- `Grammar(return_families, subordinator_families, subordinated, max_terms)` with `atoms()`, `structures(max_terms)` and `extensions(structure)`; `grammar_from_names(names, max_terms=2, subordinated=False)`, `parse_atoms(names)` and `canonical(structure)`.
+- `discover(data, *, dt=None, grammar=None, method=None, criterion="bic"|"aic", search="beam"|"exhaustive", beam_width=4, max_terms=None, n_starts=3, extension_starts=2, seed=0, tolerance=0.02, exclude_degenerate=False)`. `data` can be an array of returns, a CSV path, a `ReturnSeries` or an `EmpiricalSummary`.
+- `DiscoveryReport` has:
+  - `candidates` (in rank order), `best`, `excluded`, `warnings`, `summary` and `binned`;
+  - `score(r)`, `weights()` (IC weights), `matching()` and `admissible()`;
+  - `headline()`, `table(top=10)`, `to_dict(top=None)` (strict JSON) and `str(report)`;
+  - `uncertainty(which=0)` and `compare(first=0, second=1, correction="bic")`.
+- `screen_degenerate(ranked, exclude, score=None, criterion="bic")` lives in `spxa.discovery.report`.
+
+### Inference: Standard Errors, Vuong & Bootstrap
+- `parameter_uncertainty(result, summary, binned=None)` returns a `ParameterUncertainty(names, estimates, covariance, method)` with `standard_errors`, `confidence_intervals(level)` and `table()`. Likelihood fits use the sandwich method and cumulant fits use GMM.
+- `vuong_test(first, second, binned, correction="none"|"aic"|"bic", level=0.05)` returns a `VuongResult(z, p_value, preferred, log_likelihood_ratio)`.
+- `bootstrap(report, n_boot=50, top=5, block_length=1, seed=0)` returns a `BootstrapResult` with `selection_frequency`, `intervals(structure, level)` and `table()`. It needs a report built from a return sample.
+
+### Option Prices
+- `martingale_correction(model)` returns $\omega = -K_X(1)$. It raises when $E[e^{X_1}] = \infty$.
+- `cos_prices(model, spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0)`: European prices under $S_T = S_0 e^{(r-q+\omega)T + X_T}$.
+- `OptionQuotes.from_arrays(spot, strikes, maturities, prices, call=True, rate=0.0, dividend=0.0)` provides `forwards`, `discounts`, `implied_vols(prices=None)` and `maturity_groups()`. `model_prices(model, quotes)` prices every quote.
+- `fit_options(structure, quotes, *, n_starts=3, rng=None, initial=None, n_terms=1024, maxiter=300)`: vega-weighted least squares. Its `extras` hold `iv_rmse`, `iv_max_error`, `price_rel_rmse` and `iv_rmse@T`.
+- `discover_from_options(quotes, *, grammar=None, criterion="bic", search="beam", beam_width=3, max_terms=None, n_starts=2, seed=0, n_terms=1024, exclude_degenerate=False)`. It warns when the pricing errors depend on maturity.
+
+### Command Line
+- `spxa-discover returns FILE [--column C] [--kind auto|returns|prices] [--simple] [--dt DT]` and `spxa-discover options FILE --spot S [--rate R] [--dividend Q]`. The options file has the columns `strike`, `maturity`, `price` and optionally `type`.
+- Options shared by both modes: `--families BM,VG,...`, `--max-terms`, `--criterion`, `--beam-width`, `--exclude-degenerate`, `--seed`, `--top` and `--json`. `python -m spxa.discovery` runs the same command. `spxa.discovery.cli.read_option_quotes(path, spot, rate, dividend)` reads quote files.
+
+## Property-Based Laws (`spxa.laws`)
+
+Property-based testing for stochastic algebra: declare laws about processes, and spxa searches randomised processes and parameters for counterexamples, shrinking any it finds to a minimal one. The theory is in [Property-based laws](theory/laws.md).
+
+### Strategies
+- `Strategy[T]` has `generate(rng)` (a `Tree` with `value` and `children()`, simplest first), `example(seed=0)`, `map(f)`, `filter(pred)` and `flatmap(f)`. `Unsatisfiable` is raised when a filter cannot be met.
+- `floats(lo, hi, *, log=False, simplest=None)`, `integers(lo, hi, *, simplest=None)`, `just(value)`, `sampled_from(values)`, `one_of(*strategies)`, `tuples(*parts)`, `fixed_dictionaries(parts)` and `builds(target, **kwargs)`. Floats shrink to the shortest decimal nearest the target.
+
+### Process Strategies
+- `PRIMITIVES`: family name → zero-argument factory of a strategy for that zoo family. `SUBORDINATORS`: the names of the subordinator families.
+- `levy_processes(families=None, *, heavy_tails=False)`, `subordinators(families=None)` and `alpha_stables()`. α-stables are included only with `heavy_tails=True`.
+- `compositions(leaves=None, *, max_depth=2, operations=("+", "*", "-", "@"), clocks=None, scale_factors=None, leaf_probability=0.3)`: expression trees that shrink to their operands first. `scalars(lo=-2, hi=2)`: non-zero factors that shrink to 1.
+- `martingales(base=None)`: draws centred as $X_t - E[X_1]t$.
+
+### Laws & Expectations
+- `@law(name=None, *, description="", tags=(), **strategies)` or `Law(name, fn, strategies, description="", tags=())`. `fn` holds unless it returns `False` or raises.
+- `Law.check(n_examples=100, seed=0, *, max_discard_ratio=5.0, shrink=True, max_shrinks=500)` returns a `LawResult`, with `status` (`"verified"`, `"falsified"`, `"error"` or `"unsatisfiable"`), `ok`, `failed`, `counterexample`, `original`, `message`, `details`, `n_examples`, `n_discarded`, `seed`, `shrink_steps`, `to_dict()` and `raise_if_failed()` (which raises `LawFailure`, an `AssertionError`). `Law.holds_for(**args)` evaluates one example.
+- Inside a law: `expect_close(a, b, rtol=1e-9, atol=1e-12, what="", equal_nan=False)` requires $|a-b| \le \text{atol} + \text{rtol}\max(|a|,|b|)$. Also `expect(condition, message, **details)`, `implies(premise, conclusion, message="")` (the conclusion may be a callable) and `assume(condition, reason="")`. `LawViolation` and `Discard` are the underlying exceptions.
+
+### Quantities
+`spxa.laws.quantities` evaluates any composite: `cumulants(X, order=4, t=1.0)` (an array of $\kappa_1, \dots$), `mean`, `variance`, `char_func(X, u, t)`, `char_exponent(X, u)`, `laplace_exponent(X, z)`, `mgf(X, z, t)` and `exponential_moment_strip(X)`. The strip is intersected across sums, divided by scale factors and found by bisection for `@`.
+
+### Statistical Expectations
+`spxa.laws.stats` provides tests for laws about random output. Each returns a p-value:
+- `ecf_test(samples, char_func, frequencies)`, the empirical characteristic function;
+- `mean_test(samples, mean, variance)`;
+- `variance_test(samples, kappa2, kappa4)`;
+- `independence_test(a, b, cf_a, cf_b, pairs)`, the joint ECF against the product of the marginals.
+
+Frequencies combine by Bonferroni. `expect_not_rejected(p, level=LEVEL, what="")` fails the law below `LEVEL = 1e-6`.
+
+### Library
+`spxa.laws.library` holds 46 laws in seven tuples: `AXIOMS` (5), `ALGEBRA` (10), `SUBORDINATION` (7), `TRIPLET` (6), `CUMULANTS` (2), `PROPERTIES` (9) and `SIMULATION` (7). Every law carries tags, such as `"cf"`, `"moments"`, `"martingale"` or `"simulation"`.
+
+### Suites, pytest & the Shell
+- `Suite(name, *laws)`: laws and nested iterables of laws, with unique names. It has `select(*, names=None, tags=None, exclude_tags=())`, `tags`, and `check(n_examples=100, seed=0, *, progress=None, fail_fast=False, **check_kw)`, which returns a `SuiteReport`. `default_suite()` holds every library law.
+- `SuiteReport` has `ok`, `counts`, `failures`, `report[name]`, `summary()`, `str(report)`, `to_markdown()`, `to_dict()` and `raise_if_failed()` (which raises `SuiteFailure`).
+- `law_tests(*laws, n_examples=100, seed=0, **check_kw)` returns a pytest test function with one case per law. `assert_holds(law, n_examples=100, seed=0)` checks one law inside a test. Both honour `SPXA_LAW_EXAMPLES` and `SPXA_LAW_SEED` (`spxa.laws.testing.resolve_settings`).
+- `spxa-laws [--examples N] [--seed S] [--names a,b] [--tags t,u] [--exclude-tags v] [--format text|markdown|json] [-o FILE] [--fail-fast] [--no-shrink] [--quiet] [--list]`, also available as `python -m spxa.laws`. It exits with 0 when every law is verified, 1 otherwise and 2 on bad arguments.

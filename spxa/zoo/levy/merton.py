@@ -469,6 +469,17 @@ class MertonJumpDiffusion(Process):
     # Exact Path Simulation
     # ------------------------------------------------------------------
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: drift*t + sigma*sqrt(t)*Z + N(N*m, N*s^2) with N ~ Poisson(rate*t)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        n = rng.poisson(self._rate * t)
+        diffusion = self._drift * t + self._sigma * np.sqrt(t) * rng.standard_normal(t.shape)
+        jumps = self._jump_mean * n + self._jump_std * np.sqrt(n) * rng.standard_normal(t.shape)
+        return diffusion + jumps
+
     def simulate(
         self,
         n_steps: int,

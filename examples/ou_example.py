@@ -6,7 +6,7 @@ Run with: python examples/ou_example.py
 
 import numpy as np
 
-from spxa import OrnsteinUhlenbeck, Vasicek
+from spxa import OrnsteinUhlenbeck
 
 print("=" * 65)
 print("spxa — Gaussian Ornstein–Uhlenbeck (Vasicek) Process Demo")
@@ -29,10 +29,16 @@ print(f"  Stationary Kurt  : {ou.stationary_kurtosis:.4f} (excess kurtosis)")
 t_eval = 1.0
 cond_kappas = ou.conditional_cumulants(t=t_eval, order=4)
 print(f"\n── 2. Analytical Moments at t={t_eval} vs Stationarity ──")
-print(f"  Conditional Mean (t={t_eval}) : {cond_kappas[1]:.6f} (theory: {ou.conditional_mean(t_eval):.6f})")
-print(f"  Conditional Var  (t={t_eval}) : {cond_kappas[2]:.8f} (theory: {ou.conditional_variance(t_eval):.8f})")
+print(
+    f"  Conditional Mean (t={t_eval}) : {cond_kappas[1]:.6f} (theory: {ou.conditional_mean(t_eval):.6f})"
+)
+print(
+    f"  Conditional Var  (t={t_eval}) : {cond_kappas[2]:.8f} (theory: {ou.conditional_variance(t_eval):.8f})"
+)
 print(f"  Conditional Std  (t={t_eval}) : {ou.conditional_std(t_eval):.6f}")
-print(f"  Cumulants κ_3, κ_4       : {cond_kappas[3]:.1f}, {cond_kappas[4]:.1f} (vanish for Gaussian)")
+print(
+    f"  Cumulants κ_3, κ_4       : {cond_kappas[3]:.1f}, {cond_kappas[4]:.1f} (vanish for Gaussian)"
+)
 
 # 3. Temporal Dependence & Power Spectral Density
 print("\n── 3. Temporal Dependence & Power Spectral Density ──")
@@ -74,8 +80,12 @@ th_mean = ou.conditional_mean(T)
 th_var = ou.conditional_variance(T)
 
 print(f"  Simulation Method: exact Gaussian increments (N={n_paths:,}, steps={n_steps})")
-print(f"  Terminal E[X_T]  : {mc_mean:.6f}  (theory: {th_mean:.6f}, diff: {abs(mc_mean - th_mean):.6f})")
-print(f"  Terminal Var[X_T]: {mc_var:.8f}  (theory: {th_var:.8f}, diff: {abs(mc_var - th_var):.8f})")
+print(
+    f"  Terminal E[X_T]  : {mc_mean:.6f}  (theory: {th_mean:.6f}, diff: {abs(mc_mean - th_mean):.6f})"
+)
+print(
+    f"  Terminal Var[X_T]: {mc_var:.8f}  (theory: {th_var:.8f}, diff: {abs(mc_var - th_var):.8f})"
+)
 
 # Euler scheme comparison
 paths_euler = ou.simulate(n_steps=n_steps, n_paths=n_paths, T=T, rng=rng, method="euler")

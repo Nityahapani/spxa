@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spxa"
-version = "1.0.1"
+version = "1.2.0"
 description = "Stochastic processes as first-class algebraic objects"
 readme = "README.md"
 license = { text = "MIT" }
@@ -12,7 +12,7 @@ authors = [{ name = "Nityahapani", email = "nityahapani.tges@gmail.com" }]
 requires-python = ">=3.10"
 keywords = ["stochastic processes", "levy processes", "probability", "mathematics", "finance"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -59,10 +59,14 @@ Repository = "https://github.com/Nityahapani/spxa"
 Issues = "https://github.com/Nityahapani/spxa/issues"
 Changelog = "https://github.com/Nityahapani/spxa/blob/main/CHANGELOG.md"
 
+[project.scripts]
+spxa-discover = "spxa.discovery.cli:main"
+spxa-laws = "spxa.laws.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["spxa*"]
-exclude = ["audits*", "tests*", "benchmarks*", "scripts*", "docs*", "site*", "examples_output*"]
+include = ["spxa*", "audits*"]
+exclude = ["tests*", "benchmarks*", "scripts*", "docs*", "site*", "examples_output*"]
 
 [tool.ruff]
 target-version = "py310"
@@ -104,6 +108,10 @@ addopts = "-v --tb=short"
 markers = [
     "exactness: marks tests that verify closed-form results against published formulas (never skip)",
     "slow: marks tests that take more than 5 seconds",
+]
+# NumPy >= 2.4 raises on complex()/float() of a size-1 array; fail on older NumPy too
+filterwarnings = [
+    "error:Conversion of an array with ndim > 0 to a scalar:DeprecationWarning",
 ]
 
 [tool.coverage.run]

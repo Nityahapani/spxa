@@ -47,6 +47,7 @@ from spxa.core.exactness import ExactnessLevel
 from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
+from spxa.zoo.levy.compound_poisson import _compound_sums
 from spxa.sim.exact import sample_kou
 from spxa.story.narrator import CompositionNode, NodeKind
 from spxa.zoo.levy.compound_poisson import DoubleExponentialJump, _CompoundPoissonLevyMeasure
@@ -433,17 +434,39 @@ class KouJumpDiffusion(Process):
     # Simulation
     # ------------------------------------------------------------------
 
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: drift*t + sigma*sqrt(t)*Z + a Poisson(rate*t) number of double-exponential jumps."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        counts = rng.poisson(self.rate * t)
+
+        def draw(n: int) -> np.ndarray:
+            up = rng.random(n) < self.p
+            return np.where(
+                up, rng.exponential(1.0 / self.eta1, n), -rng.exponential(1.0 / self.eta2, n)
+            )
+
+        diffusion = self.drift * t + self.sigma * np.sqrt(t) * rng.standard_normal(t.shape)
+        return diffusion + _compound_sums(counts, draw)
+
     def simulate(
         self,
         n_steps: int = 100,
+        n_paths: int = 1,
+        T: Optional[float] = None,
+        rng: Optional[np.random.Generator] = None,
+        *,
         dt: Optional[float] = None,
         time_horizon: Optional[float] = None,
-        n_paths: int = 1,
-        rng: Optional[np.random.Generator] = None,
-        T: Optional[float] = None,
     ) -> np.ndarray:
         r"""
         Simulate exact sample paths of the Kou jump-diffusion process.
+
+        The positional order ``(n_steps, n_paths, T, rng)`` is the one shared by
+        every :class:`~spxa.core.process.Process`, so sums and time changes can
+        call it. ``dt`` and ``time_horizon`` are keyword-only alternatives.
         """
         horizon = T if T is not None else time_horizon
         return sample_kou(

@@ -230,6 +230,30 @@ class VarianceGamma(Process):
         result = base ** (-t / self.nu)
         return result if result.shape != (1,) else result[0]
 
+    def _char_exponent(self, u: np.ndarray) -> np.ndarray:
+        r"""
+        :math:`\psi(u) = -\frac1\nu\log\big(1 - i\theta\nu u + \tfrac12\sigma^2\nu u^2\big)`, the closed form.
+
+        VG is Brownian motion run on a Gamma clock, and the argument is
+        :math:`1 - \nu\psi_{BM}(u)`. Where :math:`E[e^{iuX_1}]` converges,
+        :math:`\nu\operatorname{Re}\psi_{BM}(u) < 1`, so the argument has a
+        positive real part and the principal logarithm is analytic there.
+        """
+        u = np.asarray(u, dtype=complex)
+        base = 1.0 - 1j * u * self.theta * self.nu + 0.5 * self.sigma**2 * self.nu * u**2
+        return -np.log(base) / self.nu
+
+    _vector_sampler = True
+
+    def sample_at(self, times: np.ndarray, rng: Optional[np.random.Generator] = None) -> np.ndarray:
+        """Independent draws of X_t for each entry of ``times``: theta*G + sigma*sqrt(G)*Z with G ~ Gamma(t/nu, scale nu)."""
+        rng = rng or np.random.default_rng()
+        t = np.asarray(times, dtype=float)
+        g = np.zeros(t.shape)
+        pos = t > 0
+        g[pos] = rng.gamma(t[pos] / self.nu, self.nu)
+        return self.theta * g + self.sigma * np.sqrt(g) * rng.standard_normal(t.shape)
+
     def simulate(
         self,
         n_steps: int,

@@ -187,10 +187,14 @@ class ProcessProperties:
                 "The right operand of @ must be a subordinator (non-decreasing Lévy process)."
             )
 
-        if parent.is_martingale:
+        # E[X_{T_t} | T] = 0 when E[X_1] = 0, and E|X_{T_t}| < ∞ when E|X_1| and
+        # E[T_t] are finite. A Lévy process with E|Z_1| < ∞ and E[Z_1] = 0 is a
+        # martingale, so the time change preserves the property.
+        martingale = parent.is_martingale and subordinator.has_finite_mean
+        if parent.is_martingale and not martingale:
             notes.append(
-                "Martingale property after subordination depends on the specific "
-                "processes; not propagated automatically."
+                "The parent is a martingale, but the clock has an infinite mean; "
+                "E|X_T| may be infinite, so the martingale property is not propagated."
             )
 
         finite_var = parent.has_finite_variance and subordinator.has_finite_mean
@@ -198,12 +202,13 @@ class ProcessProperties:
         return ProcessProperties(
             has_stationary_increments=True,
             has_independent_increments=True,
-            is_martingale=False,
+            is_martingale=martingale,
             has_finite_variance=finite_var,
             has_finite_mean=parent.has_finite_mean and subordinator.has_finite_mean,
             self_similarity_index=None,
             tail_index=None,
-            is_subordinator=False,
+            # a non-decreasing process run on a non-decreasing clock is non-decreasing
+            is_subordinator=parent.is_subordinator,
             hurst_index=None,
             notes=notes,
         )

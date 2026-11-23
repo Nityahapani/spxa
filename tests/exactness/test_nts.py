@@ -24,11 +24,17 @@ class TestNormalTemperedStableExactness:
         assert "lambd=1.5" in repr(p)
 
     def test_nts_triplet_structure(self) -> None:
-        """NTS triplet has zero diffusion and correct drift."""
+        """NTS triplet has zero diffusion, and its drift gives the right mean.
+
+        With truncation 1{|x|<=1} the drift is b = E[X_1] - int_{|x|>1} x nu(dx),
+        not the mean itself.
+        """
         p = NormalTemperedStableProcess(alpha=0.5, lambd=1.0, delta=1.0, theta=-0.1, sigma=1.0)
         triplet = p.triplet
         assert triplet.sigma_sq == 0.0
-        assert math.isclose(triplet.b, p.mean, rel_tol=1e-9)
+        large_jumps = triplet.nu.first_moment_between(1.0, math.inf)
+        assert math.isclose(triplet.b, p.mean - large_jumps, rel_tol=1e-9)
+        assert math.isclose(triplet.cumulant(1), p.mean, rel_tol=1e-9)
         assert not triplet.nu.is_finite_activity()
 
     def test_nts_invalid_parameters_raise(self) -> None:
