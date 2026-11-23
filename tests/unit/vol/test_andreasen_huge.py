@@ -40,6 +40,7 @@ def test_grid_and_piecewise_levels() -> None:
 
 
 def _check_slice(x: np.ndarray, c: np.ndarray) -> None:
+    assert c[0] == 1.0 - x[0] and c[-1] == 0.0  # Dirichlet ends are exact
     assert np.all(c >= np.maximum(1.0 - x, 0.0) - 1e-14)
     assert np.all(c <= 1.0 + 1e-14)
     assert np.all(np.diff(c) <= 1e-14)  # decreasing in strike
@@ -94,6 +95,44 @@ def test_validation() -> None:
         AndreasenHugeSurface([0.5], [[0.0], [0.0]], [[0.2]])
     with pytest.raises(ValueError):
         AH.grid_calls(-1.0)
+
+
+@pytest.mark.parametrize("grid", [[0.5, 2.0], [1.0], [], [[0.5, 1.0, 2.0]]])
+def test_grid_without_interior_node_rejected(grid: list) -> None:
+    # Regression: a two-point grid used to pass validation and then raise
+    # IndexError inside the implicit step, which has no interior node to solve.
+    with pytest.raises(ValueError, match="at least three points"):
+        AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.asarray(grid, float))
+    with pytest.raises(ValueError, match="at least three points"):
+        calibrate_andreasen_huge([0.5], [[0.0]], [[0.2]], grid=np.asarray(grid, float))
+
+
+@pytest.mark.parametrize(
+    "grid",
+    [
+        [0.5, 1.0, np.nan],
+        [np.nan, 1.0, 2.0],
+        [0.5, np.nan, 2.0],
+        [0.5, 1.0, np.inf],
+        [-np.inf, 1.0, 2.0],
+    ],
+)
+def test_non_finite_grid_rejected(grid: list) -> None:
+    # Regression: NaN slipped past the ordering check and failed later inside
+    # SciPy, and [0.5, 1.0, inf] built a surface with calls [0.5, 0, 0].
+    with pytest.raises(ValueError, match="finite"):
+        AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.array(grid))
+    with pytest.raises(ValueError, match="finite"):
+        calibrate_andreasen_huge([0.5], [[0.0]], [[0.2]], grid=np.array(grid))
+
+
+def test_smallest_valid_grid_and_bad_grids() -> None:
+    ah = AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.array([0.5, 1.0, 2.0]))
+    c = ah.grid_calls(0.5)
+    assert c[0] == 0.5 and c[-1] == 0.0 and 0.0 < c[1] < 1.0
+    for bad in ([0.5, 0.5, 2.0], [-0.5, 1.0, 2.0], [2.0, 1.0, 0.5]):
+        with pytest.raises(ValueError, match="positive and strictly increasing"):
+            AndreasenHugeSurface([0.5], [[0.0]], [[0.2]], grid=np.array(bad))
 
 
 SS = SSVI(-0.7, PowerLawPhi(1.1, 0.4), lambda t: 0.04 * t + 0.003 * t * t)

@@ -46,7 +46,9 @@ def audit_ornstein_uhlenbeck() -> ProcessAuditResult:
     verify_moment(result, "Stationary_Variance", theoretical=stat_var, samples=term_long)
 
     # 3. Kolmogorov-Smirnov test against stationary Gaussian distribution
-    ks_res = stats.kstest(term_long, "norm", args=(stat_mean, np.sqrt(stat_var)))
+    # Pass the frozen normal's CDF: SciPy 1.18 maps "norm" to special.ndtr,
+    # which rejects loc/scale given through args=.
+    ks_res = stats.kstest(term_long, stats.norm(stat_mean, np.sqrt(stat_var)).cdf)
     result.add_check(
         name="Stationary_KS_Uniformity",
         theoretical=0.0,

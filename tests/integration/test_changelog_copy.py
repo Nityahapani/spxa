@@ -25,5 +25,12 @@ def test_version_is_the_same_everywhere() -> None:
     api = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
     assert f"spxa v{v}." in api and f'spxa.__version__          # "{v}"' in api
     assert f"spxa v{v} " in (ROOT / "examples" / "full_showcase.py").read_text(encoding="utf-8")
-    top = re.search(r"^## \[([^\]]+)\]", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
-    assert top.group(1) == v
+    headings = re.findall(
+        r"^## \[([^\]]+)\]", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M
+    )
+    # CONTRIBUTING asks every PR to add its entry under [Unreleased], which sits
+    # above the latest release; the latest released version must still match.
+    if headings[0] == "Unreleased":
+        headings = headings[1:]
+    assert "Unreleased" not in headings
+    assert headings[0] == v
