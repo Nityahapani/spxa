@@ -50,6 +50,24 @@ def test_heavy_tailed_moments_accepted() -> None:
     q = MG1WorkloadProcess(lam=0.5, job_size=jobs)
     assert q.stationary_mean == pytest.approx(1.5)
     assert q.stationary_variance == float("inf")
+    # W_t at finite t only needs E[S^2] < inf for a finite variance.
+    assert q.properties.has_finite_mean
+    assert q.properties.has_finite_variance
+
+
+@pytest.mark.parametrize("lam", [1.0, 2.5])
+def test_unstable_queue_still_has_finite_time_moments(lam: float) -> None:
+    # rho >= 1 removes the stationary law, not the moments of W_t at finite t.
+    q = MG1WorkloadProcess(lam=lam, job_size=ExponentialJump(rate=1.0))
+    assert q.rho >= 1.0
+    assert q.properties.has_finite_mean
+    assert q.properties.has_finite_variance
+
+
+def test_infinite_second_moment_means_infinite_finite_time_variance() -> None:
+    jobs = JobSizeDistribution(lambda rng, n: np.ones(n), 1.0, float("inf"), float("inf"))
+    q = MG1WorkloadProcess(lam=0.5, job_size=jobs)
+    assert q.properties.has_finite_mean
     assert not q.properties.has_finite_variance
 
 

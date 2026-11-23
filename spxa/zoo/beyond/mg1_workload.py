@@ -330,13 +330,16 @@ class MG1WorkloadProcess(Process):
         )
 
     def _properties(self) -> ProcessProperties:
-        stable = self.rho < 1.0
+        # The flags describe W_t at finite times, not the stationary law. Since
+        # X_t <= W_t <= w0 + sum_{i <= N_t} S_i with N_t Poisson, E[W_t] is finite
+        # whenever E[S] is (always, by construction) and E[W_t^2] is finite exactly
+        # when E[S^2] is, whatever the value of rho.
         return ProcessProperties(
             has_stationary_increments=False,
             has_independent_increments=False,
             is_martingale=False,
-            has_finite_variance=stable and math.isfinite(self._m3),
-            has_finite_mean=stable and math.isfinite(self._m2),
+            has_finite_variance=math.isfinite(self._m2),
+            has_finite_mean=True,
             self_similarity_index=None,
             tail_index=None,
             is_subordinator=False,
@@ -346,6 +349,9 @@ class MG1WorkloadProcess(Process):
                 "Reflection breaks independent increments, so there is no Lévy triplet.",
                 f"Traffic intensity rho = {self.rho:.6g}; stationary mean, variance and "
                 "idle probability are exact for rho < 1 (Pollaczek–Khinchine).",
+                "Finite-moment flags refer to W_t at finite t: the mean is always finite "
+                "and the variance is finite iff E[S^2] is. The stationary law needs "
+                "rho < 1, and its variance also needs E[S^3] < inf.",
             ],
         )
 
