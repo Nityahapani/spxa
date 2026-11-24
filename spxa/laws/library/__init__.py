@@ -20,6 +20,9 @@ module-level tuple:
 - :mod:`~spxa.laws.library.simulation` (``SIMULATION``): simulated paths and
   ``sample_at`` draws against the characteristic function and cumulants,
   with statistical tests at a known false-alarm rate.
+- :mod:`~spxa.laws.library.gradients` (``GRADIENTS``): exact parameter
+  derivatives (jets) of the exponent, the cumulants and COS prices against
+  differences of the zoo closed forms, and the chain rules of the algebra.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ from __future__ import annotations
 from spxa.laws.library.algebra import ALGEBRA
 from spxa.laws.library.axioms import AXIOMS
 from spxa.laws.library.cumulants import CUMULANTS
+from spxa.laws.library.gradients import GRADIENTS
 from spxa.laws.library.properties import PROPERTIES
 from spxa.laws.library.simulation import SIMULATION
 from spxa.laws.library.subordination import SUBORDINATION
@@ -36,6 +40,7 @@ __all__ = [
     "ALGEBRA",
     "AXIOMS",
     "CUMULANTS",
+    "GRADIENTS",
     "PROPERTIES",
     "SIMULATION",
     "SUBORDINATION",

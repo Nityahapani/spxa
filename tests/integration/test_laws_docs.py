@@ -21,8 +21,8 @@ def test_library_table_counts() -> None:
     assert set(rows) == set(library.__all__)
     for name, count in rows.items():
         assert len(getattr(library, name)) == int(count), name
-    assert sum(int(c) for c in rows.values()) == len(L.default_suite()) == 46
-    assert "as 46 laws in seven groups" in TEXT
+    assert sum(int(c) for c in rows.values()) == len(L.default_suite()) == 53
+    assert "as 53 laws in eight groups" in TEXT
 
 
 def test_tolerances_and_level() -> None:
@@ -101,4 +101,4 @@ def test_api_section_names_exist() -> None:
     modules += (L.SuiteReport, L.Tree)
     missing = sorted(n for n in names if not any(hasattr(m, n) for m in modules))
     assert not missing, missing
-    assert "46 laws in seven tuples" in section
+    assert "53 laws in eight tuples" in section

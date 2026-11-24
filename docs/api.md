@@ -5566,7 +5566,7 @@ Property-based testing for stochastic algebra: declare laws about processes, and
 Frequencies combine by Bonferroni. `expect_not_rejected(p, level=LEVEL, what="")` fails the law below `LEVEL = 1e-6`.
 
 ### Library
-`spxa.laws.library` holds 46 laws in seven tuples: `AXIOMS` (5), `ALGEBRA` (10), `SUBORDINATION` (7), `TRIPLET` (6), `CUMULANTS` (2), `PROPERTIES` (9) and `SIMULATION` (7). Every law carries tags, such as `"cf"`, `"moments"`, `"martingale"` or `"simulation"`.
+`spxa.laws.library` holds 53 laws in eight tuples: `AXIOMS` (5), `ALGEBRA` (10), `SUBORDINATION` (7), `TRIPLET` (6), `CUMULANTS` (2), `PROPERTIES` (9), `SIMULATION` (7) and `GRADIENTS` (7). Every law carries tags, such as `"cf"`, `"moments"`, `"martingale"` or `"simulation"`.
 
 ### Suites, pytest & the Shell
 - `Suite(name, *laws)`: laws and nested iterables of laws, with unique names. It has `select(*, names=None, tags=None, exclude_tags=())`, `tags`, and `check(n_examples=100, seed=0, *, progress=None, fail_fast=False, **check_kw)`, which returns a `SuiteReport`. `default_suite()` holds every library law.

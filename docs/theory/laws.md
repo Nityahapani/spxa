@@ -65,7 +65,7 @@ The process shrinks to the simplest martingale and the constant to a short non-z
 
 ## 3. The library
 
-`spxa.laws.library` states the theory as 46 laws in seven groups. The default tolerances for closed-form identities are a relative $10^{-6}$ and an absolute $10^{-9}$, at frequencies $u \in [-4, 4]$.
+`spxa.laws.library` states the theory as 53 laws in eight groups. The default tolerances for closed-form identities are a relative $10^{-6}$ and an absolute $10^{-9}$, at frequencies $u \in [-4, 4]$.
 
 | Group | Laws | What it states |
 | :--- | ---: | :--- |
@@ -76,6 +76,7 @@ The process shrinks to the simplest martingale and the constant to a short non-z
 | `CUMULANTS` | 2 | cumulants recovered from the cf by Cauchy's integral formula, convexity of the cumulant generating function |
 | `PROPERTIES` | 9 | martingale, subordinator, moment and self-similarity flags against the quantities they claim, and their closure under the operators |
 | `SIMULATION` | 7 | simulated paths and `sample_at` draws against the cf and the cumulants (§4) |
+| `GRADIENTS` | 7 | exact parameter derivatives (forward-mode jets) of $\psi$, of the cumulants and of COS prices against Richardson differences of the zoo closed forms; the chain rules $\partial\psi_{cX}(u) = \partial\psi_X(cu)$, $\partial_c\psi_{cX} = u\psi_X'(cu)$ and $\partial\psi_{X\circ T} = -i\psi_T'(w)\,\partial\psi_X$; symmetry of the Hessian |
 
 The subordination laws rest on Bochner's formula: for an independent subordinator $T$, $E[e^{iuX_{T_t}}] = E[e^{T_t\psi_X(u)}] = e^{t\psi_T(-i\psi_X(u))}$ (Sato 1999, Thm 30.1). Its cumulant form follows from composing the cumulant generating functions, $K_{X\circ T} = K_T\circ K_X$. A Lévy process is a martingale exactly when $E\lvert X_1\rvert < \infty$ and $E[X_1] = 0$. That is why `martingale_flag_is_complete` matters: a `False` flag is also a claim.
 

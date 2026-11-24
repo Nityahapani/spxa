@@ -247,4 +247,5 @@ def default_suite() -> Suite:
         library.CUMULANTS,
         library.PROPERTIES,
         library.SIMULATION,
+        library.GRADIENTS,
     )

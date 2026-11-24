@@ -24,8 +24,8 @@ Quantities and library
     :mod:`spxa.laws.quantities` evaluates characteristic functions, cumulants
     and exponential-moment strips for any composite.
     :mod:`spxa.laws.library` holds ready-made laws: ``AXIOMS``, ``ALGEBRA``,
-    ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS``, ``PROPERTIES`` and
-    ``SIMULATION``.
+    ``SUBORDINATION``, ``TRIPLET``, ``CUMULANTS``, ``PROPERTIES``,
+    ``SIMULATION`` and ``GRADIENTS``.
 Suites and reports
     :class:`Suite` groups laws, filters them by name or tag, and checks them
     into a :class:`SuiteReport` (text, Markdown or JSON). :func:`default_suite`

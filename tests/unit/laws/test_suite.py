@@ -97,7 +97,7 @@ def test_default_suite_holds_every_library_law() -> None:
 
     suite = default_suite()
     expected = sum(len(getattr(library, name)) for name in library.__all__)
-    assert len(suite) == expected == 46
+    assert len(suite) == expected == 53
     for tag in ("axiom", "algebra", "subordination", "triplet", "cumulants", "properties"):
         assert suite.select(tags=[tag])
     assert len(suite.select(tags=["simulation"])) == 7
