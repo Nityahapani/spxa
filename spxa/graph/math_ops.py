@@ -4,7 +4,7 @@ Mathematical operation nodes for graph evaluation, transformations, and gradient
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -377,6 +377,18 @@ class MeanNode(OperatorNode):
         )
 
 
+def _extreme_vjp(grad_out: Any, a: Any, b: Any, largest: bool) -> tuple[Any, Any]:
+    """VJP of max/min: the larger (smaller) input takes the cotangent, ties split it.
+
+    Half to each at a tie is the midpoint of the Clarke subdifferential, as in JAX
+    and PyTorch, and matches the forward-mode jets.
+    """
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    wins = (a > b) if largest else (a < b)
+    wa = np.where(a == b, 0.5, wins.astype(float))
+    return grad_out * wa, grad_out * (1.0 - wa)
+
+
 class MaximumNode(OperatorNode):
     r"""Elementwise maximum node :math:`z = \max(x, y)`."""
 
@@ -385,10 +397,7 @@ class MaximumNode(OperatorNode):
             op_fn=lambda a, b: np.maximum(a, b),
             inputs=[x, y],
             name=name or f"Max_{x.name}_{y.name}",
-            vjp_fn=lambda grad_out, a, b: (
-                grad_out * (a >= b).astype(float),
-                grad_out * (b > a).astype(float),
-            ),
+            vjp_fn=lambda grad_out, a, b: _extreme_vjp(grad_out, a, b, largest=True),
         )
 
 
@@ -400,10 +409,7 @@ class MinimumNode(OperatorNode):
             op_fn=lambda a, b: np.minimum(a, b),
             inputs=[x, y],
             name=name or f"Min_{x.name}_{y.name}",
-            vjp_fn=lambda grad_out, a, b: (
-                grad_out * (a <= b).astype(float),
-                grad_out * (b < a).astype(float),
-            ),
+            vjp_fn=lambda grad_out, a, b: _extreme_vjp(grad_out, a, b, largest=False),
         )
 
 

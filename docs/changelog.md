@@ -74,6 +74,12 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   by $10^{-5}$ when $\varphi$ was small.
 - **Generalized hyperbolic.** The Lévy measure returned the GH probability density. It is now
   Raible's Lévy density, so `GH + Drift` and `c * GH` have the right exponent (the error was O(1)).
+- **Derivatives at ties.** `MaximumNode`/`MinimumNode` gave the whole derivative to the first
+  argument at a tie, so `max(a, b)` and `max(b, a)` differentiated differently; the jets for
+  `np.max`/`np.min` picked the first tied entry. Every kink now returns the centroid of the Clarke
+  subdifferential: half to each argument, an equal share among tied entries (also for
+  `np.maximum.accumulate`), and $\tfrac12$ at the strike for the call and put payoff nodes. The tape
+  and the jets agree.
 - **Generalized hyperbolic cumulants and drift.**
   - `cumulant_exact(n)` for $n \ge 5$ returned a difference quotient of $\psi'(0)$, that is
     $\kappa_1$. Every order now comes from $K_X(s) = \mu s + K_Z(\beta s + s^2/2)$ with the GIG

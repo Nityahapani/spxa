@@ -19,9 +19,10 @@ class EuropeanCallPayoffNode(OperatorNode):
             op_fn=lambda s, k: np.maximum(np.asarray(s, dtype=float) - float(k), 0.0),
             inputs=[spot_terminal, strike],
             name=name or f"CallPayoff_{spot_terminal.name}",
+            # H(0) = 1/2 at the strike: the midpoint of the subdifferential of the kink
             vjp_fn=lambda grad_out, s, k: (
-                grad_out * (s >= k).astype(float),
-                -grad_out * (s >= k).astype(float),
+                grad_out * np.heaviside(np.asarray(s, dtype=float) - float(k), 0.5),
+                -grad_out * np.heaviside(np.asarray(s, dtype=float) - float(k), 0.5),
             ),
         )
 
@@ -35,8 +36,8 @@ class EuropeanPutPayoffNode(OperatorNode):
             inputs=[spot_terminal, strike],
             name=name or f"PutPayoff_{spot_terminal.name}",
             vjp_fn=lambda grad_out, s, k: (
-                -grad_out * (k >= s).astype(float),
-                grad_out * (k >= s).astype(float),
+                -grad_out * np.heaviside(float(k) - np.asarray(s, dtype=float), 0.5),
+                grad_out * np.heaviside(float(k) - np.asarray(s, dtype=float), 0.5),
             ),
         )
 

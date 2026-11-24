@@ -701,28 +701,47 @@ def _select(mask: np.ndarray, a: Any, b: Any) -> Any:
     return Jet(v, np.broadcast_to(g, np.shape(v) + (n,)), h)
 
 
+def _tie_select(mask: np.ndarray, tie: np.ndarray, a: Any, b: Any) -> Any:
+    """``a`` where ``mask`` else ``b``; where ``tie``, the average of their derivatives.
+
+    At a tie of max/min the one-sided derivatives are those of ``a`` and of ``b``;
+    their average is the midpoint of the Clarke subdifferential (the JAX and PyTorch
+    convention), which keeps ``max(a, b)`` and ``max(b, a)`` identical.
+    """
+    r = _select(mask, a, b)
+    if not isinstance(r, Jet) or not np.any(tie):
+        return r
+    n, order = _meta(a, b)
+    t = np.broadcast_to(np.asarray(tie), np.shape(r.value))
+    g = np.where(t[..., None], 0.5 * (grad_of(a, n) + grad_of(b, n)), r.grad)
+    h = r.hess
+    if order == 2:
+        h = np.where(t[..., None, None], 0.5 * (hess_of(a, n) + hess_of(b, n)), r.hess)
+    return Jet(r.value, np.broadcast_to(g, np.shape(r.value) + (n,)), h)
+
+
 def _maximum(a: Any, b: Any) -> Any:
     av, bv = _a(value_of(a)), _a(value_of(b))
     mask = (av >= bv) | np.isnan(av)
-    return _select(mask, a, b)
+    return _tie_select(mask, av == bv, a, b)
 
 
 def _minimum(a: Any, b: Any) -> Any:
     av, bv = _a(value_of(a)), _a(value_of(b))
     mask = (av <= bv) | np.isnan(av)
-    return _select(mask, a, b)
+    return _tie_select(mask, av == bv, a, b)
 
 
 def _fmax(a: Any, b: Any) -> Any:
     av, bv = _a(value_of(a)), _a(value_of(b))
     mask = (av >= bv) | np.isnan(bv)
-    return _select(mask, a, b)
+    return _tie_select(mask, av == bv, a, b)
 
 
 def _fmin(a: Any, b: Any) -> Any:
     av, bv = _a(value_of(a)), _a(value_of(b))
     mask = (av <= bv) | np.isnan(bv)
-    return _select(mask, a, b)
+    return _tie_select(mask, av == bv, a, b)
 
 
 def _absolute(x: Jet) -> Jet:
@@ -1261,11 +1280,13 @@ def _extreme(x: Any, axis: Any = None, keepdims: Any = False, largest: bool = Tr
     if isinstance(axis, (tuple, list)):
         raise JetError("max/min of a Jet over several axes is not supported")
     ax = int(axis) % x.ndim
-    idx = np.argmax(x.value, axis=ax) if largest else np.argmin(x.value, axis=ax)
-    idx = np.expand_dims(idx, ax)
-    v = np.take_along_axis(x.value, idx, axis=ax)
-    g = np.take_along_axis(x.grad, idx[..., None], axis=ax)
-    h = None if x.hess is None else np.take_along_axis(x.hess, idx[..., None, None], axis=ax)
+    # Every tied position shares the derivative equally (the midpoint of the
+    # subdifferential); a NaN in a slice selects the NaNs, as np.max does.
+    v = (np.max if largest else np.min)(x.value, axis=ax, keepdims=True)
+    hit = (x.value == v) | (np.isnan(v) & np.isnan(x.value))
+    w = hit / np.sum(hit, axis=ax, keepdims=True)
+    g = np.sum(w[..., None] * x.grad, axis=ax, keepdims=True)
+    h = None if x.hess is None else np.sum(w[..., None, None] * x.hess, axis=ax, keepdims=True)
     j = Jet(v, g, h)
     return j if keepdims else _squeeze(j, axis=ax)
 
@@ -1274,23 +1295,32 @@ def _accumulate_extreme(x: Any, axis: int = 0, largest: bool = True) -> Any:
     x = _coerce(x)
     ax = int(axis) % x.ndim
     vm = np.moveaxis(x.value, ax, 0)
-    m = vm.shape[0]
-    idx = np.zeros(vm.shape, dtype=np.intp)
-    best = vm[0].copy()
-    cur = np.zeros(vm.shape[1:], dtype=np.intp)
-    for i in range(1, m):
-        upd = vm[i] > best if largest else vm[i] < best
-        cur = np.where(upd, i, cur)
-        best = np.where(upd, vm[i], best)
-        idx[i] = cur
     gm = np.moveaxis(x.grad, ax, 0)
-    v = np.take_along_axis(vm, idx, axis=0)
-    g = np.take_along_axis(gm, idx[..., None], axis=0)
-    h = None
-    if x.hess is not None:
-        hm = np.moveaxis(x.hess, ax, 0)
-        h = np.moveaxis(np.take_along_axis(hm, idx[..., None, None], axis=0), 0, ax)
-    return Jet(np.moveaxis(v, 0, ax), np.moveaxis(g, 0, ax), h)
+    hm = None if x.hess is None else np.moveaxis(x.hess, ax, 0)
+    # running extreme; tied entries so far share the derivative equally (as in _extreme)
+    best = vm[0].copy()
+    gsum, cnt = gm[0].copy(), np.ones(vm.shape[1:])
+    hsum = None if hm is None else hm[0].copy()
+    g_out = np.empty_like(gm)
+    h_out = None if hm is None else np.empty_like(hm)
+    g_out[0] = gsum
+    if h_out is not None:
+        h_out[0] = hsum
+    for i in range(1, vm.shape[0]):
+        new = (vm[i] > best if largest else vm[i] < best) | (np.isnan(vm[i]) & ~np.isnan(best))
+        tie = (vm[i] == best) & ~new
+        best = np.where(new, vm[i], best)
+        gsum = np.where(new[..., None], gm[i], gsum + np.where(tie[..., None], gm[i], 0.0))
+        cnt = np.where(new, 1.0, cnt + tie)
+        g_out[i] = gsum / cnt[..., None]
+        if hm is not None and hsum is not None and h_out is not None:
+            hsum = np.where(
+                new[..., None, None], hm[i], hsum + np.where(tie[..., None, None], hm[i], 0.0)
+            )
+            h_out[i] = hsum / cnt[..., None, None]
+    v = (np.maximum if largest else np.minimum).accumulate(x.value, axis=ax)
+    h = None if h_out is None else np.moveaxis(h_out, 0, ax)
+    return Jet(v, np.moveaxis(g_out, 0, ax), h)
 
 
 def _squeeze(x: Any, axis: Any = None) -> Any:

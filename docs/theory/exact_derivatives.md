@@ -28,6 +28,8 @@ A jet carries a value $v$, its gradient $\nabla v \in \mathbb C^n$ and, optional
 
 Jets refuse to lose information. `float()` of a jet, an operation without a rule, or an object array raises `JetError`. A derivative is exact or the call fails; it is never silently a difference quotient.
 
+**Kinks.** Where a function is not differentiable, every rule returns the centroid of its Clarke subdifferential. At a tie, `np.maximum`, `np.minimum`, `np.fmax` and `np.fmin` give each argument half of the derivative, and `np.max`/`np.min` (and their `accumulate`) share it equally among the tied entries. `|x|` has derivative 0 at 0, and the call and put payoff nodes take $\tfrac12$ at the strike. For a kink between two branches the centroid is the average of the one-sided derivatives, so the gradient applied to any direction equals the symmetric difference quotient. The convention is the one JAX and PyTorch use; it makes $\max(a, b)$ and $\max(b, a)$ differentiate identically, and the graph's `MaximumNode`/`MinimumNode` agree with the jets.
+
 `spxa.grad`, `spxa.value_and_grad`, `spxa.jacobian` and `spxa.hessian` wrap any such function, in the style of JAX. A complex output is differentiated as a holomorphic function of the real argument.
 
 ## 2. The algebra is closed under differentiation
