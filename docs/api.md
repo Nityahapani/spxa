@@ -4807,6 +4807,28 @@ from spxa.graph import (
 
 ---
 
+### Graph Calibration
+
+```python
+from spxa.graph import (
+    GraphCalibrator,
+    MSELossNode,
+    ArbitragePenaltyNode,
+)
+from spxa.graph.calibration.constraints import FellerConstraintNode
+```
+
+- `GraphCalibrator(calibration_graph, loss_output_name="loss")` minimizes a real scalar loss output with the tape's gradient. A non-scalar or complex loss raises an error rather than being summed.
+  - `fit(parameters=None, method="L-BFGS-B", max_iter=100, tol=1e-6, *, strict=False)` runs SciPy `minimize` with `jac=True`.
+  - `fit_adam(parameters=None, lr=0.01, max_iter=150, beta1=0.9, beta2=0.999, eps=1e-8, *, strict=False)` runs Adam, projected onto the parameter bounds.
+  - Both return `success`, `final_loss`, `iterations`, `optimal_parameters`, `gradient_exactness` (the worst label over all gradient evaluations) and `gradient_notes`. `strict=True` raises `InexactGradientError` at the first inexact gradient.
+- `MSELossNode(model_output, market_quotes, weights=None)` computes $\frac1N\sum(y-q)^2$, or $\sum w(y-q)^2/\sum w$, with an exact VJP that includes the derivative in the weights.
+- `ArbitragePenaltyNode(prices_node, penalty_weight=100.0)` computes $\lambda\sum\max(0, -(Dp)_i)^2$ over second differences $D$, with gradient $-2\lambda D^\top\max(0, -Dp)$. The penalty is $C^1$, so the gradient is exact on the convexity boundary too.
+- `FellerConstraintNode(kappa, theta, sigma, penalty_weight=1000.0)` computes $\lambda\max(0, \sigma^2 - 2\kappa\theta)^2$ with an exact VJP.
+- All three forwards use NumPy operations only, so they run on jets and `graph_hessian` through them is `EXACT`.
+
+---
+
 ### Universal Zoo & Submodule Adapters
 
 ```python

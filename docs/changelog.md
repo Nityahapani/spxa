@@ -68,6 +68,14 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   mixed the two. With the old curvature the bound $\lambda \ge (1+|\rho|)/4$ (Corollary 4.1), which
   `calibrate_ssvi(no_arbitrage=True)` imposes, did not exclude butterfly arbitrage; at $\lambda = 20$
   Theorem 4.2 failed. Surfaces built with `HestonLikePhi(lam)` change: at $\lambda = 2$ the skew halves.
+- **Graph calibration gradients.** `GraphCalibrator` summed each gradient with `float(np.sum(...))`.
+  That hid a non-scalar loss and dropped the imaginary part of a complex gradient. It also ignored
+  how each gradient was obtained. It now uses the tape's scalar gradients, rejects non-scalar and
+  complex losses, and reports `gradient_exactness` and `gradient_notes`. `strict=True` raises on
+  an inexact gradient. `ArbitragePenaltyNode` had no VJP, so its gradient came from central
+  differences. It now has the exact rule $-2\lambda D^\top\max(0, -Dp)$. The forwards of
+  `MSELossNode`, `ArbitragePenaltyNode` and `FellerConstraintNode` called `float()`, so Hessians
+  through them were differenced; they now run on jets, and these Hessians are exact.
 - **`calibrate_ssvi` ATM variances.** The SVI fit that reads $\theta_t$ now searches $m$ within four
   strike spans and $\sigma \le 50$. That range contains the SSVI slice parameters
   $m = -\rho/\varphi$ and $\sigma = \sqrt{1-\rho^2}/\varphi$. Before, a short-expiry $\theta$ could be off

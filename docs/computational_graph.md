@@ -88,25 +88,31 @@ print("Rho  :", greeks["rho"])
 
 ### B. Graph-Based Model Calibration
 
+`GraphCalibrator` minimizes a scalar loss output with SciPy (`fit`) or Adam (`fit_adam`), using the tape's gradient. The loss and penalty nodes (`MSELossNode`, `ArbitragePenaltyNode`, `FellerConstraintNode`) have exact reverse-mode rules and run on jets, so gradients and Hessians through them are `EXACT`. Each result reports `gradient_exactness` and `gradient_notes`. `strict=True` raises `InexactGradientError` instead of optimizing on a differenced gradient. An array-valued loss is rejected rather than summed.
+
 ```python
 import numpy as np
 from spxa.graph import (
     ComputationalGraph,
+    ConstantNode,
     GraphCalibrator,
     MSELossNode,
     ParameterNode,
 )
+from spxa.graph.math_ops import AddNode, MulNode
 
-# Build parameter recovery problem
-param_a = ParameterNode(value=0.0, name="slope")
-param_b = ParameterNode(value=0.0, name="intercept")
+slope = ParameterNode(value=0.0, name="slope")
+intercept = ParameterNode(value=0.0, name="intercept")
+x = np.linspace(0.0, 1.0, 50)
+y_target = 3.5 * x + 1.2
 
-# Setup synthetic targets
-x_data = np.linspace(0.0, 1.0, 50)
-y_target = 3.5 * x_data + 1.2
+prediction = AddNode(MulNode(slope, ConstantNode(x)), intercept)
+graph = ComputationalGraph()
+graph.add_output(MSELossNode(prediction, ConstantNode(y_target)), "loss")
 
-calibrator = GraphCalibrator()
-loss_node = MSELossNode(prediction_node=..., target=y_target)
+result = GraphCalibrator(graph, loss_output_name="loss").fit(strict=True)
+print(result["optimal_parameters"])  # {'slope': 3.5..., 'intercept': 1.2...}
+print(result["gradient_exactness"])  # EXACT
 ```
 
 ---
