@@ -17,6 +17,8 @@ evaluate
     NumPy reference interpreter and Taylor-mode interpreter (exact cumulants).
 rules
     Lowering rules: zoo Lévy families to IR exponents (``"<Family>.<param>"`` names).
+lower
+    A process expression (``+``, scaling, ``@``) to one exponent over a flat parameter vector.
 codegen
     Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
 """
