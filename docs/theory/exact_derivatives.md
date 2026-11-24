@@ -130,7 +130,7 @@ Tests pool fixed seeds against COS and Black–Scholes references. They check th
 **Known limitations.**
 
 - The generalised hyperbolic Lévy density uses a truncated quadrature, so its triplet mean $\kappa_1$ is off by about $2.5\times10^{-9}$. The characteristic exponent and its derivatives are unaffected.
-- `jacobian` and `price_and_gradient` use forward mode, so they cost about $n+1$ evaluations for $n$ parameters. For the calibrators here, $n \le 10$.
+- `jacobian` and `price_and_gradient` use forward mode, so they cost about $n+1$ evaluations for $n$ parameters. For the calibrators here, $n \le 10$. The COS payoff matrix depends on the parameters only through $[a, b]$, so its two partial derivatives are taken in closed form and chained. An exact options Jacobian then costs three to four residual evaluations for three to five parameters, less than two-point differences ($n + 1$).
 - The Hull–White, Heston-joint and SVI calibrators still use differences.
 
 ## References

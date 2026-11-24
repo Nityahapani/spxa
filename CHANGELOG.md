@@ -24,7 +24,11 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   - COS, Carr–Madan and Lewis pricers, `price_and_gradient`, and `fourier_price_node` for graphs;
   - COS differentiates its truncation interval (`track_interval=True`), so the gradient matches
     differences of the computed price to rounding;
-  - prices are never clipped.
+  - prices are never clipped;
+  - `cos_price_surface` prices a whole surface. The unit-time cumulants are computed once, and the
+    payoff matrix is differentiated in closed form in the interval end points. An exact options
+    Jacobian costs three to four residual evaluations for three to five parameters, less than SciPy's
+    two-point differences ($n + 1$).
 - **Exact calibration derivatives:**
   - `discovery.fit_structure(gradient="exact")` and `discovery.fit_options(jac="exact")`, via
     `spxa.graph.autodiff.discovery`;

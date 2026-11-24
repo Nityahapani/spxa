@@ -49,7 +49,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import numpy as np
 
 from spxa.graph.autodiff.exactness import GradientExactness
-from spxa.graph.autodiff.jet import Jet, stack, value_of, variable_vector, variables
+from spxa.graph.autodiff.jet import Jet, stack, value_of, variable_vector
 from spxa.graph.autodiff.process import DiffProcess, UnsupportedProcessError
 
 __all__ = [
@@ -62,6 +62,7 @@ __all__ = [
     "fourier_price_node",
     "fourier_nodes",
     "cos_interval",
+    "cos_price_surface",
 ]
 
 _METHODS = ("cos", "carr_madan", "lewis")
@@ -98,9 +99,12 @@ def martingale_correction(dp: DiffProcess, theta: Any = None) -> Any:
     return -np.real(k1)
 
 
-def _cf_T(dp: DiffProcess, u: np.ndarray, T: float, r: float, q: float, theta: Any) -> Any:
-    r""":math:`E[e^{iu\log(S_T/S_0)}]` (``u`` may be complex)."""
-    omega = martingale_correction(dp, theta)
+def _cf_T(
+    dp: DiffProcess, u: np.ndarray, T: float, r: float, q: float, theta: Any, omega: Any = None
+) -> Any:
+    r""":math:`E[e^{iu\log(S_T/S_0)}]` (``u`` may be complex); ``omega`` if already known."""
+    if omega is None:
+        omega = martingale_correction(dp, theta)
     return np.exp(1j * u * ((r - q) * T + omega * T) + T * dp.char_exponent(u, theta))
 
 
@@ -158,7 +162,11 @@ def cos_interval(
     th = theta if (track and isinstance(theta, Jet)) else _theta_values(dp, theta)
     k = dp.cumulants(4, th)
     omega = martingale_correction(dp, th)
-    T = float(maturity)
+    return _interval(k, omega, float(maturity), rate, dividend, width)
+
+
+def _interval(k: Any, omega: Any, T: float, rate: float, dividend: float, width: float) -> Any:
+    """:func:`cos_interval` from the unit-time cumulants ``k`` and ``omega`` (Lévy scaling)."""
     c1 = (rate - dividend + omega + k[0]) * T
     c2, c4 = np.maximum(k[1], 0.0) * T, np.maximum(k[3], 0.0) * T
     # sqrt is not differentiable at 0; a vanishing c4 (e.g. Brownian motion) is a
@@ -198,31 +206,152 @@ def cos_price(
     _check(spot, maturity)
     K = _strikes(strikes)
     is_call = np.broadcast_to(np.asarray(call, dtype=bool), K.shape)
-    T = float(maturity)
-    a, b = cos_interval(dp, T, rate, dividend, width, theta, track=track_interval)
+    moments = _cos_moments(dp, theta, track_interval)
+    return _cos_one(
+        dp, spot, K, is_call, float(maturity), rate, dividend, n_terms, width, theta, moments
+    )
+
+
+def cos_price_surface(
+    dp: DiffProcess,
+    spot: float,
+    strikes: Any,
+    maturities: Any,
+    rate: float = 0.0,
+    dividend: float = 0.0,
+    call: Any = True,
+    n_terms: int = 1024,
+    width: float = 12.0,
+    theta: Any = None,
+    track_interval: bool = True,
+) -> Any:
+    r"""
+    :func:`cos_price` for quotes at several maturities, one price per quote.
+
+    ``strikes``, ``maturities`` and ``call`` broadcast to one 1-D shape.
+    Element ``i`` equals ``cos_price(..., strikes[i], maturities[i], ...)``
+    to rounding. The cumulants and :math:`\omega` of :math:`X_1` do not depend
+    on the maturity, so they are computed once and scaled by :math:`T`.
+    """
+    K = _strikes(strikes)
+    Tq = np.atleast_1d(np.asarray(maturities, dtype=float))
+    if Tq.ndim != 1:
+        raise ValueError("maturities must be a scalar or a 1-D array")
+    K, Tq = np.broadcast_arrays(K, Tq)
+    is_call = np.broadcast_to(np.asarray(call, dtype=bool), K.shape)
+    groups = np.unique(Tq)
+    for T in groups:
+        _check(spot, float(T))
+    moments = _cos_moments(dp, theta, track_interval)
+    idxs, parts = [], []
+    for T in groups:
+        idx = np.flatnonzero(Tq == T)
+        p = _cos_one(
+            dp, spot, K[idx], is_call[idx], float(T), rate, dividend, n_terms, width, theta, moments
+        )
+        idxs.append(idx)
+        parts.append(p)
+    order = np.argsort(np.concatenate(idxs), kind="stable")
+    if not any(isinstance(p, Jet) for p in parts):
+        return np.concatenate([np.asarray(p, dtype=float) for p in parts])[order]
+    return np.concatenate(parts)[order]
+
+
+def _cos_moments(dp: DiffProcess, theta: Any, track: bool) -> Tuple[Any, Any, Any]:
+    """Unit-time cumulants and omega for the interval, and omega for the transform."""
+    jet = isinstance(theta, Jet)
+    th_iv = theta if (track and jet) else _theta_values(dp, theta)
+    k = dp.cumulants(4, th_iv)
+    om_iv = martingale_correction(dp, th_iv)
+    om_cf = om_iv if (track or not jet) else martingale_correction(dp, theta)
+    return k, om_iv, om_cf
+
+
+def _cos_one(
+    dp: DiffProcess,
+    spot: float,
+    K: np.ndarray,
+    is_call: np.ndarray,
+    T: float,
+    rate: float,
+    dividend: float,
+    n_terms: int,
+    width: float,
+    theta: Any,
+    moments: Tuple[Any, Any, Any],
+) -> Any:
+    k, om_iv, om_cf = moments
+    a, b = _interval(k, om_iv, T, rate, dividend, width)
     k_idx = np.arange(int(n_terms))
     u = k_idx * np.pi / (b - a)
-    phi = _cf_T(dp, u, T, rate, dividend, theta)
+    phi = _cf_T(dp, u, T, rate, dividend, theta, om_cf)
     coef = np.real(phi * np.exp(-1j * u * a))
     disc = np.exp(-rate * T)
     forward = spot * np.exp(-dividend * T) - K * np.exp(-rate * T)
     shift = np.where(is_call, forward, 0.0)
     if isinstance(a, Jet) and isinstance(coef, Jet) and coef.hess is None:
-        # The (M, N) payoff matrix depends on theta only through (a, b): carry
-        # two directions there and chain, instead of n directions on M x N.
-        A, B = variables([float(np.real(a.value)), float(np.real(b.value))])
-        P2 = _cos_payoff(K, spot, A, B, k_idx)
+        # The (M, N) payoff matrix depends on theta only through (a, b): its two
+        # partial derivatives in closed form, chained with da and db.
+        av, bv = float(np.real(a.value)), float(np.real(b.value))
+        P, Pa, Pb = _cos_payoff_ab(K, spot, av, bv, k_idx)
         cv, cg = np.asarray(coef.value), np.asarray(coef.grad)
-        val = disc * (np.real(P2.value) @ cv) + shift
-        P2g = np.real(P2.grad)
+        val = disc * (P @ cv) + shift
         grad = disc * (
-            (P2g[..., 0] @ cv)[:, None] * np.real(a.grad)[None, :]
-            + (P2g[..., 1] @ cv)[:, None] * np.real(b.grad)[None, :]
-            + np.real(P2.value) @ cg
+            (Pa @ cv)[:, None] * np.real(a.grad)[None, :]
+            + (Pb @ cv)[:, None] * np.real(b.grad)[None, :]
+            + P @ cg
         )
         return Jet(val, grad)
     payoff = _cos_payoff(K, spot, a, b, k_idx)
     return disc * (payoff @ coef) + shift
+
+
+def _cos_payoff_ab(
+    K: np.ndarray, spot: float, a: float, b: float, k_idx: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    r"""
+    :func:`_cos_payoff` at float end points, and its partial derivatives in ``a`` and ``b``.
+
+    With :math:`L = b - a`, :math:`w = k\pi/L`, :math:`d = \mathrm{clip}(\log(K/S_0), a, b)`
+    and :math:`\vartheta = w(d - a)`:
+
+    - :math:`\partial_a w = w/L` and :math:`\partial_b w = -w/L`;
+    - :math:`\partial d` is 1 where the clip is active at that end point. Ties
+      keep :math:`\log(K/S_0)`, as ``np.maximum`` and ``np.minimum`` do on jets;
+    - the product and quotient rules are applied to
+      :math:`\chi = (\cos\vartheta\,e^d - e^a + w\sin\vartheta\,e^d)/(1 + w^2)` and
+      :math:`\psi = \sin\vartheta/w` (:math:`d - a` at :math:`k = 0`).
+    """
+    L = b - a
+    w = (k_idx * np.pi / L)[None, :]
+    ell = np.log(K / spot)[:, None]
+    lo, hi = ell < a, ell > b
+    d = np.where(lo, a, np.where(hi, b, ell))
+    half = np.ones(k_idx.size)
+    half[0] = 0.5
+    first = (k_idx == 0)[None, :]
+    th = w * (d - a)
+    c, s = np.cos(th), np.sin(th)
+    ed, ea = np.exp(d), np.exp(a)
+    den = 1.0 + w * w
+    sed, ced = s * ed, c * ed
+    N = ced - ea + w * sed
+    ws = np.where(first, 1.0, w)
+    psi = np.where(first, d - a, s / ws)
+    core = K[:, None] * psi - spot * (N / den)
+    out = [2.0 / L * core * half]
+    for end in (0, 1):
+        sign = 1.0 if end == 0 else -1.0  # dw = sign * w / L and dL = -sign
+        w_p = sign * w / L
+        d_p = (lo if end == 0 else hi).astype(float)
+        a_p = 1.0 if end == 0 else 0.0
+        th_p = w_p * (d - a) + w * (d_p - a_p)
+        N_p = (w * ced - sed) * th_p + (ced + w * sed) * d_p - ea * a_p + w_p * sed
+        chi_p = N_p / den - N * (2.0 * w * w_p) / (den * den)
+        psi_p = np.where(first, d_p - a_p, (c * th_p - s * w_p / ws) / ws)
+        core_p = K[:, None] * psi_p - spot * chi_p
+        out.append((2.0 * sign / (L * L) * core + 2.0 / L * core_p) * half)
+    return out[0], out[1], out[2]
 
 
 def _cos_payoff(K: np.ndarray, spot: float, a: Any, b: Any, k_idx: np.ndarray) -> Any:

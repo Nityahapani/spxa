@@ -435,6 +435,20 @@ class Jet:
 
     # -- protocols ---------------------------------------------------------
     def __array_ufunc__(self, ufunc: Any, method: str, *inputs: Any, **kwargs: Any) -> Any:
+        if method == "__call__" and not kwargs:
+            # fast path: only jets, Python numbers and numeric arrays (nothing to coerce,
+            # no Taylor series, no keyword); same result as the general path below
+            rule = _UFUNC_RULES.get(ufunc)
+            if rule is not None:
+                for i in inputs:
+                    t = type(i)
+                    if t is Jet or t in _PLAIN_SCALARS:
+                        continue
+                    if t is np.ndarray and i.dtype.kind in "biufc":
+                        continue
+                    break
+                else:
+                    return rule(*inputs)
         if any(getattr(type(i), "__taylor__", False) for i in inputs):
             return NotImplemented  # Taylor series hold jets as coefficients, not vice versa
         out = kwargs.get("out")
@@ -999,6 +1013,8 @@ def _polygamma(k: Any, x: Any) -> Jet:
         lambda v, f, d: _polygamma_real(int(kk) + 2, v),
     )
 
+
+_PLAIN_SCALARS = frozenset({float, int, complex, bool, np.float64, np.complex128, np.int64})
 
 _VALUE_ONLY = {
     np.greater,

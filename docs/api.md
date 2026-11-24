@@ -5610,6 +5610,7 @@ Derivatives labelled `EXACT` (jets or authored adjoints), `NUMERICAL` (a reporte
   - `cos_price(dp, spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0, theta=None, track_interval=True)`;
   - `carr_madan_price(..., alpha=1.5, u_max=400.0, panel=1.0, order=16, theta=None)`;
   - `lewis_price(..., u_max=400.0, panel=1.0, order=16, theta=None)`.
+- `cos_price_surface(dp, spot, strikes, maturities, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0, theta=None, track_interval=True)` prices quotes at several maturities, one price per quote. It equals `cos_price` per maturity to rounding. The cumulants and $\omega$ of $X_1$ are computed once and scaled by $T$.
 - `price_and_gradient(dp, spot, strikes, maturity, method="cos"|"carr_madan"|"lewis", hessian=False, theta=None, **kw)` returns a `PricingResult(prices, jacobian, names, method, hessian, exactness, notes)` with `__story__()`.
 - `fourier_price_node(dp, params, spot, strikes, maturity, method="cos", name=None, **kw)` is a graph node with an exact VJP.
 

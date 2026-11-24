@@ -117,30 +117,19 @@ def options_residual_jacobian(
     structure: Node, quotes: Any, x: Sequence[float], vega: np.ndarray, n_terms: int = 1024
 ) -> np.ndarray:
     """Exact ``d resid / d x`` for :func:`~spxa.discovery.options.fit_options` residuals."""
-    from spxa.graph.autodiff.fourier import cos_price
+    from spxa.graph.autodiff.fourier import cos_price_surface
 
     fm = FreeModel(structure, x)
     th = variable_vector(fm.values)
-    J = np.zeros((len(quotes), fm.values.size))
-    for T, idx in quotes.maturity_groups():
-        p = cos_price(
-            fm,
-            quotes.spot,
-            quotes.strikes[idx],
-            T,
-            quotes.rate,
-            quotes.dividend,
-            quotes.call[idx],
-            n_terms=n_terms,
-            theta=th,
-        )
-        # discovery floors the put at 0 before parity: zero derivative there
-        forward = quotes.spot * np.exp(-quotes.dividend * T) - quotes.strikes[idx] * np.exp(
-            -quotes.rate * T
-        )
-        put = np.real(value_of(p)) - np.where(quotes.call[idx], forward, 0.0)
-        g = np.real(p.grad) if isinstance(p, Jet) else np.zeros((idx.size, fm.values.size))
-        J[idx] = np.where((put < 0.0)[:, None], 0.0, g)
+    K, T, call = quotes.strikes, quotes.maturities, quotes.call
+    p = cos_price_surface(
+        fm, quotes.spot, K, T, quotes.rate, quotes.dividend, call, n_terms=n_terms, theta=th
+    )
+    # discovery floors the put at 0 before parity: zero derivative there
+    forward = quotes.spot * np.exp(-quotes.dividend * T) - K * np.exp(-quotes.rate * T)
+    put = np.real(value_of(p)) - np.where(call, forward, 0.0)
+    g = np.real(p.grad) if isinstance(p, Jet) else np.zeros((len(quotes), fm.values.size))
+    J = np.where((put < 0.0)[:, None], 0.0, g)
     return J / vega[:, None]
 
 
