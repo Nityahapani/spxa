@@ -44,9 +44,13 @@ def _out(x: np.ndarray) -> Any:
 # Taylor coefficients (highest power first, for np.polyval) of
 #   (1 - (1 - e^{-x})/x)/x = sum_j (-1)^j x^j / (j+2)!
 #   (1 - e^{-x}(1 + x))/x^2 = sum_j (-1)^j (j+1) x^j / (j+2)!
+#   d/dx of the first = (2 - x - (2 + x)e^{-x})/x^3 = sum_j (-1)^(j+1) (j+1) x^j / (j+3)!
 # 22 terms make the truncation error below 1e-20 for x < 1.
 _PHI_SERIES = np.array([(-1) ** j / math.factorial(j + 2) for j in range(22)][::-1])
 _DPHI_SERIES = np.array([(-1) ** j * (j + 1) / math.factorial(j + 2) for j in range(22)][::-1])
+_PHI_X_SERIES = np.array(
+    [(-1) ** (j + 1) * (j + 1) / math.factorial(j + 3) for j in range(22)][::-1]
+)
 
 
 @dataclass(frozen=True)
@@ -63,11 +67,11 @@ class HestonLikePhi:
         x = self.lam * np.asarray(theta, float)
         if np.any(x <= 0):
             raise ValueError("theta must be positive")
-        # lam (1 - (1 - e^{-x})/x)/x, with a Taylor series where it cancels
+        # (1 - (1 - e^{-x})/x)/x with x = lam theta, a Taylor series where it cancels
         small = x < 1.0
         xs = np.where(small, 1.0, x)
         big = (1.0 - (-np.expm1(-xs)) / xs) / xs
-        return _out(self.lam * np.where(small, np.polyval(_PHI_SERIES, x), big))
+        return _out(np.where(small, np.polyval(_PHI_SERIES, x), big))
 
     def theta_phi_derivative(self, theta: Any) -> Any:
         r""":math:`\partial_\theta(\theta\varphi(\theta)) = \bigl(1 - e^{-x}(1+x)\bigr)/x^2` with :math:`x = \lambda\theta`."""
@@ -76,6 +80,20 @@ class HestonLikePhi:
         xs = np.where(small, 1.0, x)
         big = (1.0 - np.exp(-xs) * (1.0 + xs)) / (xs * xs)
         return _out(np.where(small, np.polyval(_DPHI_SERIES, x), big))
+
+    def parameter_gradient(self, theta: Any) -> np.ndarray:
+        r"""
+        :math:`\partial\varphi/\partial\lambda = \theta f'(\lambda\theta)`, shape ``theta.shape + (1,)``.
+
+        Here :math:`f(x) = (1 - (1 - e^{-x})/x)/x` and
+        :math:`f'(x) = (2 - x - (2 + x)e^{-x})/x^3`, by a Taylor series for :math:`x < 1`.
+        """
+        t = np.asarray(theta, float)
+        x = self.lam * t
+        small = x < 1.0
+        xs = np.where(small, 1.0, x)
+        big = (2.0 - xs - (2.0 + xs) * np.exp(-xs)) / (xs * xs * xs)
+        return (t * np.where(small, np.polyval(_PHI_X_SERIES, x), big))[..., None]
 
 
 @dataclass(frozen=True)
@@ -102,6 +120,16 @@ class PowerLawPhi:
         t = np.asarray(theta, float)
         g = self.gamma
         return _out(self.eta * (1.0 - g) * t ** (-g) * (1.0 + t) ** (g - 2.0))
+
+    def parameter_gradient(self, theta: Any) -> np.ndarray:
+        r"""
+        :math:`(\partial\varphi/\partial\eta, \partial\varphi/\partial\gamma) = (\varphi/\eta, \varphi\log(1 + 1/\theta))`.
+
+        The shape is ``theta.shape + (2,)``.
+        """
+        t = np.asarray(theta, float)
+        ph = np.asarray(self(t), float)
+        return np.stack([ph / self.eta, ph * np.log1p(1.0 / t)], axis=-1)
 
 
 Phi = Union[HestonLikePhi, PowerLawPhi]

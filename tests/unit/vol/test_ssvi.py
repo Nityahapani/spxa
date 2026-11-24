@@ -28,10 +28,25 @@ class TestPhi:
         with mp.workdps(50):
             for th in np.geomspace(1e-8, 50, 60):
                 x = mp.mpf(1.3) * mp.mpf(th)
-                ref = mp.mpf(1.3) * (1 - (1 - mp.e ** (-x)) / x) / x
+                ref = (1 - (1 - mp.e ** (-x)) / x) / x  # Gatheral & Jacquier (2014), ex. 4.1
                 dref = (1 - mp.e ** (-x) * (1 + x)) / x**2
                 assert abs(phi(th) / float(ref) - 1) < 1e-15
                 assert abs(phi.theta_phi_derivative(th) / float(dref) - 1) < 1e-15
+
+    def test_heston_like_derivative_is_derivative_of_theta_phi(self) -> None:
+        # theta_phi_derivative must be d(theta phi)/d theta of __call__ itself
+        for lam in (0.3, 1.3, 7.0):
+            phi = HestonLikePhi(lam)
+            with mp.workdps(40):
+
+                def theta_phi(t: mp.mpf, lam: float = lam) -> mp.mpf:
+                    x = mp.mpf(lam) * t
+                    return t * (1 - (1 - mp.e ** (-x)) / x) / x
+
+                for th in (1e-3, 0.04, 0.7, 5.0):
+                    assert phi(th) * th == pytest.approx(float(theta_phi(mp.mpf(th))), rel=1e-15)
+                    d = float(mp.diff(theta_phi, mp.mpf(th)))
+                    assert phi.theta_phi_derivative(th) == pytest.approx(d, rel=1e-14)
 
     def test_power_law_derivative(self) -> None:
         phi = PowerLawPhi(0.8, 0.4)
@@ -99,6 +114,16 @@ class TestSurface:
         Ts = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0]
         assert all(check_butterfly(s.slice(T), K) for T in Ts)
         assert check_calendar([s.slice(T) for T in Ts], K)
+
+    def test_heston_like_corollary_for_any_admissible_lambda(self) -> None:
+        # Corollary 4.1 has no upper bound on lambda; a curvature off by a factor of
+        # lambda (theta phi = 1 - (1 - e^-x)/x instead of that over lambda) broke
+        # Theorem 4.2 for large lambda
+        ths = np.geomspace(1e-6, 50.0, 400)
+        for rho in (-0.95, -0.4, 0.0, 0.6):
+            for lam in ((1 + abs(rho)) / 4, 1.0, 20.0, 100.0, 1e4):
+                s = SSVI(rho, HestonLikePhi(lam), THETA)
+                assert s.is_arbitrage_free(ths), (rho, lam)
 
     def test_power_law_remark(self) -> None:
         rho = 0.3

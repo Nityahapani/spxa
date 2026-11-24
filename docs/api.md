@@ -5377,14 +5377,14 @@ This section covers arbitrage-free implied-volatility slices and surfaces in log
 - `SVINatural(delta, mu, rho, omega, zeta)` with `to_raw()`; `SVIJumpWings(v, psi, p, c, v_min, t)` with `to_raw()`, `butterfly_free_projection()`, `satisfies_ssvi_bounds()` and `to_ssvi_natural()`.
 
 ### SSVI & eSSVI
-- `SSVI(rho, phi, theta)` with `total_variance(k, T)`, `total_variance_theta(k, theta)`, `implied_vol`, `slice(T)` (raw SVI), `butterfly_conditions(thetas)`, `calendar_conditions(thetas)` and `is_arbitrage_free(thetas)`. Curvatures `HestonLikePhi(lam)` and `PowerLawPhi(eta, gamma)`; `ATMVarianceCurve(times, thetas)`.
+- `SSVI(rho, phi, theta)` with `total_variance(k, T)`, `total_variance_theta(k, theta)`, `implied_vol`, `slice(T)` (raw SVI), `butterfly_conditions(thetas)`, `calendar_conditions(thetas)` and `is_arbitrage_free(thetas)`. Curvatures `HestonLikePhi(lam)` and `PowerLawPhi(eta, gamma)`, each with `theta_phi_derivative(theta)` and `parameter_gradient(theta)` (shape `theta.shape + (n_params,)`); `ATMVarianceCurve(times, thetas)`.
 - `ESSVISlice(theta, psi, rho)` with `phi`, `total_variance`, `to_raw()` and `butterfly_free()`; `essvi_calendar_free(first, second, tol=0.0)`; `ESSVI(times, slices, long_theta_slope=None)` with `params(T)`, `slice(T)`, `total_variance(k, T)`, `implied_vol`, `violations()` and `is_arbitrage_free()`; `anchored_theta(rho, psi, k_star, theta_star)`.
 
 ### Calibration
 - `calibrate_svi(k, w, weights=None, max_slope=2.0, sigma_bounds=(1e-4, 5.0), m_bounds=None, n_starts=4)` (quasi-explicit) and `svi_inner_fit(k, w, m, sigma, weights=None, max_slope=2.0)` return an `SVIFit(params, rmse, sse, nfev, success)` or a `(slice, sse)` pair.
-- `calibrate_svi_butterfly_free(k, w, weights=None, max_slope=2.0, grid=None, initial=None, min_g=1e-8, lower=None, min_gap=0.0)`: Durrleman's condition (and, with `lower`, no calendar arbitrage against the previous slice) imposed with cutting planes.
-- `calibrate_svi_surface(expiries, ks, ws, weights=None, max_slope=2.0, min_g=1e-8, min_gap=0.0, grid=None)` returns an `SVISurfaceFit(expiries, slices, fits)` with `rmse` and `success`.
-- `calibrate_ssvi(expiries, ks, ws, phi="power_law"|"heston", no_arbitrage=True)` returns an `SSVIFit(surface, thetas, rmse, success)`; `isotonic_increasing(y, weights=None)` is the pool-adjacent-violators fit used for $\theta_t$.
+- `calibrate_svi_butterfly_free(k, w, weights=None, max_slope=2.0, grid=None, initial=None, min_g=1e-8, lower=None, min_gap=0.0, jac="exact")`: Durrleman's condition (and, with `lower`, no calendar arbitrage against the previous slice) imposed with cutting planes. `jac="exact"` gives SLSQP closed-form gradients of the objective and every constraint, including $g$ on the grid; `"2-point"` restores SciPy's differences.
+- `calibrate_svi_surface(expiries, ks, ws, weights=None, max_slope=2.0, min_g=1e-8, min_gap=0.0, grid=None, jac="exact")` returns an `SVISurfaceFit(expiries, slices, fits)` with `rmse` and `success`.
+- `calibrate_ssvi(expiries, ks, ws, phi="power_law"|"heston", no_arbitrage=True, jac="exact")` returns an `SSVIFit(surface, thetas, rmse, success)`; `isotonic_increasing(y, weights=None)` is the pool-adjacent-violators fit used for $\theta_t$.
 - `calibrate_essvi(expiries, ks, ws, n_rho=41, margin=1e-9)` returns an `ESSVI`.
 
 ### Diagnostics, Interpolation & Distributions
@@ -5620,7 +5620,7 @@ Derivatives labelled `EXACT` (jets or authored adjoints), `NUMERICAL` (a reporte
   - `options_residual_jacobian(structure, quotes, x, vega, n_terms=1024)`;
   - `likelihood_value_and_grad(structure, binned, x, floor=1e-300)`;
   - `cumulant_value_and_grad(structure, target, x, dt, weights=None, drift_at=None)`.
-- The options `fit_structure(gradient=)`, `fit_options(jac=)` and `calibrate_sabr(jac=)` are documented in their sections. `LeastSquaresOptimizer.minimize(residual_fn, x0, bounds=None, jac=None)` accepts a residual Jacobian.
+- The options `fit_structure(gradient=)`, `fit_options(jac=)`, `calibrate_sabr(jac=)`, `calibrate_svi_butterfly_free(jac=)`, `calibrate_svi_surface(jac=)` and `calibrate_ssvi(jac=)` are documented in their sections. `LeastSquaresOptimizer.minimize(residual_fn, x0, bounds=None, jac=None)` accepts a residual Jacobian.
 
 ### Monte Carlo Gradients
 - `spxa.graph.autodiff.montecarlo`:

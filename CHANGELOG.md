@@ -33,7 +33,11 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   - `discovery.fit_structure(gradient="exact")` and `discovery.fit_options(jac="exact")`, via
     `spxa.graph.autodiff.discovery`;
   - `rates.calibrate_sabr(jac="exact")`, with the ATM-pinned $\alpha$ differentiated implicitly;
-  - `LeastSquaresOptimizer.minimize(..., jac=)`.
+  - `LeastSquaresOptimizer.minimize(..., jac=)`;
+  - `vol.calibrate_svi_butterfly_free`, `vol.calibrate_svi_surface` and `vol.calibrate_ssvi`
+    (`jac="exact"`): closed-form SLSQP gradients of the objective and of every constraint,
+    including Durrleman's $g$ on the grid; `HestonLikePhi` and `PowerLawPhi` gain
+    `parameter_gradient`.
 
   Each defaults to exact; `"2-point"` restores differences. CGMY option fits reach an objective of
   $2\times10^{-15}$ instead of $3\times10^{-9}$.
@@ -53,6 +57,16 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
 
 ### Fixed
 
+- **`HestonLikePhi` was $\lambda$ times Gatheral and Jacquier's curvature.** It now returns
+  $\varphi(\theta) = \frac{1}{\lambda\theta}\bigl(1 - \frac{1-e^{-\lambda\theta}}{\lambda\theta}\bigr)$,
+  as documented. `theta_phi_derivative` already used that definition, so the calendar conditions
+  mixed the two. With the old curvature the bound $\lambda \ge (1+|\rho|)/4$ (Corollary 4.1), which
+  `calibrate_ssvi(no_arbitrage=True)` imposes, did not exclude butterfly arbitrage; at $\lambda = 20$
+  Theorem 4.2 failed. Surfaces built with `HestonLikePhi(lam)` change: at $\lambda = 2$ the skew halves.
+- **`calibrate_ssvi` ATM variances.** The SVI fit that reads $\theta_t$ now searches $m$ within four
+  strike spans and $\sigma \le 50$. That range contains the SSVI slice parameters
+  $m = -\rho/\varphi$ and $\sigma = \sqrt{1-\rho^2}/\varphi$. Before, a short-expiry $\theta$ could be off
+  by $10^{-5}$ when $\varphi$ was small.
 - **Generalized hyperbolic.** The Lévy measure returned the GH probability density. It is now
   Raible's Lévy density, so `GH + Drift` and `c * GH` have the right exponent (the error was O(1)).
 - **Exact composite exponents.** `c * X` and `X + Y` now use their children's exponents exactly.

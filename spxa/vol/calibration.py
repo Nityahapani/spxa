@@ -54,6 +54,69 @@ def _arrays(k: Any, w: Any, weights: Any) -> tuple[np.ndarray, np.ndarray, np.nd
     return kk, ww, sw
 
 
+def _check_jac(jac: str) -> None:
+    if jac not in ("exact", "2-point"):
+        raise ValueError("jac must be 'exact' or '2-point'")
+
+
+def _svi_and_gradients(x: np.ndarray, kv: np.ndarray) -> tuple[np.ndarray, ...]:
+    r"""
+    Raw SVI :math:`w, w', w''` at ``kv`` and their gradients in :math:`(a, b, \rho, m, \sigma)`.
+
+    With :math:`y = k - m` and :math:`r = \sqrt{y^2 + \sigma^2}`:
+    :math:`w = a + b(\rho y + r)`, :math:`w' = b(\rho + y/r)`, :math:`w'' = b\sigma^2/r^3`.
+    The gradients have shape ``kv.shape + (5,)``.
+    """
+    a, b, rho, m, sig = (float(v) for v in x)
+    y = kv - m
+    r = np.sqrt(y * y + sig * sig)
+    yr = y / r
+    r3 = r**3
+    s2r3 = sig * sig / r3
+    w = a + b * (rho * y + r)
+    w1 = b * (rho + yr)
+    w2 = b * s2r3
+    one, zero = np.ones_like(y), np.zeros_like(y)
+    dw = np.stack([one, rho * y + r, b * y, -b * (rho + yr), b * sig / r], axis=-1)
+    dw1 = np.stack([zero, rho + yr, b * one, -b * s2r3, -b * y * sig / r3], axis=-1)
+    dw2 = np.stack(
+        [
+            zero,
+            s2r3,
+            zero,
+            3.0 * b * s2r3 * y / (r * r),
+            b * (2.0 * sig / r3 - 3.0 * sig * s2r3 / (r * r)),
+        ],
+        axis=-1,
+    )
+    return w, w1, w2, dw, dw1, dw2
+
+
+def _durrleman_g_and_gradient(
+    kv: np.ndarray, x: np.ndarray, floor: float = 1e-12
+) -> tuple[np.ndarray, np.ndarray]:
+    r"""
+    Durrleman's :math:`g` of a raw SVI slice (``w`` floored at ``floor``) and its gradient.
+
+    :math:`g = A^2 - \tfrac14 w'^2(1/w + \tfrac14) + \tfrac12 w''` with
+    :math:`A = 1 - k w'/(2w)`; where the floor is active ``w`` is a constant.
+    """
+    w, w1, w2, dw, dw1, dw2 = _svi_and_gradients(x, kv)
+    low = w < floor
+    w = np.where(low, floor, w)
+    dw = np.where(low[..., None], 0.0, dw)
+    A = 1.0 - kv * w1 / (2.0 * w)
+    g = A * A - 0.25 * w1 * w1 * (1.0 / w + 0.25) + 0.5 * w2
+    dA = -(kv / 2.0)[..., None] * (dw1 / w[..., None] - (w1 / (w * w))[..., None] * dw)
+    dg = (
+        2.0 * A[..., None] * dA
+        - 0.25
+        * (2.0 * (w1 * (1.0 / w + 0.25))[..., None] * dw1 - (w1 * w1 / (w * w))[..., None] * dw)
+        + 0.5 * dw2
+    )
+    return g, dg
+
+
 def svi_inner_fit(
     k: Any,
     w: Any,
@@ -221,6 +284,7 @@ def calibrate_svi_butterfly_free(
     min_g: float = 1e-8,
     lower: Optional[SVIRaw] = None,
     min_gap: float = 0.0,
+    jac: str = "exact",
 ) -> SVIFit:
     r"""Raw SVI fit with Durrleman's condition imposed on a grid.
 
@@ -244,9 +308,15 @@ def calibrate_svi_butterfly_free(
     refinement, and the wing slopes satisfy :math:`b(1 \pm \rho) \ge
     b_{\text{lower}}(1 \pm \rho_{\text{lower}})`, which controls the sign
     of the difference beyond the grid.
+
+    ``jac="exact"`` (default) gives SLSQP closed-form gradients of the
+    objective and of every constraint (including :math:`g` on the grid);
+    ``"2-point"`` lets SciPy difference them.
     """
     from spxa.vol.arbitrage import durrleman_g
 
+    _check_jac(jac)
+    exact = jac == "exact"
     kk, ww, sw = _arrays(k, w, weights)
     if grid is None:
         span = float(kk.max() - kk.min())
@@ -270,6 +340,22 @@ def calibrate_svi_butterfly_free(
         nfev += 1
         return float(np.sum(((wfun(x, kk)[0] - ww) * sw) ** 2)) / scale
 
+    def obj_grad(x: np.ndarray) -> np.ndarray:
+        wv, _, _, dw, _, _ = _svi_and_gradients(x, kk)
+        return np.asarray(2.0 * ((wv - ww) * sw * sw) @ dw / scale)
+
+    def g_grad(x: np.ndarray, kv: np.ndarray) -> np.ndarray:
+        return _durrleman_g_and_gradient(kv, x)[1]
+
+    def gap_grad(x: np.ndarray, kv: np.ndarray) -> np.ndarray:
+        return _svi_and_gradients(x, kv)[3]
+
+    def _c(fun: Any, grad: Any) -> dict[str, Any]:
+        d: dict[str, Any] = {"type": "ineq", "fun": fun}
+        if exact:
+            d["jac"] = grad
+        return d
+
     def g_on(x: np.ndarray, kv: np.ndarray) -> np.ndarray:
         wv, d1, d2 = wfun(x, kv)
         return np.asarray(durrleman_g(kv, np.maximum(wv, 1e-12), d1, d2))
@@ -282,17 +368,26 @@ def calibrate_svi_butterfly_free(
     if lower is not None:
         lr, ll = lower.right_slope, lower.left_slope
         cal = [
-            {"type": "ineq", "fun": lambda x: x[1] * (1 + x[2]) - lr},
-            {"type": "ineq", "fun": lambda x: x[1] * (1 - x[2]) - ll},
+            _c(lambda x: x[1] * (1 + x[2]) - lr, lambda x: np.array([0, 1 + x[2], x[1], 0, 0])),
+            _c(lambda x: x[1] * (1 - x[2]) - ll, lambda x: np.array([0, 1 - x[2], -x[1], 0, 0])),
         ]
+
+    def minvar_grad(x: np.ndarray) -> np.ndarray:
+        q = np.sqrt(max(1 - x[2] ** 2, 0.0))
+        dq = -x[2] / q if q > 0 else 0.0
+        return np.array([1.0, x[4] * q, x[1] * x[4] * dq, 0.0, x[1] * q])
+
     base = [
         *cal,
-        {"type": "ineq", "fun": lambda x: max_slope - x[1] * (1 + x[2])},
-        {"type": "ineq", "fun": lambda x: max_slope - x[1] * (1 - x[2])},
-        {
-            "type": "ineq",
-            "fun": lambda x: x[0] + x[1] * x[4] * np.sqrt(max(1 - x[2] ** 2, 0.0)) - 1e-10,
-        },
+        _c(
+            lambda x: max_slope - x[1] * (1 + x[2]),
+            lambda x: np.array([0, -(1 + x[2]), -x[1], 0, 0]),
+        ),
+        _c(
+            lambda x: max_slope - x[1] * (1 - x[2]),
+            lambda x: np.array([0, -(1 - x[2]), x[1], 0, 0]),
+        ),
+        _c(lambda x: x[0] + x[1] * x[4] * np.sqrt(max(1 - x[2] ** 2, 0.0)) - 1e-10, minvar_grad),
     ]
     span_k = float(kk.max() - kk.min())
     bounds = [
@@ -314,12 +409,18 @@ def calibrate_svi_butterfly_free(
     # join the constraint set
     for _ in range(12 if lower is None else 30):
         pts, cpts = active, active_cal
-        cons = [{"type": "ineq", "fun": lambda x, pts=pts: g_on(x, pts) - min_g}, *base]
+        cons = [
+            _c(lambda x, pts=pts: g_on(x, pts) - min_g, lambda x, pts=pts: g_grad(x, pts)),
+            *base,
+        ]
         if lower is not None:
-            cons.append({"type": "ineq", "fun": lambda x, c=cpts: gap_on(x, c) - floor})
+            cons.append(
+                _c(lambda x, c=cpts: gap_on(x, c) - floor, lambda x, c=cpts: gap_grad(x, c))
+            )
         r = minimize(
             obj,
             x,
+            jac=obj_grad if exact else "2-point",
             method="SLSQP",
             bounds=bounds,
             constraints=cons,
@@ -379,12 +480,17 @@ def calibrate_ssvi(
     ws: Any,
     phi: str = "power_law",
     no_arbitrage: bool = True,
+    jac: str = "exact",
 ) -> SSVIFit:
     r"""Fit an SSVI surface to total-variance slices.
 
     1. The ATM total variance of each slice is read from a quasi-explicit
        SVI fit at :math:`k = 0` and made non-decreasing in :math:`T` by
-       isotonic regression (no calendar arbitrage at the money).
+       isotonic regression (no calendar arbitrage at the money). The SVI
+       search covers :math:`m` within four strike spans of the data and
+       :math:`\sigma \le 50`, which contains the SSVI slice parameters
+       :math:`m = -\rho/\varphi` and :math:`\sigma = \sqrt{1-\rho^2}/\varphi`
+       even when :math:`\varphi` is small.
     2. :math:`\rho` and the curvature parameters are fitted to all quotes
        by SLSQP. With ``no_arbitrage`` the sufficient conditions are
        imposed: :math:`\eta(1 + |\rho|) \le 2`, :math:`\gamma \le 1/2` for
@@ -399,6 +505,9 @@ def calibrate_ssvi(
     ks, ws : sequences of arrays
         Log-moneyness and total variance per expiry.
     phi : ``"power_law"`` or ``"heston"``
+    jac : ``"exact"`` (default) or ``"2-point"``
+        Closed-form gradient of the objective and constraints for SLSQP, or
+        SciPy's differences.
     """
     from spxa.vol.ssvi import SSVI, ATMVarianceCurve, HestonLikePhi, PowerLawPhi
 
@@ -409,8 +518,19 @@ def calibrate_ssvi(
         raise ValueError("expiries must be positive and increasing")
     if phi not in ("power_law", "heston"):
         raise ValueError("phi must be 'power_law' or 'heston'")
+    _check_jac(jac)
+    exact = jac == "exact"
     slices = [(np.asarray(k, float), np.asarray(w, float)) for k, w in zip(ks, ws)]
-    raw_theta = np.array([float(calibrate_svi(k, w, max_slope=4.0).params(0.0)) for k, w in slices])
+
+    # An SSVI slice is raw SVI with m = -rho/phi(theta) and sigma = sqrt(1 - rho^2)/phi(theta),
+    # which lie far from the strikes when phi is small; search wide enough to contain them.
+    def _atm(k: np.ndarray, w: np.ndarray) -> float:
+        span = float(k.max() - k.min())
+        m_bounds = (float(k.min()) - 4 * span, float(k.max()) + 4 * span)
+        fit = calibrate_svi(k, w, max_slope=4.0, sigma_bounds=(1e-4, 50.0), m_bounds=m_bounds)
+        return float(fit.params(0.0))
+
+    raw_theta = np.array([_atm(k, w) for k, w in slices])
     thetas = isotonic_increasing(raw_theta)
     curve = ATMVarianceCurve(T, thetas)
     k_all = np.concatenate([k for k, _ in slices])
@@ -430,22 +550,47 @@ def calibrate_ssvi(
     def obj(x: np.ndarray) -> float:
         return float(np.sum((surf_w(x) - w_all) ** 2)) / scale
 
+    def obj_grad(x: np.ndarray) -> np.ndarray:
+        # w = theta/2 (1 + rho y + R), R = sqrt((y + rho)^2 + 1 - rho^2), y = phi k
+        rho = float(x[0])
+        ph_obj: Any = (
+            PowerLawPhi(float(x[1]), float(x[2]))
+            if phi == "power_law"
+            else HestonLikePhi(float(x[1]))
+        )
+        ph = np.asarray(ph_obj(th_all), float)
+        y = ph * k_all
+        R = np.sqrt((y + rho) ** 2 + 1 - rho * rho)
+        dw_drho = 0.5 * th_all * y * (1.0 + 1.0 / R)
+        dw_dy = 0.5 * th_all * (rho + (y + rho) / R)
+        dw = np.column_stack(
+            [dw_drho, (dw_dy * k_all)[:, None] * ph_obj.parameter_gradient(th_all)]
+        )
+        resid = 0.5 * th_all * (1 + rho * y + R) - w_all
+        return np.asarray(2.0 * resid @ dw / scale)
+
+    def _c(fun: Any, grad: Any) -> dict[str, Any]:
+        d: dict[str, Any] = {"type": "ineq", "fun": fun}
+        if exact:
+            d["jac"] = grad
+        return d
+
     cons: list[dict[str, Any]] = []
     if phi == "power_law":
         x0 = np.array([-0.5, 0.8, 0.4])
         bounds = [(-0.999, 0.999), (1e-4, 20.0), (1e-3, 0.5 if no_arbitrage else 0.999)]
         if no_arbitrage:
             cons = [
-                {"type": "ineq", "fun": lambda x: 2.0 - x[1] * (1 + x[0])},
-                {"type": "ineq", "fun": lambda x: 2.0 - x[1] * (1 - x[0])},
+                _c(lambda x: 2.0 - x[1] * (1 + x[0]), lambda x: np.array([-x[1], -(1 + x[0]), 0])),
+                _c(lambda x: 2.0 - x[1] * (1 - x[0]), lambda x: np.array([x[1], -(1 - x[0]), 0])),
             ]
     else:
         x0 = np.array([-0.5, 1.0])
         bounds = [(-0.999, 0.999), (1e-4, 1e3)]
         if no_arbitrage:
             cons = [
-                {"type": "ineq", "fun": lambda x: x[1] - (1 + x[0]) / 4},
-                {"type": "ineq", "fun": lambda x: x[1] - (1 - x[0]) / 4},
+                _c(lambda x: x[1] - (1 + x[0]) / 4, lambda x: np.array([-0.25, 1.0])),
+                _c(lambda x: x[1] - (1 - x[0]) / 4, lambda x: np.array([0.25, 1.0])),
             ]
     best = None
     for start_rho in (-0.7, -0.3, 0.0, 0.3):
@@ -454,6 +599,7 @@ def calibrate_ssvi(
         r = minimize(
             obj,
             x0,
+            jac=obj_grad if exact else "2-point",
             method="SLSQP",
             bounds=bounds,
             constraints=cons,
@@ -500,6 +646,7 @@ def calibrate_svi_surface(
     min_g: float = 1e-8,
     min_gap: float = 0.0,
     grid: Any = None,
+    jac: str = "exact",
 ) -> SVISurfaceFit:
     r"""Raw SVI slices free of butterfly and calendar arbitrage (Gatheral & Jacquier 2014, §5).
 
@@ -510,7 +657,8 @@ def calibrate_svi_surface(
     common grid (default 601 points covering all the data and twice its
     width either side) plus ordered wing slopes. Gatheral and Jacquier
     penalise crossings instead; constraints with cutting planes give an
-    exactly calendar-free result on the grid.
+    exactly calendar-free result on the grid. ``jac`` is passed to
+    :func:`calibrate_svi_butterfly_free`.
     """
     T = np.asarray(expiries, float)
     if T.ndim != 1 or T.size == 0 or np.any(np.diff(T) <= 0) or T[0] <= 0:
@@ -528,7 +676,7 @@ def calibrate_svi_surface(
     prev: Optional[SVIRaw] = None
     for k, w, wt in zip(ks, ws, wts):
         fit = calibrate_svi_butterfly_free(
-            k, w, wt, max_slope, grid=grid, min_g=min_g, lower=prev, min_gap=min_gap
+            k, w, wt, max_slope, grid=grid, min_g=min_g, lower=prev, min_gap=min_gap, jac=jac
         )
         slices.append(fit.params)
         fits.append(fit)
