@@ -9,6 +9,9 @@ exponent :math:`\psi(u;\theta)`:
   from one fused program that shares every subexpression;
 * ``psi_grad_hess(u, theta)`` — adds :math:`\nabla^2_\theta\psi`
   (upper triangle generated, mirrored);
+* ``psi_du_and_grad(u, theta)`` — :math:`\psi`, :math:`\partial\psi/\partial u`
+  and :math:`\nabla_\theta\psi`, the inputs of the COS price gradient,
+  optionally with a separate ``u`` grid per parameter set (``rowwise``);
 
 each for one parameter vector (``theta`` of shape ``(n,)``) or a batch
 (shape ``(B, n)``), on the NumPy, Numba or JAX backend. Only the *free*
@@ -180,6 +183,7 @@ class ExponentKernel:
             self.psi_expr = self.psi_expr + I.const(0j)
         self._grad_exprs: Optional[List[Expr]] = None
         self._hess_exprs: Optional[List[Expr]] = None
+        self._du_expr: Optional[Expr] = None
         self._families: Dict[str, _Family] = {}
 
     # ── expressions ─────────────────────────────────────────────────────────
@@ -204,6 +208,15 @@ class ExponentKernel:
             self._hess_exprs = out
         return self._hess_exprs
 
+    @property
+    def du_expr(self) -> Expr:
+        r""":math:`\partial\psi/\partial u`."""
+        if self._du_expr is None:
+            d = derivative(self.psi_expr, I.U)
+            assert isinstance(d, Expr)
+            self._du_expr = d if d.kind == I.COMPLEX else d + I.const(0j)
+        return self._du_expr
+
     def _family(self, what: str) -> _Family:
         fam = self._families.get(what)
         if fam is None:
@@ -211,6 +224,8 @@ class ExponentKernel:
                 outs = [self.psi_expr]
             elif what == "grad":
                 outs = [self.psi_expr] + self.grad_exprs
+            elif what == "du_grad":
+                outs = [self.psi_expr, self.du_expr] + self.grad_exprs
             else:
                 outs = [self.psi_expr] + self.grad_exprs + self.hess_exprs
             fam = _Family(outs, self.n_free, self.backend, f"psi_{what}", self.parallel)
@@ -286,6 +301,46 @@ class ExponentKernel:
                 hess[..., j, i] = outs[pos]
                 pos += 1
         return psi, grad, hess
+
+    def _run_rowwise(
+        self, what: str, u: Any, theta: Optional[Any]
+    ) -> Tuple[Tuple[np.ndarray, ...], Tuple[int, ...]]:
+        """Like ``_run``, with row ``b`` of ``u`` evaluated at parameter set ``b`` only."""
+        th, batched = self._theta(theta)
+        uu = np.asarray(u, dtype=complex)
+        if not batched or uu.ndim < 1 or uu.shape[0] != th.shape[0]:
+            raise ValueError("rowwise needs theta (B, n_free) and u of shape (B, ...)")
+        if self.backend == "numba":  # the generated loop shares u across the batch
+            rows = [self._run(what, uu[b], th[b])[0] for b in range(th.shape[0])]
+            return tuple(np.stack([r[k] for r in rows]) for k in range(len(rows[0]))), uu.shape
+        tail = (1,) * (uu.ndim - 1)
+        params = [th[:, k].reshape((th.shape[0],) + tail) for k in range(self.n_free)]
+        res = self._family(what)(uu, params)
+        return tuple(np.broadcast_to(np.asarray(o), uu.shape) for o in res), uu.shape
+
+    def psi_rowwise(self, u: Any, theta: Any) -> np.ndarray:
+        r""":math:`\psi(u_b;\theta_b)` for ``theta`` of shape ``(B, n_free)`` and ``u`` of shape ``(B, ...)``."""
+        outs, _ = self._run_rowwise("psi", u, theta)
+        return np.asarray(outs[0], dtype=complex).copy()
+
+    def psi_du_and_grad(
+        self, u: Any, theta: Optional[Any] = None, rowwise: bool = False
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        r"""
+        :math:`\psi`, :math:`\partial\psi/\partial u` and :math:`\partial\psi/\partial\theta`.
+
+        With ``rowwise=True``, ``theta`` is a ``(B, n_free)`` batch and ``u``
+        has shape ``(B, ...)``: row ``b`` of ``u`` is evaluated at parameter
+        set ``b`` only (each set has its own frequency grid).
+        """
+        run = self._run_rowwise if rowwise else self._run
+        outs, shape = run("du_grad", u, theta)
+        psi = np.asarray(outs[0], dtype=complex).copy()
+        dpsi = np.asarray(outs[1], dtype=complex).copy()
+        grad = np.empty(shape + (self.n_free,), dtype=complex)
+        for k in range(self.n_free):
+            grad[..., k] = outs[2 + k]
+        return psi, dpsi, grad
 
     # ── cumulants (Taylor mode on the same expressions) ────────────────────
     def _taylor_params(self, theta: Optional[Any]) -> Tuple[List[Any], bool]:
