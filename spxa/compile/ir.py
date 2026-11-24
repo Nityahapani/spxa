@@ -318,8 +318,8 @@ def _fold(op: str, args: Tuple[Expr, ...], payload: Any, kind: str) -> Expr:
     from spxa.compile._numeric import apply_op
 
     vals = [a.payload for a in args]
-    if kind == REAL:
-        vals = [float(v) if not isinstance(v, bool) else v for v in vals]
+    if kind == REAL:  # real results may come from complex operands (real, imag, abs)
+        vals = [v if isinstance(v, (bool, complex)) else float(v) for v in vals]
     with np.errstate(all="ignore"):
         out = apply_op(op, vals, payload)
     out = np.asarray(out)[()]

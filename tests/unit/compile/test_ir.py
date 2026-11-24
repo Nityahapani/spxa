@@ -63,6 +63,9 @@ class TestKindsAndFolding:
         assert np.isnan(float(I.sqrt(-1.0)))  # real sqrt of a negative real is nan
         assert I.sqrt(I.const(-1 + 0j)).const_value() == 1j
         assert I.log1p(I.const(1e-20)).const_value() == 1e-20
+        assert I.real(I.const(2 - 3j)) is I.const(2.0)
+        assert I.imag(I.const(2 - 3j)) is I.const(-3.0)
+        assert I.abs_(I.const(3 + 4j)) is I.const(5.0)
 
     def test_identities(self) -> None:
         assert a + 0.0 is a

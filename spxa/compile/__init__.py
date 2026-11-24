@@ -11,6 +11,8 @@ Modules
 -------
 ir
     Hash-consed expression DAG with constant folding and simplification.
+evaluate
+    NumPy reference interpreter and Taylor-mode interpreter (exact cumulants).
 """
 
 from __future__ import annotations
