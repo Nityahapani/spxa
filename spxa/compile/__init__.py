@@ -11,6 +11,8 @@ Modules
 -------
 ir
     Hash-consed expression DAG with constant folding and simplification.
+diff
+    Symbolic derivatives in the parameters and in u, sharing nodes with the value.
 evaluate
     NumPy reference interpreter and Taylor-mode interpreter (exact cumulants).
 """
