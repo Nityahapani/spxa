@@ -215,6 +215,9 @@ def _array_expr(node: Expr, a: List[str], em: _Emitter, backend: str) -> str:
             # the ** operator special-cases some scalar exponents (0.5 -> sqrt, ...);
             # the ufunc does not, and is what the reference evaluator uses
             return f"np.power({a[0]}, {a[1]})"
+        if node.args[1].kind == I.COMPLEX:
+            # NumPy: 0 ** y = 0 for Re y > 0 even when Im y != 0 (JAX gives nan)
+            return f"jnp.where(({a[0]} == 0) & (jnp.real({a[1]}) > 0), 0j, ({a[0]} ** {a[1]}))"
         return f"({a[0]} ** {a[1]})"
     if op == "neg":
         return f"(-{a[0]})"
@@ -499,6 +502,14 @@ def _rsinc_d1(x):
 
 
 @nb.njit(cache=False, error_model="numpy")
+def _cpow(x, y):
+    # NumPy: 0 ** y = 0 for Re y > 0 even when Im y != 0 (numba gives nan)
+    if x.real == 0.0 and x.imag == 0.0 and y.real > 0.0:
+        return complex(0.0, 0.0)
+    return x**y
+
+
+@nb.njit(cache=False, error_model="numpy")
 def _cdiv(a, b):
     # NumPy's convention for a zero divisor (numba raises ZeroDivisionError)
     if b.real == 0.0 and b.imag == 0.0:
@@ -562,6 +573,8 @@ def _numba_scalar(node: Expr, a: List[str]) -> str:
             return f"_cdiv({a[0]}, {a[1]})"
         return f"({a[0]} / {a[1]})"
     if op == "pow":
+        if node.args[1].kind == I.COMPLEX:
+            return f"_cpow(complex({a[0]}), {a[1]})"
         return f"({a[0]} ** {a[1]})"
     if op == "neg":
         return f"(-{a[0]})"
