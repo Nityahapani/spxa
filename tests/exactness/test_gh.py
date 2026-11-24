@@ -177,3 +177,63 @@ class TestGeneralizedHyperbolicExactness:
         terminal_mean = float(np.mean(paths[:, -1]))
         theo_mean = gh.cumulant_exact(1, t=1.0)
         assert terminal_mean == pytest.approx(theo_mean, rel=0.03)
+
+
+# ── cumulants of every order and the triplet drift ──────────────────────────
+
+_GH_CASES = [
+    (1.2, 3.0, -0.5, 0.8, 0.03),
+    (-0.5, 2.0, 0.4, 1.5, 0.0),  # NIG
+    (2.5, 1.5, 1.0, 0.3, 0.1),
+    (-2.0, 5.0, -3.0, 0.2, -0.4),
+    (0.0, 1.1, 0.9, 4.0, 0.0),
+]
+
+
+def _mp_gh_cgf(mp, z, lam, alpha, beta, delta, mu):  # type: ignore[no-untyped-def]
+    """log E[e^{z X_1}] of GH, at mpmath precision."""
+    g = mp.sqrt(alpha**2 - beta**2)
+    s = mp.sqrt(alpha**2 - (beta + z) ** 2)
+    return (
+        mu * z
+        + lam * mp.log(g / s)
+        + mp.log(mp.besselk(lam, delta * s) / mp.besselk(lam, delta * g))
+    )
+
+
+@pytest.mark.parametrize("p", _GH_CASES)
+def test_gh_cumulants_of_every_order_match_mpmath(p: tuple) -> None:
+    mp = pytest.importorskip("mpmath")
+    gh = GeneralizedHyperbolicProcess(*p)
+    with mp.workdps(40):
+        mpp = [mp.mpf(v) for v in p]
+        co = mp.taylor(lambda z: _mp_gh_cgf(mp, z, *mpp), 0, 10)
+        ref = [float(mp.factorial(n) * co[n]) for n in range(1, 11)]
+    got = [gh.cumulant_exact(n) for n in range(1, 11)]
+    np.testing.assert_allclose(got, ref, rtol=1e-13, atol=0)
+    assert gh.cumulant_exact(7, t=2.5) == pytest.approx(2.5 * ref[6], rel=1e-14)
+    # orders >= 5 used to return a difference quotient of psi'(0), i.e. kappa_1
+    assert abs(gh.cumulant_exact(5) - gh.cumulant_exact(1)) > 1e-3 * abs(ref[4])
+
+
+@pytest.mark.parametrize("p", _GH_CASES)
+def test_gh_triplet_drift_reproduces_the_closed_form_mean(p: tuple) -> None:
+    gh = GeneralizedHyperbolicProcess(*p)
+    trip = gh._triplet()
+    # was 2.5e-9 off for the first case: the integral skipped |x| < 1e-8
+    assert trip.cumulant(1) == pytest.approx(gh.cumulant_exact(1), rel=1e-14, abs=1e-15)
+    assert gh._exact_cumulants(4) == gh.cumulants(4)
+
+
+def test_nig_levy_density_is_finite_in_the_tails() -> None:
+    mp = pytest.importorskip("mpmath")
+    a, b, d = 2.0, 0.4, 1.5
+    nu = GeneralizedHyperbolicProcess(-0.5, a, b, d, 0.0)._triplet().nu
+    xs = np.array([-400.0, -40.0, -3.0, -0.01, 1e-6, 0.5, 7.0, 60.0, 400.0])
+    with mp.workdps(30):
+        ref = [
+            float(a * d / mp.pi * mp.exp(b * x) * mp.besselk(1, a * abs(x)) / abs(x)) for x in xs
+        ]
+    got = nu.density(xs)
+    assert np.all(np.isfinite(got))
+    np.testing.assert_allclose(got, ref, rtol=1e-13, atol=0)

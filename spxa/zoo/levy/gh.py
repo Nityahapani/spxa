@@ -77,6 +77,47 @@ def _gig_moments(lam: float, delta: float, gamma: float) -> Tuple[float, float, 
     return m1, m2, m3, m4
 
 
+def _gig_cumulants(lam: float, delta: float, gamma: float, order: int) -> list[float]:
+    r"""
+    Cumulants :math:`\kappa_1, \dots, \kappa_n` of GIG(:math:`\lambda, \delta, \gamma`).
+
+    The raw moments :math:`(\delta/\gamma)^k K_{\lambda+k}(\delta\gamma)/K_\lambda(\delta\gamma)`
+    use the scaled Bessel function (the ratio is the same) and become cumulants by
+    :math:`\kappa_n = m_n - \sum_{k<n}\binom{n-1}{k-1}\kappa_k m_{n-k}`.
+    """
+    dg, scale = delta * gamma, delta / gamma
+    k0 = float(bessel_kve(lam, dg))
+    m = [1.0] + [scale**k * float(bessel_kve(lam + k, dg)) / k0 for k in range(1, order + 1)]
+    kap = [0.0] * (order + 1)
+    for n in range(1, order + 1):
+        kap[n] = m[n] - sum(math.comb(n - 1, k - 1) * kap[k] * m[n - k] for k in range(1, n))
+    return kap[1:]
+
+
+def _gh_cumulants(
+    lam: float, delta: float, gamma: float, beta: float, mu: float, order: int
+) -> list[float]:
+    r"""
+    Cumulants of GH at unit time, of any order.
+
+    GH is the normal mean-variance mixture :math:`X = \mu + \beta Z + \sqrt{Z}N` with
+    :math:`Z \sim` GIG, so :math:`K_X(s) = \mu s + K_Z(\beta s + s^2/2)`. Expanding
+    :math:`K_Z(w) = \sum_j \kappa^Z_j w^j/j!` with :math:`w = \beta s + s^2/2` gives
+    :math:`\kappa_n = n!\,[s^n]K_X(s)`.
+    """
+    kz = _gig_cumulants(lam, delta, gamma, order)
+    coef = np.zeros(order + 2)
+    coef[1] = mu
+    w = np.zeros(order + 2)
+    w[1], w[2] = beta, 0.5
+    power = np.zeros(order + 2)
+    power[0] = 1.0
+    for j in range(1, order + 1):
+        power = np.convolve(power, w)[: order + 2]  # (beta s + s^2/2)^j, truncated
+        coef += kz[j - 1] / math.factorial(j) * power
+    return [float(math.factorial(n) * coef[n]) for n in range(1, order + 1)]
+
+
 def _gh_small_s_tail(nu: float, t_cut: float) -> float:
     r"""
     :math:`\int_{t_{cut}}^\infty 2/(\pi^2 (J_\nu^2 + Y_\nu^2)(e^{-t}))\,dt` by small-argument forms.
@@ -210,7 +251,13 @@ def _gh_levy_measure(
         if is_nig:
             # J_{1/2}^2 + Y_{1/2}^2 = 2/(pi z): nu(x) = (alpha delta/pi) e^{beta x} K_1(alpha|x|)/|x|
             ax = np.abs(xv)
-            out[nz] = (alpha * delta / np.pi) * np.exp(beta * xv) * bessel_kv(1.0, alpha * ax) / ax
+            # scaled Bessel: e^{beta x} K_1 overflows times underflows (inf * 0) in the tails
+            out[nz] = (
+                (alpha * delta / np.pi)
+                * np.exp(beta * xv - alpha * ax)
+                * bessel_kve(1.0, alpha * ax)
+                / ax
+            )
             return out
         vals = [_gh_levy_bracket(abs(float(xi)), lambda_param, alpha, delta) for xi in xv]
         ax = np.abs(xv)
@@ -371,18 +418,15 @@ class GeneralizedHyperbolicProcess(Process):
     def _triplet(self) -> LevyTriplet:
         nu_measure = _gh_levy_measure(self._lambda, self._alpha, self._beta, self._delta)
 
-        # Truncated drift b_drift = mu + integral_{|x| <= 1} x nu(dx)
-        # Using moment_1 of truncated nu or quad integration:
-        def integrand(x: float) -> float:
-            if abs(x) < 1e-10:
-                return 0.0
-            return float(x * nu_measure.density(np.array([x]))[0])
-
-        b_pos, _ = integrate.quad(integrand, 1e-8, 1.0, limit=150)
-        b_neg, _ = integrate.quad(integrand, -1.0, -1e-8, limit=150)
-        b_drift = self._mu + b_pos + b_neg
-
+        # The truncated drift b = kappa_1 - int_{|x|>1} x nu(dx) uses the closed-form mean and
+        # the same tail moment as LevyTriplet.cumulant, so the triplet's kappa_1 is exact. (An
+        # integral of x nu(dx) over 1e-8 < |x| < 1 would drop about 2e-8 delta beta / pi:
+        # near 0, x nu(x) = delta / (pi x) + delta beta / pi + O(x).)
+        b_drift = self.cumulant_exact(1) - nu_measure.first_moment_between(1.0, np.inf)
         return LevyTriplet(b=b_drift, sigma_sq=0.0, nu=nu_measure)
+
+    def _exact_cumulants(self, order: int) -> dict[int, float]:
+        return self.cumulants(order)
 
     def _properties(self) -> ProcessProperties:
         # Martingale iff expected drift is zero
@@ -472,6 +516,9 @@ class GeneralizedHyperbolicProcess(Process):
         - :math:`\kappa_2 = \mathbb{E}[Z] + \beta^2 \mathrm{Var}(Z)`
         - :math:`\kappa_3 = 3 \beta \mathrm{Var}(Z) + \beta^3 \mu_3(Z)`
         - :math:`\kappa_4 = 3 \mathrm{Var}(Z) + 6 \beta^2 \mu_3(Z) + \beta^4 (\mu_4(Z) - 3 \mathrm{Var}(Z)^2)`
+
+        Higher orders come from :math:`K_X(s) = \mu s + K_Z(\beta s + s^2/2)` with the GIG
+        cumulants of :math:`Z`.
         """
         if order < 1:
             raise ValueError(f"Cumulant order must be >= 1, got {order}")
@@ -498,19 +545,8 @@ class GeneralizedHyperbolicProcess(Process):
         elif order == 4:
             k4 = 3.0 * var_z + 6.0 * (beta**2) * mu3_z + (beta**4) * k4_z
             return float(t * k4)
-        else:
-            # High-order numerical differentiation of psi(u) at u=0
-            h = 1e-4
-
-            # 5-point complex derivative
-            def psi_fn(u_val: float) -> complex:
-                return complex(self.char_exponent(u_val))
-
-            pts = np.array([-2, -1, 1, 2]) * h
-            vals = [psi_fn(p) for p in pts]
-            # First derivative approx
-            d_val = (-vals[3] + 8.0 * vals[2] - 8.0 * vals[1] + vals[0]) / (12.0 * h)
-            return float(t * np.imag(d_val))
+        k = _gh_cumulants(self._lambda, self._delta, self._gamma, beta, self._mu, order)
+        return float(t * k[-1])
 
     def cumulants(self, order: int = 4, t: float = 1.0) -> Dict[int, float]:
         """Dictionary of exact cumulants {1: κ_1, ..., order: κ_order}."""

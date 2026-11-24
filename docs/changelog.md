@@ -74,6 +74,15 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   by $10^{-5}$ when $\varphi$ was small.
 - **Generalized hyperbolic.** The Lévy measure returned the GH probability density. It is now
   Raible's Lévy density, so `GH + Drift` and `c * GH` have the right exponent (the error was O(1)).
+- **Generalized hyperbolic cumulants and drift.**
+  - `cumulant_exact(n)` for $n \ge 5$ returned a difference quotient of $\psi'(0)$, that is
+    $\kappa_1$. Every order now comes from $K_X(s) = \mu s + K_Z(\beta s + s^2/2)$ with the GIG
+    cumulants of $Z$, and matches mpmath to $10^{-13}$ through $\kappa_{10}$.
+  - The triplet drift integrated $x\,\nu(dx)$ over $10^{-8} < |x| < 1$ and dropped about
+    $2\times10^{-8}\delta\beta/\pi$, so the triplet's $\kappa_1$ was $2.5\times10^{-9}$ off. It is now
+    the closed-form mean minus the tail moment, and agrees to rounding.
+  - The NIG Lévy density returned `nan` in the far tails ($e^{\beta x}K_1 = \infty\cdot0$); it uses the
+    scaled Bessel function.
 - **Exact composite exponents.** `c * X` and `X + Y` now use their children's exponents exactly.
   They had used quadratures of the Lévy measure, which were $1.4\times10^{-8}$ off for `0.5 * NIG`.
 - **Graph VJPs:**
