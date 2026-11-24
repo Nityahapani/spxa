@@ -35,6 +35,7 @@ from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind
+from spxa.zoo.levy.inverse_gaussian import sample_inverse_gaussian
 
 
 def _nig_levy_measure(alpha: float, beta: float, delta: float) -> DensityLevyMeasure:
@@ -261,7 +262,9 @@ class NIG(Process):
         t = np.asarray(times, dtype=float)
         s = np.zeros(t.shape)
         pos = t > 0
-        s[pos] = rng.wald(self.delta * t[pos] / self._gamma, (self.delta * t[pos]) ** 2)
+        s[pos] = sample_inverse_gaussian(
+            self.delta * t[pos] / self._gamma, (self.delta * t[pos]) ** 2, rng
+        )
         return self.mu * t + self.beta * s + np.sqrt(s) * rng.standard_normal(t.shape)
 
     def simulate(
