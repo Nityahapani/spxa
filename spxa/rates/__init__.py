@@ -100,6 +100,8 @@ Hull-White PDE
     :class:`HullWhitePDE`: Crank-Nicolson pricing in the Hull-White state on the spxa.pde solvers.
 Hull-White calibration
     :func:`calibrate_hull_white`: bootstrap or global calibration of Hull-White to swaptions and caps.
+Hull-White sensitivities
+    :func:`hull_white_price_and_gradient`: exact gradients in the volatility levels and mean reversion.
 G2++
     :class:`G2PP`: two-factor Gaussian G2++ model fitted to a discount curve.
 G2++ simulation
@@ -282,6 +284,8 @@ from spxa.rates.hw_calibration import (
     market_prices,
     model_price,
 )
+
+from spxa.rates.hw_sensitivities import hull_white_price_and_gradient
 
 from spxa.rates.hw_pde import HullWhitePDE
 
@@ -618,6 +622,7 @@ __all__ = [
     "HullWhitePDE",
     "HullWhiteCalibration",
     "calibrate_hull_white",
+    "hull_white_price_and_gradient",
     "market_prices",
     "model_price",
     "G2PP",

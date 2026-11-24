@@ -5303,7 +5303,8 @@ This section covers interest-rate instruments on real calendar dates, priced on 
   - `HullWhiteTree(model, horizon, n_steps)`: a trinomial tree fitted to the curve, with `node_rates(alpha, x)`.
   - `HullWhitePDE(model, n_space=201, n_time=200, n_sd=7.0)`: `solve(payoff, T, exercise=None, american=None, lcp="brennan_schwartz")`, `value(...)`, `zero_bond(T)`, `zcb_option(T, S, K, option="call", american=False)` and `swaption(swaption)`.
 - Calibration:
-  - `calibrate_hull_white(curve, instruments, targets, projection=None, a=0.03, mode="bootstrap"|"global", sigma_times=None, sigma_bounds=(1e-6, 0.2))` returns a `HullWhiteCalibration(model, prices, targets)` with `errors` and `max_relative_error`.
+  - `calibrate_hull_white(curve, instruments, targets, projection=None, a=0.03, mode="bootstrap"|"global", sigma_times=None, sigma_bounds=(1e-6, 0.2), jac="exact")` returns a `HullWhiteCalibration(model, prices, targets)` with `errors` and `max_relative_error`. In global mode `jac="exact"` gives the least-squares solver the exact Jacobian; `"2-point"` restores differences.
+  - `hull_white_price_and_gradient(model, inst, projection=None, method="jamshidian"|"integral")` returns the price of a swaption, cap/floor or caplet and its exact gradient in `(sigma_0, ..., sigma_{n-1}, a)`. Jamshidian swaptions and caplets are differentiated in closed form; integral swaptions are differentiated under the integral by Gauss–Legendre quadrature, accurate to rounding.
   - `market_prices(instruments, vols, discount, projection=None, model="black", shift=0.0)` and `model_price(model, inst, projection=None)` price the inputs.
   - `model_implied_vols(model, instruments, projection=None, quote="black", shift=0.0)` inverts model prices back to vols.
 - `G2PP(curve, a, sigma, b, eta, rho)`: `V(t, T)`, `covariance(t)`, `forward_mean(t, T)`, `phi(t)`, `discount_bond(t, T, x, y)`, `bond_option_vol(T, S)`, `option_on_cashflows(T, times, amounts, const=0.0, n_quad=None)` and swaptions by one-dimensional quadrature. `g2pp_paths(model, times, n_paths, seed=0, antithetic=True)` returns `G2PPPaths` with `zero_bond` and `price`. `calibrate_g2pp(curve, instruments, targets, projection=None, initial=(0.5, 0.01, 0.05, 0.008, -0.5), n_quad=24)` returns a `G2PPCalibration`. `HullWhite2F(a_bar, sigma1, b_bar, sigma2, rho_bar)` converts with `to_g2pp(curve)` and `from_g2pp(model)`.
@@ -5620,7 +5621,7 @@ Derivatives labelled `EXACT` (jets or authored adjoints), `NUMERICAL` (a reporte
   - `options_residual_jacobian(structure, quotes, x, vega, n_terms=1024)`;
   - `likelihood_value_and_grad(structure, binned, x, floor=1e-300)`;
   - `cumulant_value_and_grad(structure, target, x, dt, weights=None, drift_at=None)`.
-- The options `fit_structure(gradient=)`, `fit_options(jac=)`, `calibrate_sabr(jac=)`, `calibrate_svi_butterfly_free(jac=)`, `calibrate_svi_surface(jac=)` and `calibrate_ssvi(jac=)` are documented in their sections. `LeastSquaresOptimizer.minimize(residual_fn, x0, bounds=None, jac=None)` accepts a residual Jacobian.
+- The options `fit_structure(gradient=)`, `fit_options(jac=)`, `calibrate_sabr(jac=)`, `calibrate_svi_butterfly_free(jac=)`, `calibrate_svi_surface(jac=)`, `calibrate_ssvi(jac=)` and `calibrate_hull_white(jac=)` are documented in their sections, as is `hull_white_price_and_gradient(...)`. `LeastSquaresOptimizer.minimize(residual_fn, x0, bounds=None, jac=None)` accepts a residual Jacobian.
 
 ### Monte Carlo Gradients
 - `spxa.graph.autodiff.montecarlo`:

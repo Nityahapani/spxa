@@ -77,6 +77,7 @@ does depend on $\theta$, through the cumulants. With `track_interval=True` (the 
 | `rates.calibrate_sabr` | Hagan and Obłój implied vols | `jac="exact"` |
 | `vol.calibrate_svi_butterfly_free`, `vol.calibrate_svi_surface` | SVI objective, Durrleman's $g$ and calendar gaps (SLSQP gradients) | `jac="exact"` |
 | `vol.calibrate_ssvi` | SSVI objective through $\rho$ and the curvature parameters | `jac="exact"` |
+| `rates.calibrate_hull_white` (global mode) | swaption and cap prices in $(\sigma_0, \dots, \sigma_{n-1}, a)$ (least-squares Jacobian) | `jac="exact"` |
 | `LeastSquaresOptimizer.minimize` | any residual Jacobian you supply | `jac=` |
 
 Each defaults to the exact derivative; `"2-point"` restores SciPy's differences.
@@ -133,7 +134,7 @@ Tests pool fixed seeds against COS and Black–Scholes references. They check th
 
 - The generalised hyperbolic Lévy density uses a truncated quadrature, so its triplet mean $\kappa_1$ is off by about $2.5\times10^{-9}$. The characteristic exponent and its derivatives are unaffected.
 - `jacobian` and `price_and_gradient` use forward mode, so they cost about $n+1$ evaluations for $n$ parameters. For the calibrators here, $n \le 10$. The COS payoff matrix depends on the parameters only through $[a, b]$, so its two partial derivatives are taken in closed form and chained. An exact options Jacobian then costs three to four residual evaluations for three to five parameters, less than two-point differences ($n + 1$).
-- The Hull–White and Heston-joint calibrators still use differences. `calibrate_svi` needs none: it searches $(m, \sigma)$ by Nelder–Mead around an exact linear solve.
+- The Heston-joint calibrator still uses differences. The Hull–White bootstrap solves one $\sigma$ per expiry by bracketing and needs no derivative. `calibrate_svi` needs none: it searches $(m, \sigma)$ by Nelder–Mead around an exact linear solve.
 
 ## References
 

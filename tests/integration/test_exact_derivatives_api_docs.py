@@ -21,7 +21,7 @@ from spxa.graph.autodiff import (
     taylor,
     tape,
 )
-from spxa.rates import sabr
+from spxa.rates import hw_calibration, hw_sensitivities, sabr
 from spxa.vol import calibration as vol_calibration
 
 API = (Path(__file__).resolve().parents[2] / "docs" / "api.md").read_text(encoding="utf-8")
@@ -33,6 +33,7 @@ def test_section_names_exist() -> None:
     names |= set(re.findall(r"`([A-Z][A-Za-z]+)`", section))
     modules = (spxa, api, discovery, exactness, families, fourier, hessian, jet, montecarlo)
     modules += (process, taylor, tape, fit, options, sabr, optimizer, vol_calibration)
+    modules += (hw_calibration, hw_sensitivities)
     modules += (tape.GradientTape, optimizer.LeastSquaresOptimizer, process.DiffProcess)
     modules += (exactness.GradientExactness, montecarlo.MCGradient)
     missing = sorted(n for n in names if not any(hasattr(m, n) for m in modules))

@@ -93,11 +93,18 @@ def calibrate_hull_white(
     mode: str = "bootstrap",
     sigma_times: Optional[Sequence[float]] = None,
     sigma_bounds: tuple[float, float] = (1e-6, 0.2),
+    jac: str = "exact",
 ) -> HullWhiteCalibration:
     """Fit :class:`HullWhite` on ``curve`` to instrument prices ``targets``.
 
-    ``a=None`` (global mode only) calibrates the mean reversion too.
+    ``a=None`` (global mode only) calibrates the mean reversion too. In global
+    mode ``jac="exact"`` (default) gives the least-squares solver the exact
+    Jacobian of the relative price errors in the log-parameters
+    (:func:`~spxa.rates.hw_sensitivities.hull_white_price_and_gradient`);
+    ``"2-point"`` restores SciPy's differences.
     """
+    if jac not in ("exact", "2-point"):
+        raise ValueError("jac must be 'exact' or '2-point'")
     tgt = np.asarray(targets, float)
     if len(instruments) != tgt.size or tgt.size == 0:
         raise ValueError("need one target per instrument")
@@ -136,8 +143,26 @@ def calibrate_hull_white(
             m = build(p)
             return np.array([model_price(m, i, projection) for i in instruments]) / tgt - 1.0
 
+        def jacobian(p: np.ndarray) -> np.ndarray:
+            from spxa.rates.hw_sensitivities import hull_white_price_and_gradient
+
+            m = build(p)
+            # d price / d (sigma..., a), chained to (log sigma..., log a)
+            G = np.array([hull_white_price_and_gradient(m, i, projection)[1] for i in instruments])
+            J = G[:, :n_sig] * m.sigma[None, :]
+            if a is None:
+                J = np.column_stack([J, G[:, n_sig] * m.a])
+            return J / tgt[:, None]
+
         p0 = np.r_[np.full(n_sig, np.log(0.01)), [] if a is not None else [np.log(0.05)]]
-        sol = least_squares(resid, p0, xtol=1e-14, ftol=1e-14, gtol=1e-14)
+        sol = least_squares(
+            resid,
+            p0,
+            jac=jacobian if jac == "exact" else "2-point",
+            xtol=1e-14,
+            ftol=1e-14,
+            gtol=1e-14,
+        )
         model = build(sol.x)
     else:
         raise ValueError("mode must be 'bootstrap' or 'global'")

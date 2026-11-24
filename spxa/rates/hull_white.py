@@ -206,6 +206,40 @@ class HullWhite:
         when the sign condition fails).
         """
         from scipy.integrate import quad
+
+        if method not in ("jamshidian", "integral"):
+            raise ValueError("method must be 'jamshidian' or 'integral'")
+        plan = self._swaption_plan(swaption, projection, method)
+        if plan["kind"] == "intrinsic":
+            return float(plan["value"])
+        T, times, amounts = plan["T"], plan["times"], plan["amounts"]
+        if plan["kind"] == "jamshidian":
+            total = 0.0
+            for t_i, a_i, k_i in zip(times, amounts, plan["K"]):
+                if plan["increasing"]:
+                    total -= a_i * self.zcb_option(T, t_i, k_i, "put")
+                else:
+                    total += a_i * self.zcb_option(T, t_i, k_i, "call")
+            return float(total)
+        V, sd, root, lo, hi = plan["V"], plan["sd"], plan["root"], plan["lo"], plan["hi"]
+
+        def f(x: float) -> float:
+            return max(V(x), 0.0) * np.exp(-0.5 * (x / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
+
+        pts = [lo, root, hi] if root is not None else [lo, hi]
+        val = sum(
+            quad(f, a, b, epsabs=0.0, epsrel=1e-12, limit=200)[0] for a, b in zip(pts[:-1], pts[1:])
+        )
+        return float(plan["pT"] * val)
+
+    def _swaption_plan(
+        self, swaption: Any, projection: Optional[YieldCurve], method: str
+    ) -> dict[str, Any]:
+        """How :meth:`swaption` prices ``swaption``: intrinsic, Jamshidian or the integral.
+
+        Shared with :mod:`spxa.rates.hw_sensitivities`, so that the gradient follows
+        exactly the branch the price takes.
+        """
         from scipy.optimize import brentq
 
         from spxa.rates.model_cashflows import swap_cashflows
@@ -216,7 +250,7 @@ class HullWhite:
         T = float(crv.time(swaption.expiry))
         cf = swap_cashflows(swaption.swap, crv, projection)
         if T <= 0:
-            return max(cf.pv(crv), 0.0)
+            return {"kind": "intrinsic", "value": max(cf.pv(crv), 0.0)}
         live = cf.times > T + 1e-12
         times, amounts = cf.times[live], cf.amounts[live]
         const = float(cf.amounts[~live].sum())  # flows at T: P(T, T) = 1
@@ -233,24 +267,22 @@ class HullWhite:
             and (np.all(amounts[1:] < 0) or np.all(amounts[1:] > 0))
             and np.sign(amounts[0]) != np.sign(amounts[1])
         )
+        plan: dict[str, Any] = {
+            "T": T,
+            "times": times,
+            "amounts": amounts,
+            "const": const,
+            "sd": sd,
+            "pT": pT,
+            "V": V,
+            "root": root,
+            "lo": lo,
+            "hi": hi,
+        }
         if method == "jamshidian" and root is not None and one_sign and const == 0.0:
-            K = self.discount_bond(T, times, root)
-            increasing = V(root + sd) > 0
-            total = 0.0
-            for t_i, a_i, k_i in zip(times, amounts, K):
-                if increasing:
-                    total -= a_i * self.zcb_option(T, t_i, k_i, "put")
-                else:
-                    total += a_i * self.zcb_option(T, t_i, k_i, "call")
-            return float(total)
-        if method not in ("jamshidian", "integral"):
-            raise ValueError("method must be 'jamshidian' or 'integral'")
-
-        def f(x: float) -> float:
-            return max(V(x), 0.0) * np.exp(-0.5 * (x / sd) ** 2) / (sd * np.sqrt(2 * np.pi))
-
-        pts = [lo, root, hi] if root is not None else [lo, hi]
-        val = sum(
-            quad(f, a, b, epsabs=0.0, epsrel=1e-12, limit=200)[0] for a, b in zip(pts[:-1], pts[1:])
-        )
-        return float(pT * val)
+            plan["kind"] = "jamshidian"
+            plan["K"] = self.discount_bond(T, times, root)
+            plan["increasing"] = V(root + sd) > 0
+        else:
+            plan["kind"] = "integral"
+        return plan

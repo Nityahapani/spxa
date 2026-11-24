@@ -37,7 +37,12 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   - `vol.calibrate_svi_butterfly_free`, `vol.calibrate_svi_surface` and `vol.calibrate_ssvi`
     (`jac="exact"`): closed-form SLSQP gradients of the objective and of every constraint,
     including Durrleman's $g$ on the grid; `HestonLikePhi` and `PowerLawPhi` gain
-    `parameter_gradient`.
+    `parameter_gradient`;
+  - `rates.calibrate_hull_white(mode="global", jac="exact")`, through the new
+    `rates.hull_white_price_and_gradient`. Jamshidian swaptions and caplets are differentiated in
+    closed form, with the Jamshidian strikes frozen by the envelope theorem; integral swaptions are
+    differentiated under the integral. Gradients agree with a 30-digit mpmath reference to
+    $10^{-11}$.
 
   Each defaults to exact; `"2-point"` restores differences. CGMY option fits reach an objective of
   $2\times10^{-15}$ instead of $3\times10^{-9}$.
