@@ -59,9 +59,33 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   - unbroadcast adjoints, with complex cotangents in the JAX convention.
 - **`GRADIENTS`**: seven laws in `spxa.laws` that check these derivatives against differences of
   independent code and against the chain rules. `default_suite` now has 53 laws in eight groups.
+- **Compiled kernels** (`spxa.compile`, `Process.compile()`; see `docs/compile.md`):
+  - one expression DAG for $\psi(u;\theta)$ of any zoo Lévy expression built with `+`, scaling
+    and `@`, emitted as straight-line NumPy, Numba or JAX code for one parameter vector or a batch;
+  - symbolic parameter gradients and Hessians, $\partial\psi/\partial u$, and cumulants with their
+    Jacobian (generated up to order four, Taylor mode beyond);
+  - exact fused samplers (`simulate`, `sample_at`, `paths`) with merged Gaussian parts, aggregated
+    jump sums and per-path parameter batches;
+  - batched COS prices with the exact Jacobian, including the truncation interval; they match the
+    graph COS pricer to $10^{-12}$;
+  - `export()`, a standalone NumPy module of the exponent and gradient, identical to the
+    in-process NumPy kernel bit for bit;
+  - Numba and JAX match NumPy on edge cases that change finite results (such as $0^{y}$ for complex
+    $y$). JAX pads array axes to power-of-two lengths, so changing shapes recompile a logarithmic
+    number of times;
+  - a conformance suite of 24 random composition trees checks the exponent, gradient, cumulants,
+    sampler and backends against the zoo and `DiffProcess`;
+  - against the uncompiled paths, gradients are 5–8× faster and COS prices with the Jacobian
+    2.5–3× faster. A composite with a family that lacks a vectorised zoo exponent evaluates about
+    85× faster. `benchmarks/compile_report.py` prints the comparison.
 
 ### Fixed
 
+- **Inverse Gaussian sampling at tiny clock increments.** `NIG` and `InverseGaussianProcess`
+  `sample_at` drew with `Generator.wald`, which raises once the shape parameter underflows. So
+  `(NIG(10, -2, 0.5) @ GammaProcess(5, 5)).simulate(252, 2000)` raised. They now use the
+  Michael–Schucany–Haas method with the smaller root written without cancellation. The draw
+  depends only on the mean-to-shape ratio, so it stays exact.
 - **`HestonLikePhi` was $\lambda$ times Gatheral and Jacquier's curvature.** It now returns
   $\varphi(\theta) = \frac{1}{\lambda\theta}\bigl(1 - \frac{1-e^{-\lambda\theta}}{\lambda\theta}\bigr)$,
   as documented. `theta_phi_derivative` already used that definition, so the calendar conditions
