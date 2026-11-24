@@ -46,6 +46,19 @@ def test_merton_jump_diffusion_is_brownian_motion_plus_normal_jumps() -> None:
     assert r.best.g_pvalue > 0.05
 
 
+@pytest.mark.parametrize("search_seed", [7, 12])
+def test_merton_recovery_does_not_depend_on_which_parent_reaches_it(search_seed: int) -> None:
+    # With these seeds the first parent to reach BM + NormalJumps warm-started it
+    # in the many-tiny-jumps basin (BIC worse by ~700), and VG won. Every parent's
+    # warm start is now tried and the best optimum kept.
+    x = merton_increments(0.05, 0.15, 10.0, -0.03, 0.04, DT, 5_000, seed=3)
+    r = discover(x, dt=DT, grammar=GRAMMAR, n_starts=2, seed=search_seed)
+    ref = discover(x, dt=DT, grammar=GRAMMAR, n_starts=2, seed=0)
+    assert r.best.structure_key == "BM + NormalJumps + Drift"
+    assert r.candidates[1].bic - r.best.bic > 6
+    assert abs(r.best.bic - ref.best.bic) < 1.0
+
+
 def test_variance_gamma_beats_its_neighbours() -> None:
     x = vg_increments(0.2, 0.25, -0.3, 1 / 52, 2_000, seed=7, mu=0.1)
     g = grammar_from_names(["BM", "VG", "NIG", "NormalJumps"], max_terms=1)

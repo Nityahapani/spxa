@@ -189,8 +189,13 @@ def discover(
         starts: int = n_starts,
     ) -> Optional[FitResult]:
         key = with_location(structure).key()
-        if key in fitted:
-            return fitted[key]
+        previous = fitted.get(key)
+        if previous is not None and initial is None:
+            return previous
+        # A structure reached again from another parent is refitted from that
+        # parent's warm start and the better optimum is kept: one warm start can
+        # sit in a poor basin (e.g. many tiny jumps for a jump-diffusion), and
+        # which parent arrives first must not decide the ranking.
         try:
             res = fit_structure(
                 structure,
@@ -202,8 +207,12 @@ def discover(
                 initial=initial,
             )
         except (RuntimeError, ValueError, FloatingPointError) as exc:
+            if previous is not None:
+                return previous
             report_warnings.append(f"{structure.key()}: fit failed ({exc})")
             return None
+        if previous is not None and not res.objective < previous.objective:
+            return previous
         fitted[key] = res
         return res
 

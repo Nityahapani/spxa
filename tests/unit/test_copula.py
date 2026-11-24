@@ -371,7 +371,9 @@ class TestCoupledProcess:
         assert coupled.dim == 2
         assert "CoupledProcess" in repr(coupled)
 
-        paths = coupled.simulate(n_steps=40, n_paths=200, T=1.0)
+        # seeded: the correlation of 200 pairs has a standard error of ~0.036, so
+        # an unseeded run left the 0.1 band about 1.5% of the time
+        paths = coupled.simulate(n_steps=40, n_paths=200, T=1.0, rng=np.random.default_rng(42))
         assert paths.shape == (200, 41, 2)
 
         # Check empirical increment correlation

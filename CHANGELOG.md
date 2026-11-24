@@ -81,6 +81,11 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
 
 ### Fixed
 
+- **`discover` beam search kept the first warm start of a structure.** A structure reached from
+  several parents was fitted only from the first parent's estimate. For a Merton sample,
+  `BM + NormalJumps` could start in a many-tiny-jumps basin (BIC worse by about 700) and lose to
+  `BM + VG`, depending on the search seed and on floating-point details of the platform. Each
+  parent's warm start is now tried and the best optimum kept.
 - **Inverse Gaussian sampling at tiny clock increments.** `NIG` and `InverseGaussianProcess`
   `sample_at` drew with `Generator.wald`, which raises once the shape parameter underflows. So
   `(NIG(10, -2, 0.5) @ GammaProcess(5, 5)).simulate(252, 2000)` raised. They now use the
