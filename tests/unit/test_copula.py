@@ -371,14 +371,18 @@ class TestCoupledProcess:
         assert coupled.dim == 2
         assert "CoupledProcess" in repr(coupled)
 
-        paths = coupled.simulate(n_steps=40, n_paths=200, T=1.0)
-        assert paths.shape == (200, 41, 2)
+        n = 2_000
+        paths = coupled.simulate(n_steps=40, n_paths=n, T=1.0, rng=np.random.default_rng(7))
+        assert paths.shape == (n, 41, 2)
 
-        # Check empirical increment correlation
+        # The Gaussian copula with normal marginals gives jointly normal steps with
+        # correlation 0.7, so the increments over [0, T] have correlation 0.7. The sample
+        # correlation has standard error (1 - rho^2)/sqrt(n); allow five of them. The run
+        # is seeded: unseeded, 200 paths and atol=0.1 failed about 1% of CI runs.
         increments_1 = paths[:, -1, 0] - paths[:, 0, 0]
         increments_2 = paths[:, -1, 1] - paths[:, 0, 1]
         emp_corr = np.corrcoef(increments_1, increments_2)[0, 1]
-        assert np.isclose(emp_corr, 0.7, atol=0.1)
+        assert np.isclose(emp_corr, 0.7, atol=5 * (1 - 0.7**2) / np.sqrt(n))
 
     def test_coupled_jump_diffusion_and_options(self):
         merton1 = MertonJumpDiffusion(rate=1.0, jump_mean=-0.05, jump_std=0.1)
@@ -386,20 +390,25 @@ class TestCoupledProcess:
         copula = ClaytonCopula(theta=2.0)
 
         coupled = CoupledProcess([merton1, merton2], copula=copula)
-        paths = coupled.simulate(n_steps=20, n_paths=100, T=0.5)
+        paths = coupled.simulate(n_steps=20, n_paths=100, T=0.5, rng=np.random.default_rng(1))
         assert paths.shape == (100, 21, 2)
 
-        # Basket option pricing
-        b_call = coupled.basket_call_price(weights=[0.5, 0.5], strike=1.0, T=0.5, n_paths=5000)
-        w_call = coupled.worst_of_call_price(strike=1.0, T=0.5, n_paths=5000)
-        best_call = coupled.best_of_call_price(strike=1.0, T=0.5, n_paths=5000)
+        # worst-of <= basket <= best-of holds path by path; with common random numbers
+        # (one seed for all three) it holds exactly for the estimators too
+        def crn():
+            return np.random.default_rng(2)
 
-        # Theoretical arbitrage ordering: worst-of <= basket <= best-of
-        assert w_call <= b_call + 1e-4
-        assert b_call <= best_call + 1e-4
+        b_call = coupled.basket_call_price(
+            weights=[0.5, 0.5], strike=1.0, T=0.5, n_paths=5000, rng=crn()
+        )
+        w_call = coupled.worst_of_call_price(strike=1.0, T=0.5, n_paths=5000, rng=crn())
+        best_call = coupled.best_of_call_price(strike=1.0, T=0.5, n_paths=5000, rng=crn())
+        assert w_call <= b_call <= best_call
 
         # Spread option pricing
-        spread_call = coupled.spread_option_price(strike=0.0, T=0.5, n_paths=3000)
+        spread_call = coupled.spread_option_price(
+            strike=0.0, T=0.5, n_paths=3000, rng=np.random.default_rng(3)
+        )
         assert spread_call >= 0.0
 
 
