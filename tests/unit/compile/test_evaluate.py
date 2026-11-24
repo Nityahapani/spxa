@@ -8,7 +8,14 @@ import numpy as np
 import pytest
 
 from spxa.compile import ir as I
-from spxa.compile.evaluate import call_exponent, cumulants_from_ir, evaluate, taylor
+from spxa.compile.evaluate import (
+    call_exponent,
+    cumulants_from_ir,
+    cumulants_from_ir_many,
+    evaluate,
+    taylor,
+    taylor_many,
+)
 from spxa.compile.ir import CompileError
 from spxa.graph.autodiff.taylor import TaylorError
 
@@ -170,3 +177,25 @@ class TestSpecialSeries:
         assert c[0] == pytest.approx(kve_dnu(0.3, 2.0), rel=1e-14)
         assert c[1] == pytest.approx(d1, rel=1e-6)
         assert c[2] == pytest.approx(d2 / 2.0, rel=1e-5)
+
+
+class TestTaylorMany:
+    def test_one_pass_equals_separate_passes(self) -> None:
+        g = gamma_psi()
+        roots = [g, g * g + a * u, I.const(2.0), b * u]
+        A = np.array([1.0, 2.0, 3.5])
+        together = taylor_many(roots, 5, [A, 3.0], 0.25, -1j)
+        for root, coeffs in zip(roots, together):
+            alone = taylor(root, 5, [A, 3.0], 0.25, -1j)
+            assert len(coeffs) == 6
+            for c1, c2 in zip(coeffs, alone):
+                np.testing.assert_array_equal(c1, c2)
+
+    def test_cumulants_many(self) -> None:
+        g = gamma_psi()
+        k1, k2 = cumulants_from_ir_many([g, 2.0 * g], 4, [2.0, 3.0])
+        np.testing.assert_array_equal(k1, cumulants_from_ir(g, 4, [2.0, 3.0]))
+        np.testing.assert_allclose(k2, 2.0 * k1, rtol=1e-15)
+        # Gamma(a, b): kappa_n = a (n-1)! / b^n
+        want = [2.0 * factorial(n - 1) / 3.0**n for n in range(1, 5)]
+        np.testing.assert_allclose(k1, want, rtol=1e-14)

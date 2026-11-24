@@ -33,7 +33,14 @@ from spxa.compile import ir as I
 from spxa.compile._numeric import apply_op
 from spxa.compile.ir import CompileError, Expr
 
-__all__ = ["evaluate", "taylor", "cumulants_from_ir", "call_exponent"]
+__all__ = [
+    "evaluate",
+    "taylor",
+    "taylor_many",
+    "cumulants_from_ir",
+    "cumulants_from_ir_many",
+    "call_exponent",
+]
 
 
 def call_exponent(process: Any, arg: Any) -> np.ndarray:
@@ -210,6 +217,13 @@ def taylor(
     parameter values. With ``u0 = 0, du = -1j`` the coefficients are those of
     :math:`K(z) = \psi(-iz)`.
     """
+    return taylor_many([root], order, params, u0, du)[0]
+
+
+def taylor_many(
+    roots: Sequence[Expr], order: int, params: Sequence[Any], u0: Any = 0.0, du: Any = 1.0
+) -> List[List[Any]]:
+    """:func:`taylor` for several roots in one pass (shared nodes are expanded once)."""
     from spxa.graph.autodiff.taylor import TaylorError, TSeries
 
     if order < 1:
@@ -217,7 +231,7 @@ def taylor(
     useries = TSeries([np.asarray(u0, dtype=complex)[()], complex(du)] + [0.0] * (order - 1))
     vals: Dict[int, Any] = {}
     with np.errstate(all="ignore"):
-        for node in I.postorder([root]):
+        for node in I.postorder(list(roots)):
             op = node.op
             if op == "const":
                 vals[id(node)] = node.payload
@@ -269,10 +283,13 @@ def taylor(
                 raise TaylorError(f"no Taylor rule for {op} of a u-dependent argument")
             else:
                 vals[id(node)] = apply_op(op, args, node.payload)
-    out = vals[id(root)]
-    if not _is_series(out):
-        out = _lift(out, order)
-    return [np.asarray(c)[()] for c in out.coeffs]
+    result = []
+    for root in roots:
+        out = vals[id(root)]
+        if not _is_series(out):
+            out = _lift(out, order)
+        result.append([np.asarray(c)[()] for c in out.coeffs])
+    return result
 
 
 def cumulants_from_ir(root: Expr, order: int, params: Sequence[Any]) -> np.ndarray:
@@ -281,6 +298,15 @@ def cumulants_from_ir(root: Expr, order: int, params: Sequence[Any]) -> np.ndarr
 
     Shape ``(order,)`` for scalar parameters, ``batch + (order,)`` for arrays.
     """
-    coeffs = taylor(root, order, params, 0.0, -1j)
-    ks = [np.real(factorial(n) * np.asarray(coeffs[n])) for n in range(1, order + 1)]
-    return np.stack(np.broadcast_arrays(*ks), axis=-1)
+    return cumulants_from_ir_many([root], order, params)[0]
+
+
+def cumulants_from_ir_many(
+    roots: Sequence[Expr], order: int, params: Sequence[Any]
+) -> List[np.ndarray]:
+    """:func:`cumulants_from_ir` for several exponents in one Taylor pass."""
+    out = []
+    for coeffs in taylor_many(roots, order, params, 0.0, -1j):
+        ks = [np.real(factorial(n) * np.asarray(coeffs[n])) for n in range(1, order + 1)]
+        out.append(np.stack(np.broadcast_arrays(*ks), axis=-1))
+    return out

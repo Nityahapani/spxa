@@ -378,15 +378,17 @@ class ExponentKernel:
         Taylor coefficients in :math:`u` commute with parameter derivatives, so
         the Jacobian is the cumulant series of :math:`\partial\psi/\partial\theta_k`.
         """
-        from spxa.compile.evaluate import cumulants_from_ir
+        from spxa.compile.evaluate import cumulants_from_ir_many
 
         self._require_analytic()
         params, batched = self._taylor_params(theta)
         lead = (len(params[0]),) if batched else ()
-        kappa = np.broadcast_to(cumulants_from_ir(self.psi_expr, order, params), lead + (order,))
+        # one Taylor pass: the gradient expressions share most nodes with psi
+        series = cumulants_from_ir_many([self.psi_expr] + self.grad_exprs, order, params)
+        kappa = np.broadcast_to(series[0], lead + (order,))
         jac = np.empty(lead + (order, self.n_free))
-        for k, g in enumerate(self.grad_exprs):
-            jac[..., k] = np.broadcast_to(cumulants_from_ir(g, order, params), lead + (order,))
+        for k, ser in enumerate(series[1:]):
+            jac[..., k] = np.broadcast_to(ser, lead + (order,))
         return kappa.copy(), jac
 
     def char_func(self, u: Any, t: float = 1.0, theta: Optional[Any] = None) -> np.ndarray:
