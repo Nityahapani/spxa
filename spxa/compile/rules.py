@@ -15,6 +15,17 @@ parameter set and compile one specialised program per pattern, so a batch of
 parameters may straddle a branch. Parameter names follow
 :class:`spxa.graph.autodiff.process.DiffProcess` (``"<Family>.<param>"``),
 so the two are interchangeable.
+
+Three rules improve on the textbook form without changing the value:
+
+* Poisson and Merton jump parts use ``expm1``, which is accurate at small
+  :math:`u` where :math:`e^{x} - 1` cancels;
+* the Kou and exponential jump parts are written as
+  :math:`iu\,p/(\eta_1 - iu) - iu\,q/(\eta_2 + iu)` instead of
+  :math:`p\eta_1/(\eta_1 - iu) + q\eta_2/(\eta_2 + iu) - 1`, which is the
+  same function with no cancellation near :math:`u = 0`;
+* uniform jumps use :math:`e^{ium}\,\mathrm{sinc}(uw)`, which is analytic at
+  :math:`u = 0` (the zoo's quotient form is singular there).
 """
 
 from __future__ import annotations
@@ -253,6 +264,112 @@ def _r_meixner(P: Any) -> LeafSpec:
 @leaf_rule("GeneralizedHyperbolicProcess")
 def _r_gh(P: Any) -> LeafSpec:
     return _family_spec("GeneralizedHyperbolicProcess", P, _gh_psi, None, "Eberlein (2001)")
+
+
+# ── CGMY across the Gamma(-Y) poles ─────────────────────────────────────────
+
+#: Same band and number of terms as spxa.graph.autodiff.families (see there).
+_CGMY_SERIES_WIDTH = 5e-2
+_CGMY_SERIES_TERMS = 24
+
+
+def _cgmy_series(C: Expr, G: Expr, M: Expr, Y: Expr, u: Expr, k: int) -> Expr:
+    r"""
+    :math:`C\,A_k(\varepsilon)\sum_{j\ge1}B^{(j)}(k)\,\varepsilon^{j-1}/j!`, :math:`\varepsilon = Y - k`.
+
+    :math:`\Gamma(-Y) = A_k/\varepsilon` with :math:`A_0 = -\Gamma(1-\varepsilon)`,
+    :math:`A_1 = \Gamma(1-\varepsilon)/(1+\varepsilon)`; :math:`B^{(j)}` are the
+    :math:`Y`-derivatives of the bracket at the pole. Analytic across it.
+    """
+    a, b = M - J * u, G + J * u
+    la, lm, lb, lg = I.log(a), I.log(M), I.log(b), I.log(G)
+    eps = Y - float(k)
+    A = -I.gamma(1.0 - eps) if k == 0 else I.gamma(1.0 - eps) / (1.0 + eps)
+    total: Expr = I.const(0j)
+    powe: Expr = I.const(1.0)
+    pa, pm, pb, pg = la, lm, lb, lg
+    fact = 1.0
+    for j in range(1, _CGMY_SERIES_TERMS + 1):
+        fact *= j
+        if k == 0:
+            bj = pa - pm + pb - pg
+        else:
+            bj = a * pa - M * pm + b * pb - G * pg
+        total = total + bj * (powe / fact)
+        powe = powe * eps
+        pa, pm, pb, pg = pa * la, pm * lm, pb * lb, pg * lg
+    return C * A * total
+
+
+def _cgmy_psi(u: Expr, p: Sequence[Expr]) -> Expr:
+    C, G, M, Y = p
+    direct = C * I.gamma(-Y) * ((M - J * u) ** Y - M**Y + (G + J * u) ** Y - G**Y)
+    near0 = I.lt(I.abs_(Y), _CGMY_SERIES_WIDTH)
+    near1 = I.lt(I.abs_(Y - 1.0), _CGMY_SERIES_WIDTH)
+    return I.where(
+        near0,
+        _cgmy_series(C, G, M, Y, u, 0),
+        I.where(near1, _cgmy_series(C, G, M, Y, u, 1), direct),
+    )
+
+
+@leaf_rule("CGMY")
+def _r_cgmy(P: Any) -> LeafSpec:
+    return _family_spec("CGMY", P, _cgmy_psi, None, "Carr, Geman, Madan & Yor (2002) eq. (5)")
+
+
+# ── jump diffusions ─────────────────────────────────────────────────────────
+
+
+def _merton_psi(u: Expr, p: Sequence[Expr]) -> Expr:
+    drift, sigma, rate, jm, js = p
+    return J * drift * u - 0.5 * sigma**2 * u * u + rate * I.expm1(J * jm * u - 0.5 * js**2 * u * u)
+
+
+def _double_exp_jump(u: Expr, q: Expr, eta1: Expr, eta2: Expr) -> Expr:
+    r""":math:`E[e^{iuY}] - 1` for double-exponential jumps, without cancellation at 0."""
+    iu = J * u
+    return iu * (q / (eta1 - iu) - (1.0 - q) / (eta2 + iu))
+
+
+def _kou_psi(u: Expr, p: Sequence[Expr]) -> Expr:
+    drift, sigma, rate, q, eta1, eta2 = p
+    return J * drift * u - 0.5 * sigma**2 * u * u + rate * _double_exp_jump(u, q, eta1, eta2)
+
+
+@leaf_rule("MertonJumpDiffusion")
+def _r_merton(P: Any) -> LeafSpec:
+    return _family_spec("MertonJumpDiffusion", P, _merton_psi, "merton", "Merton (1976)")
+
+
+@leaf_rule("KouJumpDiffusion")
+def _r_kou(P: Any) -> LeafSpec:
+    return _family_spec("KouJumpDiffusion", P, _kou_psi, "kou", "Kou (2002)")
+
+
+# ── alpha-stable: differentiable in the parameters, real u only ─────────────
+
+
+def _stable_psi(u: Expr, p: Sequence[Expr]) -> Expr:
+    alpha, beta, sigma, mu = p
+    x = I.real(u)
+    ax = I.abs_(x)
+    sgn = I.sign(x)
+    live = I.gt(ax, 0.0)
+    safe = I.where(live, ax, 1.0)
+    general = (
+        -(sigma**alpha)
+        * I.exp(alpha * I.log(safe))
+        * (1.0 - J * beta * sgn * I.tan(float(np.pi) * alpha / 2.0))
+    )
+    at_one = -sigma * safe * (1.0 + J * beta * (2.0 / float(np.pi)) * sgn * I.log(safe))
+    core = I.where(I.gt(I.abs_(alpha - 1.0), 1e-12), general, at_one)
+    return I.where(live, core, 0j) + J * mu * x
+
+
+@leaf_rule("AlphaStable")
+def _r_stable(P: Any) -> LeafSpec:
+    return _family_spec("AlphaStable", P, _stable_psi, None, "Nolan (2020) Def. 1.6")
 
 
 def supported_families() -> List[str]:

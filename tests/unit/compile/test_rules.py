@@ -126,3 +126,107 @@ def test_non_finite_parameters_are_rejected() -> None:
 
     with pytest.raises(CompileError):
         _f(1.0, float("nan"))
+
+
+# ── CGMY, jump diffusions, alpha-stable ─────────────────────────────────────
+
+CGMY_CASES = [
+    L.CGMY(1.0, 5.0, 10.0, 0.5),
+    L.CGMY(0.3, 2.0, 4.0, 1.5),
+    L.CGMY(0.1, 8.0, 9.0, 1.85),
+    L.CGMY(1.0, 5.0, 10.0, 0.01),  # series band around the pole at Y = 0
+    L.CGMY(1.0, 5.0, 10.0, -0.03),
+    L.CGMY(1.0, 5.0, 10.0, 0.97),  # series band around the pole at Y = 1
+    L.CGMY(1.0, 5.0, 10.0, 1.04),
+]
+JUMP_DIFFUSION_CASES = [
+    L.MertonJumpDiffusion(0.05, 0.2, 1.0, -0.1, 0.15),
+    L.MertonJumpDiffusion(-0.02, 1e-3, 30.0, 0.01, 0.002),
+    L.KouJumpDiffusion(0.05, 0.2, 1.0, 0.4, 10.0, 5.0),
+    L.KouJumpDiffusion(0.0, 0.1, 5.0, 0.9, 3.0, 25.0),
+]
+
+
+@pytest.mark.parametrize("proc", CGMY_CASES, ids=_ids(CGMY_CASES))
+def test_cgmy_exponent(proc: Any) -> None:
+    # the zoo evaluates the direct form near the poles, which cancels; the IR
+    # (like the differentiable family) switches to the series there
+    near_pole = min(abs(proc.Y), abs(proc.Y - 1.0)) < 0.05
+    _check_family(proc, zoo_rtol=1e-11 if near_pole else 2e-14)
+
+
+@pytest.mark.parametrize("k", [0, 1])
+def test_cgmy_is_continuous_across_the_series_band(k: int) -> None:
+    proc = L.CGMY(1.0, 5.0, 10.0, 0.5)
+    spec, params, psi = _leaf_psi(proc)
+    edge = k + 0.05
+    vals = [list(spec.values[:3]) + [edge + s] for s in (-1e-13, 1e-13)]
+    inside, outside = (evaluate(psi, U_CPLX, v) for v in vals)
+    _close(inside, outside, 1e-12)
+
+
+@pytest.mark.parametrize(
+    "proc", CGMY_CASES + JUMP_DIFFUSION_CASES, ids=_ids(CGMY_CASES + JUMP_DIFFUSION_CASES)
+)
+def test_cgmy_and_jump_diffusion_gradients_and_cumulants(proc: Any) -> None:
+    test_family_parameter_gradient_matches_jets(proc)
+    test_family_cumulants(proc)
+
+
+@pytest.mark.parametrize("proc", JUMP_DIFFUSION_CASES, ids=_ids(JUMP_DIFFUSION_CASES))
+def test_jump_diffusion_exponent(proc: Any) -> None:
+    _check_family(proc)
+
+
+def test_jump_parts_have_no_cancellation_near_zero() -> None:
+    # psi(u) ~ i u kappa_1 as u -> 0; the textbook e^x - 1 form loses all digits
+    proc = L.MertonJumpDiffusion(0.0, 1e-9, 1.0, 0.1, 0.2)
+    spec, params, psi = _leaf_psi(proc)
+    u = 1e-12
+    got = complex(evaluate(psi, u, list(spec.values)))
+    assert got.imag == pytest.approx(u * 0.1, rel=1e-12)
+    kou = L.KouJumpDiffusion(0.0, 1e-9, 1.0, 0.4, 10.0, 5.0)
+    spec, params, psi = _leaf_psi(kou)
+    got = complex(evaluate(psi, u, list(spec.values)))
+    assert got.imag == pytest.approx(u * (0.4 / 10.0 - 0.6 / 5.0), rel=1e-12)
+
+
+STABLE_CASES = [
+    L.AlphaStable(1.5, 0.3, 1.0, 0.0),
+    L.AlphaStable(0.7, -0.8, 0.4, 0.1),
+    L.AlphaStable(1.0, 0.3, 1.0, 0.0),
+    L.AlphaStable(2.0, 0.0, 0.5, 0.2),
+]
+
+
+@pytest.mark.parametrize("proc", STABLE_CASES, ids=_ids(STABLE_CASES))
+def test_stable_exponent(proc: Any) -> None:
+    from spxa.graph.autodiff.families import RULES
+
+    spec, params, psi = _leaf_psi(proc)
+    got = evaluate(psi, U_REAL, list(spec.values))
+    _close(got, np.asarray(RULES["AlphaStable"].psi(U_REAL, spec.values)), 2e-14)
+    _close(got, _zoo_psi(proc, U_REAL), 2e-14)
+    assert complex(evaluate(psi, 0.0, list(spec.values))) == 0j
+
+
+@pytest.mark.parametrize("proc", STABLE_CASES[:2], ids=_ids(STABLE_CASES[:2]))
+def test_stable_parameter_gradient(proc: Any) -> None:
+    from spxa.graph.autodiff.process import DiffProcess
+
+    spec, params, psi = _leaf_psi(proc)
+    u = U_REAL[U_REAL != 0]
+    _, ref = DiffProcess(proc).char_exponent_and_grad(u)
+    for k, p in enumerate(params):
+        got = evaluate(derivative(psi, p), u, list(spec.values))
+        _close(np.broadcast_to(got, u.shape), ref[:, k], 1e-12)
+
+
+def test_stable_is_not_analytic() -> None:
+    from spxa.graph.autodiff.taylor import TaylorError
+
+    spec, params, psi = _leaf_psi(STABLE_CASES[0])
+    with pytest.raises(TaylorError):
+        cumulants_from_ir(psi, 2, list(spec.values))
+    with pytest.raises(CompileError):
+        derivative(psi, I.U)
