@@ -96,7 +96,7 @@ from spxa.graph.measure_change import EsscherTransformNode, GirsanovTransformNod
 from spxa.graph.morph import MorphNode, QuadraticVarianceMorphNode
 from spxa.graph.multiasset import CorrelatedDiffusionNode, MultiAssetBasketNode
 from spxa.graph.node import ConstantNode, Node, NodeType, OperatorNode, OutputNode, ParameterNode
-from spxa.graph.pricing.greeks import compute_graph_greeks
+from spxa.graph.pricing.greeks import GreeksResult, compute_graph_greeks, graph_greeks
 from spxa.graph.pricing.payoff_nodes import (
     AsianPayoffNode,
     DigitalPayoffNode,
@@ -255,6 +255,8 @@ __all__ = [
     "build_black_scholes_pricing_graph",
     "monte_carlo_graph_price",
     "compute_graph_greeks",
+    "graph_greeks",
+    "GreeksResult",
     # Calibration
     "MSELossNode",
     "ArbitragePenaltyNode",

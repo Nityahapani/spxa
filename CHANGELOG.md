@@ -74,6 +74,12 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   by $10^{-5}$ when $\varphi$ was small.
 - **Generalized hyperbolic.** The Lévy measure returned the GH probability density. It is now
   Raible's Lévy density, so `GH + Drift` and `c * GH` have the right exponent (the error was O(1)).
+- **Pricing-graph Greeks.** `BlackScholesPriceNode` converted its inputs with `float()`, so jets
+  could not run through it: delta, vega, rho and theta were central differences, and gamma a
+  difference of those, although the docs called them exact. The node now uses ufuncs and
+  `scipy.special.ndtr`, and every Greek is exact (closed-form Black–Scholes to $5\times10^{-15}$).
+  `compute_graph_greeks` takes gamma from the exact Hessian, adds vanna and volga, and accepts
+  `strict=True`; the new `graph_greeks` returns a `GreeksResult` with the exactness and notes.
 - **Derivatives at ties.** `MaximumNode`/`MinimumNode` gave the whole derivative to the first
   argument at a tie, so `max(a, b)` and `max(b, a)` differentiated differently; the jets for
   `np.max`/`np.min` picked the first tied entry. Every kink now returns the centroid of the Clarke

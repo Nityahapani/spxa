@@ -4791,6 +4791,7 @@ from spxa.graph import (
     GradientTape,
     compute_graph_greeks,
     compute_graph_hessian,
+    graph_greeks,
     SmoothIndicatorNode,
     SoftplusNode,
 )
@@ -4799,7 +4800,8 @@ from spxa.graph import (
 - `GradientTape`: Context manager recording DAG execution and computing reverse-mode vector-Jacobian products (VJPs):
   - `tape.gradient(target_output, sources=None)`: Computes exact gradients $\nabla_x y$ via reverse-mode accumulation.
   - `tape.jacobian(targets, sources)`: Computes full Jacobian matrix $J_{ij} = \partial y_i / \partial x_j$.
-- `compute_graph_greeks(pricing_graph, spot_node, vol_node, rate_node=None, mat_node=None)`: Computes exact Greeks (Delta, Gamma, Vega, Rho, Theta) in a single tape pass without finite-difference truncation error.
+- `graph_greeks(pricing_graph, price_output_name="price", spot_name="s0", vol_name="volatility", maturity_name="maturity", rate_name="rate", eps=1e-4, *, strict=False)` returns a `GreeksResult(values, exactness, notes)`. Delta, vega, rho and theta come from one tape pass. Gamma, vanna and volga are the Hessian in (spot, volatility): exact second-order jets when every node runs on jets, otherwise differences of the exact gradient, reported as `NUMERICAL`. `strict=True` raises `InexactGradientError` instead.
+- `compute_graph_greeks(...)` takes the same arguments and returns `values`, a dict with `price`, `delta`, `gamma`, `vega`, `theta`, `rho`, `vanna` and `volga`. `BlackScholesPriceNode` runs on jets, so its Greeks are exact.
 - `compute_graph_hessian(graph, target_node, param_nodes)`: Evaluates full second-order Hessian matrix including cross-sensitivities (Vanna, Volga).
 - Smoothers:
   - `SmoothIndicatorNode(input_node, threshold, beta=20.0)`: Differentiable sigmoid mollifier $\sigma(\beta(x - K))$ for discontinuous payoffs (digitals, barriers).

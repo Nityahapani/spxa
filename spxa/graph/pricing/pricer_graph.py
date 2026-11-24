@@ -7,8 +7,9 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import numpy as np
-from scipy.stats import norm
+from scipy.special import ndtr
 
+from spxa.graph.autodiff.jet import Jet
 from spxa.graph.graph import ComputationalGraph
 from spxa.graph.node import Node, OperatorNode, ParameterNode, PortDescriptor
 from spxa.graph.types import DType
@@ -29,24 +30,21 @@ class BlackScholesPriceNode(OperatorNode):
     ) -> None:
         self.is_call = is_call
 
-        def bs_price_fn(
-            s_val: float, k_val: float, t_val: float, r_val: float, sig_val: float
-        ) -> float:
-            vol_sqrt = float(sig_val) * np.sqrt(float(t_val))
-            d1 = (
-                np.log(float(s_val) / float(k_val))
-                + (float(r_val) + 0.5 * float(sig_val) ** 2) * float(t_val)
-            ) / vol_sqrt
+        def bs_price_fn(s_val: Any, k_val: Any, t_val: Any, r_val: Any, sig_val: Any) -> Any:
+            # NumPy ufuncs only (no float()), so forward-mode jets run through the node
+            # and its gradient and Hessian are exact.
+            vol_sqrt = sig_val * np.sqrt(t_val)
+            d1 = (np.log(s_val / k_val) + (r_val + 0.5 * sig_val * sig_val) * t_val) / vol_sqrt
             d2 = d1 - vol_sqrt
+            disc = k_val * np.exp(-r_val * t_val)
             if self.is_call:
-                return float(
-                    float(s_val) * norm.cdf(d1)
-                    - float(k_val) * np.exp(-float(r_val) * float(t_val)) * norm.cdf(d2)
-                )
-            return float(
-                float(k_val) * np.exp(-float(r_val) * float(t_val)) * norm.cdf(-d2)
-                - float(s_val) * norm.cdf(-d1)
-            )
+                out = s_val * ndtr(d1) - disc * ndtr(d2)
+            else:
+                out = disc * ndtr(-d2) - s_val * ndtr(-d1)
+            if isinstance(out, Jet):
+                return out
+            out = np.asarray(out, dtype=float)
+            return float(out) if out.ndim == 0 else out
 
         super().__init__(
             op_fn=bs_price_fn,

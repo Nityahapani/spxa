@@ -77,13 +77,20 @@ graph = build_black_scholes_pricing_graph(
 results = graph.evaluate()
 print("Call Price:", results["price"])
 
-# Compute exact Greeks via reverse-mode autodiff tape
+# Greeks: first order from the tape, gamma/vanna/volga from an exact jet Hessian
 greeks = compute_graph_greeks(graph)
 print("Delta:", greeks["delta"])
 print("Gamma:", greeks["gamma"])
 print("Vega :", greeks["vega"])
 print("Theta:", greeks["theta"])
 print("Rho  :", greeks["rho"])
+print("Vanna:", greeks["vanna"], "Volga:", greeks["volga"])
+
+# graph_greeks also reports whether every Greek is exact
+from spxa.graph import graph_greeks
+
+res = graph_greeks(graph, strict=True)  # raises if any Greek would be a difference quotient
+print(res.exactness)
 ```
 
 ### B. Graph-Based Model Calibration
