@@ -370,14 +370,56 @@ def _jax_sinc_d1(z: Any) -> Any:
     return jnp.where(small, zs * acc, direct)
 
 
+def _bucket(n: int) -> int:
+    """The smallest power of two >= ``n`` (``n`` itself for 0 and 1)."""
+    return n if n <= 1 else 1 << (n - 1).bit_length()
+
+
+def _pad_to_buckets(args: Sequence[Any]) -> Tuple[List[Any], Tuple[int, ...]]:
+    """
+    Pad array arguments so that every non-unit axis has a power-of-two length.
+
+    ``jax.jit`` compiles once per input shape; rounding axes up keeps the number of
+    compilations logarithmic in the problem size (calibration loops change the
+    batch, the strike count and the frequency grid). Padding repeats the edge
+    values, so the padded entries are copies of real inputs and introduce no new
+    non-finite values. Returns the padded arguments and the true broadcast shape.
+    """
+    arrs = [np.asarray(a) for a in args]
+    shape = np.broadcast_shapes(*(a.shape for a in arrs))
+    target = tuple(_bucket(n) for n in shape)
+    if target == shape:
+        return arrs, shape
+    out = []
+    for a in arrs:
+        if a.ndim == 0:
+            out.append(a)
+            continue
+        lead = len(shape) - a.ndim
+        widths = [(0, target[lead + i] - n) if n > 1 else (0, 0) for i, n in enumerate(a.shape)]
+        out.append(np.pad(a, widths, mode="edge"))
+    return out, shape
+
+
+def _unpad(o: Any, shape: Tuple[int, ...]) -> np.ndarray:
+    a = np.asarray(o)
+    if a.ndim == 0:
+        return a
+    lead = len(shape) - a.ndim
+    return a[
+        tuple(slice(0, shape[lead + i]) if n > 1 else slice(None) for i, n in enumerate(a.shape))
+    ]
+
+
 def _jax_wrap(jax: Any, raw: Callable[..., Any]) -> Callable[..., Any]:
     with x64_context():
         jitted = jax.jit(raw)
 
     def run(u: Any, *params: Any) -> Tuple[Any, ...]:
+        args, shape = _pad_to_buckets((u,) + params)
         with x64_context():
-            out = jitted(u, *params)
-            return tuple(np.asarray(o) for o in out)
+            out = jitted(*args)
+            return tuple(_unpad(o, shape) for o in out)
 
     run.jitted = jitted  # type: ignore[attr-defined]
     run.raw = raw  # type: ignore[attr-defined]
