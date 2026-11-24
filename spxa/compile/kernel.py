@@ -287,6 +287,53 @@ class ExponentKernel:
                 pos += 1
         return psi, grad, hess
 
+    # ── cumulants (Taylor mode on the same expressions) ────────────────────
+    def _taylor_params(self, theta: Optional[Any]) -> Tuple[List[Any], bool]:
+        th, batched = self._theta(theta)
+        if batched:
+            return [th[:, k] for k in range(self.n_free)], True
+        return [th[k] for k in range(self.n_free)], False
+
+    def _require_analytic(self) -> None:
+        if not self.lowered.analytic:
+            raise CompileError(
+                "the exponent is not analytic at u = 0 (an alpha-stable component has no "
+                "moments), so it has no cumulants"
+            )
+
+    def cumulants(self, order: int = 4, theta: Optional[Any] = None) -> np.ndarray:
+        r"""
+        :math:`\kappa_1..\kappa_{order}` of :math:`X_1`, exactly (Taylor mode).
+
+        Shape ``(order,)``, or ``(B, order)`` for a batch of parameters.
+        """
+        from spxa.compile.evaluate import cumulants_from_ir
+
+        self._require_analytic()
+        params, batched = self._taylor_params(theta)
+        out = cumulants_from_ir(self.psi_expr, order, params)
+        return np.broadcast_to(out, ((len(params[0]),) if batched else ()) + (order,)).copy()
+
+    def cumulants_and_jacobian(
+        self, order: int = 4, theta: Optional[Any] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        r"""
+        Cumulants and :math:`\partial\kappa_n/\partial\theta_k`, shape ``(..., order, n_free)``.
+
+        Taylor coefficients in :math:`u` commute with parameter derivatives, so
+        the Jacobian is the cumulant series of :math:`\partial\psi/\partial\theta_k`.
+        """
+        from spxa.compile.evaluate import cumulants_from_ir
+
+        self._require_analytic()
+        params, batched = self._taylor_params(theta)
+        lead = (len(params[0]),) if batched else ()
+        kappa = np.broadcast_to(cumulants_from_ir(self.psi_expr, order, params), lead + (order,))
+        jac = np.empty(lead + (order, self.n_free))
+        for k, g in enumerate(self.grad_exprs):
+            jac[..., k] = np.broadcast_to(cumulants_from_ir(g, order, params), lead + (order,))
+        return kappa.copy(), jac
+
     def char_func(self, u: Any, t: float = 1.0, theta: Optional[Any] = None) -> np.ndarray:
         r""":math:`E[e^{iuX_t}] = e^{t\psi(u)}`."""
         return np.exp(float(t) * self.psi(u, theta))

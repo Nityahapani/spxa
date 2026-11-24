@@ -195,3 +195,67 @@ def test_opaque_leaves_run_on_numpy() -> None:
     _close(sub.psi(U), (L.BrownianMotion(0.0, 0.3) @ MyGamma(2.0, 3.0))._char_exponent(U), 5e-14)
     with pytest.raises(CompileError, match="opaque"):
         sub.psi_and_grad(U)
+
+
+# ── cumulants ───────────────────────────────────────────────────────────────
+
+CUMULANT_CASES = dict(
+    CASES, meixner=L.MeixnerProcess(0.3, -0.5, 1.0, 0.0), cgmy_pole=L.CGMY(1.0, 5.0, 10.0, 0.02)
+)
+
+
+@pytest.mark.parametrize("name", sorted(CUMULANT_CASES))
+def test_cumulants_and_jacobian_match_diff_process(name: str) -> None:
+    proc = CUMULANT_CASES[name]
+    k = ExponentKernel(lower(proc))
+    kappa, jac = k.cumulants_and_jacobian(6)
+    k_ref, j_ref = DiffProcess(proc).cumulants_and_jacobian(6)
+    _close(kappa, k_ref, 1e-13)
+    _close(jac, j_ref, 1e-12)
+    _close(k.cumulants(6), k_ref, 1e-13)
+    ref = proc.cumulants(4)
+    _close(k.cumulants(4), np.array([ref[n] for n in range(1, 5)]), 1e-11)
+
+
+def test_batched_cumulants() -> None:
+    k = ExponentKernel(lower(CASES["subordinated"]))
+    theta = np.vstack([k.theta0, k.theta0 * 1.1, k.theta0 * 0.9])
+    kb, jb = k.cumulants_and_jacobian(4, theta)
+    assert kb.shape == (3, 4) and jb.shape == (3, 4, k.n_free)
+    for r in range(3):
+        kr, jr = k.cumulants_and_jacobian(4, theta[r])
+        _close(kb[r], kr, 1e-15)
+        _close(jb[r], jr, 1e-15)
+    assert k.cumulants(3, theta).shape == (3, 3)
+
+
+def test_cumulant_jacobian_of_compound_poisson_by_differences() -> None:
+    from spxa.zoo.levy import compound_poisson as cp
+
+    proc = L.BrownianMotion(0.0, 0.2) + cp.CompoundPoisson(2.0, cp.UniformJump(-0.2, 0.5))
+    k = ExponentKernel(lower(proc))
+    kappa, jac = k.cumulants_and_jacobian(5)
+    h = 1e-6
+    for j in range(k.n_free):
+        tp, tm = k.theta0.copy(), k.theta0.copy()
+        tp[j] += h
+        tm[j] -= h
+        num = (k.cumulants(5, tp) - k.cumulants(5, tm)) / (2 * h)
+        _close(jac[:, j], num, 1e-8)
+
+
+def test_free_subset_jacobian() -> None:
+    proc = CASES["vg_gamma"]
+    k = ExponentKernel(lower(proc), free=["VarianceGamma.nu", "scale"])
+    _, jac = k.cumulants_and_jacobian(4)
+    _, j_ref = DiffProcess(proc, free=["VarianceGamma.nu", "scale"]).cumulants_and_jacobian(4)
+    _close(jac, j_ref, 1e-12)
+
+
+def test_stable_components_have_no_cumulants() -> None:
+    k = ExponentKernel(lower(L.AlphaStable(1.5, 0.3, 1.0, 0.0) + L.BrownianMotion(0.0, 0.1)))
+    with pytest.raises(CompileError, match="not analytic"):
+        k.cumulants(2)
+    with pytest.raises(CompileError, match="not analytic"):
+        k.cumulants_and_jacobian(2)
+    assert np.all(np.isfinite(k.psi(U)))

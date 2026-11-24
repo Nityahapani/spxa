@@ -140,3 +140,33 @@ class TestTaylor:
     def test_sinc_with_mixed_expansion_points_raises(self) -> None:
         with pytest.raises(CompileError):
             taylor(I.sinc(a * u + b), 2, [1.0, np.array([0.0, 1.0])])
+
+
+class TestSpecialSeries:
+    def test_sinc_derivative_series(self) -> None:
+        # sinc'(a u) = sum_k (-1)^k 2k (a u)^(2k-1) / (2k+1)!
+        c = taylor(I.sinc_d1(a * u), 5, [2.0])
+        ref = [0.0, -2.0 / 3.0, 0.0, 8.0 / 30.0, 0.0, -32.0 / 840.0]
+        np.testing.assert_allclose(np.array(c, dtype=complex), ref, atol=1e-15)
+        # away from zero the series is that of (cos z - sinc z) / z
+        c1 = taylor(I.sinc_d1(u), 3, [], u0=0.7)
+        h = 1e-3
+        from spxa.compile._numeric import sinc_d1
+
+        num = (sinc_d1(0.7 + h) - sinc_d1(0.7 - h)) / (2 * h)
+        assert c1[1] == pytest.approx(num, rel=1e-6)
+        with pytest.raises(CompileError):
+            taylor(I.sinc_d1(a * u + b), 2, [1.0, np.array([0.0, 1.0])])
+
+    def test_bessel_order_derivative_series(self) -> None:
+        from spxa.compile._numeric import kve_dnu
+
+        e = I.kve_dnu(a, b + u)
+        c = taylor(e, 3, [0.3, 2.0])
+        h = 1e-3
+        z = 2.0
+        d1 = (kve_dnu(0.3, z + h) - kve_dnu(0.3, z - h)) / (2 * h)
+        d2 = (kve_dnu(0.3, z + h) - 2 * kve_dnu(0.3, z) + kve_dnu(0.3, z - h)) / h**2
+        assert c[0] == pytest.approx(kve_dnu(0.3, 2.0), rel=1e-14)
+        assert c[1] == pytest.approx(d1, rel=1e-6)
+        assert c[2] == pytest.approx(d2 / 2.0, rel=1e-5)

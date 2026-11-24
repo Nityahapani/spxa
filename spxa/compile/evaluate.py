@@ -127,6 +127,55 @@ def _series_sinc(a: Any, order: int) -> Any:
     return np.sin(a) / a
 
 
+def _series_sinc_d1(a: Any, order: int) -> Any:
+    from spxa.graph.autodiff.taylor import compose
+
+    z0 = a.coeffs[0]
+    if np.all(np.asarray(z0) == 0):
+        # d^n/dz^n sinc'(0) = sinc^(n+1)(0): (-1)^k / (2k + 1) at even n + 1 = 2k, else 0
+        derivs: List[Any] = []
+        for n in range(order + 1):
+            m = n + 1
+            derivs.append(0.0 if m % 2 else (-1.0) ** (m // 2) / (m + 1))
+        return compose(a, derivs)
+    if np.any(np.asarray(z0) == 0):
+        raise CompileError("sinc' series at a mix of zero and non-zero expansion points")
+    return (np.cos(a) - np.sin(a) / a) / a
+
+
+def _series_kve_dnu(nu: Any, a: Any, order: int) -> Any:
+    r"""
+    :math:`\partial_\nu e^zK_\nu(z)` on a series in :math:`z`.
+
+    :math:`\partial_z^k e^zK_\nu = \sum_j c_{kj}\,e^zK_{\nu+j}` with constant
+    coefficients (from :math:`(e^zK_\nu)' = e^zK_\nu - (e^zK_{\nu-1} + e^zK_{\nu+1})/2`),
+    so :math:`\partial_z^k\partial_\nu e^zK_\nu = \sum_j c_{kj}\,\partial_\nu e^zK_{\nu+j}`.
+    """
+    from spxa.compile._numeric import kve_dnu
+    from spxa.graph.autodiff.taylor import TaylorError, compose
+
+    if _is_series(nu):
+        raise TaylorError("the Bessel order cannot depend on u")
+    z0 = a.coeffs[0]
+    combo: Dict[int, float] = {0: 1.0}
+    cache: Dict[int, Any] = {}
+    derivs: List[Any] = []
+    for _ in range(order + 1):
+        total: Any = 0.0
+        for j, c in combo.items():
+            if j not in cache:
+                cache[j] = kve_dnu(nu + j, z0)
+            total = total + c * cache[j]
+        derivs.append(total)
+        nxt: Dict[int, float] = {}
+        for j, c in combo.items():
+            nxt[j - 1] = nxt.get(j - 1, 0.0) - 0.5 * c
+            nxt[j + 1] = nxt.get(j + 1, 0.0) - 0.5 * c
+            nxt[j] = nxt.get(j, 0.0) + c
+        combo = nxt
+    return compose(a, derivs)
+
+
 def _series_call(process: Any, a: Any, order: int) -> Any:
     from spxa.graph.autodiff.taylor import TaylorError, compose
 
@@ -206,13 +255,17 @@ def taylor(
                 vals[id(node)] = _series_tan(args[0])
             elif op == "sinc":
                 vals[id(node)] = _series_sinc(args[0], order)
+            elif op == "sinc_d1":
+                vals[id(node)] = _series_sinc_d1(args[0], order)
+            elif op == "kve_dnu":
+                vals[id(node)] = _series_kve_dnu(args[0], _lift(args[1], order), order)
             elif op == "call":
                 vals[id(node)] = _series_call(node.payload, _lift(args[0], order), order)
             elif op == "pow" and not _is_series(args[1]) and _small_int(args[1]):
                 # integer powers by repeated products: exact at a zero constant term,
                 # where the general power recurrence divides by it
                 vals[id(node)] = args[0] ** int(np.real(args[1]))
-            elif op in ("gamma", "digamma", "polygamma", "sinc_d1", "kve_dnu"):
+            elif op in ("gamma", "digamma", "polygamma"):
                 raise TaylorError(f"no Taylor rule for {op} of a u-dependent argument")
             else:
                 vals[id(node)] = apply_op(op, args, node.payload)
