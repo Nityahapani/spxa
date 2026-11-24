@@ -25,6 +25,7 @@ def test_top_level_subpackage_access():
         "calculus",
         "discovery",
         "laws",
+        "compile",
     ]:
         assert hasattr(spxa, subpkg), f"spxa should expose subpackage '{subpkg}'"
         mod = getattr(spxa, subpkg)
