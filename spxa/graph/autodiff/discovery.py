@@ -76,7 +76,6 @@ class FreeModel:
         for k, lf in enumerate(structure.leaves()):
             names += [f"{lf.family.name}[{k}].free{j}" for j in range(lf.family.n_params)]
         self.names = tuple(names)
-        self._cache: dict[Any, Any] = {}
 
     @property
     def values(self) -> np.ndarray:
@@ -105,16 +104,10 @@ class FreeModel:
         th = self._theta(theta)
         if not is_jet(th):
             return Model.from_free(self.structure, th).cumulants(order)
-        key = (id(th), order)
-        hit = self._cache.get(key)
-        if hit is not None and hit[0] is th:  # same jet object: maturities share it
-            return hit[1]
         z = taylor_variable(0.0, order)
         params = _raw_params(self.structure, th)
         K = self.structure._log_mgf(z, params)
-        out = stack([np.real(factorial(n) * K.coeffs[n]) for n in range(1, order + 1)])
-        self._cache = {key: (th, out)}
-        return out
+        return stack([np.real(factorial(n) * K.coeffs[n]) for n in range(1, order + 1)])
 
 
 # ── option fits ─────────────────────────────────────────────────────────────

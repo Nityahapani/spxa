@@ -25,5 +25,9 @@ def test_version_is_the_same_everywhere() -> None:
     api = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
     assert f"spxa v{v}." in api and f'spxa.__version__          # "{v}"' in api
     assert f"spxa v{v} " in (ROOT / "examples" / "full_showcase.py").read_text(encoding="utf-8")
-    top = re.search(r"^## \[([^\]]+)\]", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
+    top = re.search(
+        r"^## \[(?!Unreleased\])([^\]]+)\]",
+        (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"),
+        re.M,
+    )
     assert top.group(1) == v

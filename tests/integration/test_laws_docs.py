@@ -93,7 +93,7 @@ def test_api_section_names_exist() -> None:
     from spxa.laws import quantities, stats, testing
 
     api = (DOC.parents[1] / "api.md").read_text(encoding="utf-8")
-    section = api.split("## Property-Based Laws (`spxa.laws`)", 2)[-1]
+    section = api.split("## Property-Based Laws (`spxa.laws`)", 2)[-1].split("\n## ", 1)[0]
     names = set(re.findall(r"`([A-Za-z_][A-Za-z0-9_]*)\(", section))
     names |= {"LawViolation", "Discard", "LawFailure", "SuiteFailure", "Unsatisfiable", "LEVEL"}
     names -= {"str"}

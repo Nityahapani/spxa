@@ -73,6 +73,7 @@ nav:
       - Estimation & calibration: theory/calibration.md
       - Process discovery: theory/discovery.md
       - Property-based laws: theory/laws.md
+      - Exact derivatives: theory/exact_derivatives.md
   - Tutorials:
       - First composition: tutorials/01_first_composition.ipynb
       - Finance models: tutorials/02_finance_models.ipynb

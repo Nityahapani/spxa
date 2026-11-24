@@ -2,6 +2,70 @@
 
 All notable changes to spxa are documented here. Follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Theme: exact derivatives through the process algebra. Every derivative is labelled `EXACT`,
+`NUMERICAL` or `STOCHASTIC`; see `docs/theory/exact_derivatives.md`.
+
+### Added
+
+- **Forward-mode jets** (`spxa.graph.autodiff.jet`): value, gradient and optional Hessian through
+  NumPy ufuncs, array functions and SciPy special functions. These include the order derivative of
+  $K_\nu$, complex trigamma/tetragamma and `np.prod`. Conversions that would drop derivatives raise
+  `JetError`.
+- **`spxa.grad`, `spxa.value_and_grad`, `spxa.jacobian`, `spxa.hessian`**: JAX-style transforms over
+  jets (`spxa.graph.autodiff.api`).
+- **`DiffProcess` and `Param`** (`spxa.graph.autodiff.process`; also `spxa.DiffProcess`):
+  - closed-form exponents for every zoo Lévy family, composed through `+`, scaling and `@`;
+  - exact parameter gradients and Hessians of $\psi$;
+  - exact cumulants and cumulant Jacobians from Taylor series of $\psi(-iz)$ with jet coefficients;
+  - CGMY is exact across the $\Gamma(-Y)$ poles at $Y = 0, 1$.
+- **Fourier prices with exact Jacobians and Hessians** (`spxa.graph.autodiff.fourier`):
+  - COS, Carr–Madan and Lewis pricers, `price_and_gradient`, and `fourier_price_node` for graphs;
+  - COS differentiates its truncation interval (`track_interval=True`), so the gradient matches
+    differences of the computed price to rounding;
+  - prices are never clipped.
+- **Exact calibration derivatives:**
+  - `discovery.fit_structure(gradient="exact")` and `discovery.fit_options(jac="exact")`, via
+    `spxa.graph.autodiff.discovery`;
+  - `rates.calibrate_sabr(jac="exact")`, with the ATM-pinned $\alpha$ differentiated implicitly;
+  - `LeastSquaresOptimizer.minimize(..., jac=)`.
+
+  Each defaults to exact; `"2-point"` restores differences. CGMY option fits reach an objective of
+  $2\times10^{-15}$ instead of $3\times10^{-9}$.
+- **Monte Carlo gradients with standard errors** (`spxa.graph.autodiff.montecarlo`):
+  - pathwise, with implicit reparameterisation of Gamma and inverse Gaussian variates and a Poisson
+    score; $\partial G/\partial a$ agrees with mpmath to $10^{-11}$;
+  - likelihood ratio through closed densities;
+  - Malliavin delta and vega.
+- **Gradient tape** (`GradientTape`):
+  - exactness labels per source in `GradientResult`;
+  - `strict=True`, which raises `InexactGradientError`;
+  - `GradientTape.jacobian`, plus the functions `jvp` and `forward_hessian` (exact) in
+    `spxa.graph.autodiff.tape`;
+  - unbroadcast adjoints, with complex cotangents in the JAX convention.
+- **`GRADIENTS`**: seven laws in `spxa.laws` that check these derivatives against differences of
+  independent code and against the chain rules. `default_suite` now has 53 laws in eight groups.
+
+### Fixed
+
+- **Generalized hyperbolic.** The Lévy measure returned the GH probability density. It is now
+  Raible's Lévy density, so `GH + Drift` and `c * GH` have the right exponent (the error was O(1)).
+- **Exact composite exponents.** `c * X` and `X + Y` now use their children's exponents exactly.
+  They had used quadratures of the Lévy measure, which were $1.4\times10^{-8}$ off for `0.5 * NIG`.
+- **Graph VJPs:**
+  - the array finite-difference fallback;
+  - the `Sum`/`Mean` axis VJPs and the `MatMul` vector VJP;
+  - the `Pow`/`Log`/`Sqrt` VJPs at the edges of their domains;
+  - the weight gradient of the weighted MSE;
+  - `SubgraphNode` (it now takes `grad_output` and no longer mutates parameters).
+
+  An exact Cholesky VJP was added.
+- **Characteristic-function nodes:**
+  - they take process parameters as inputs, so gradients now reach them;
+  - the CGF uses the continuous logarithm;
+  - moments of orders 3 and 4 are correct.
+
 ## [1.2.0] — 2026-11-21
 
 ### Added

@@ -220,6 +220,13 @@ the running library. All signatures are exact.
    - [Statistical Expectations](#statistical-expectations)
    - [Library](#library)
    - [Suites, pytest & the Shell](#suites-pytest-the-shell)
+25. [Exact Derivatives (`spxa.graph.autodiff`)](#exact-derivatives-spxagraphautodiff)
+   - [Transforms & Jets](#transforms-jets)
+   - [Differentiable Processes](#differentiable-processes)
+   - [Fourier Prices](#fourier-prices)
+   - [Calibration Derivatives](#calibration-derivatives)
+   - [Monte Carlo Gradients](#monte-carlo-gradients)
+   - [Gradient Tape & Exactness](#gradient-tape-exactness)
 
 ---
 
@@ -5282,7 +5289,7 @@ This section covers interest-rate instruments on real calendar dates, priced on 
 ### Caps, Floors, Swaptions & SABR
 - `Caplet(coupon, strike, kind="cap"|"floor")` on one `IborCoupon`: `expiry(discount)`, `forward(projection)`, `weight(discount)` ($N\tau P(t_p)$) and `price(discount, projection, vol, model="black"|"normal"|"shifted_black", shift=0.0)`. `CapFloor(caplets, strike, kind="cap")` with `maturity`, `price(...)`, `caplet_prices(...)`, `annuity(discount)`, `atm_strike(discount, projection=None)`, `with_strike(strike, kind=None)` and `implied_flat_vol(price, discount, ...)`. `cap_floor(trade_date, tenor, strike, index=EURIBOR6M, notional=1.0, kind="cap", skip_first=True, forward_start=None, use_index_dates=True)` builds the strip.
 - `Swaption(swap, expiry, settlement="physical"|"cash")` with `strike`, `is_payer`, `notional`, `time_to_expiry(discount)`, `forward_rate(discount, projection=None)`, `frequency()`, `annuity(discount, projection=None)`, `price(discount, projection=None, vol=0.2, model="black"|"normal"|"shifted_black", shift=0.0)` and `implied_vol(price, ...)`. `swaption(trade_date, expiry, tenor, strike, index=EURIBOR6M, payer=True, notional=1.0, settlement="physical", fixed_tenor="1Y", ...)` builds one; `cash_annuity(S, n, m, notional=1.0)` is the par-yield annuity.
-- `SABR(alpha, beta, rho, nu, shift=0.0)` with `lognormal_vol(F, K, T, method="hagan"|"obloj")`, `normal_vol(F, K, T)` and `price(F, K, T, df=1.0, option="call", vol="lognormal"|"normal")`. Functional forms `sabr_lognormal_vol(F, K, T, alpha, beta, rho, nu, shift=0.0, method="hagan")`, `sabr_normal_vol(...)` and `z_over_chi(z, rho)`. `alpha_from_atm(atm_vol, F, T, beta, rho, nu, shift=0.0)`; `calibrate_sabr(F, strikes, vols, T, beta, shift=0.0, vol_type="lognormal", method="hagan", weights=None, atm_vol=None)` returns a `SABRFit(model, errors, rmse)`.
+- `SABR(alpha, beta, rho, nu, shift=0.0)` with `lognormal_vol(F, K, T, method="hagan"|"obloj")`, `normal_vol(F, K, T)` and `price(F, K, T, df=1.0, option="call", vol="lognormal"|"normal")`. Functional forms `sabr_lognormal_vol(F, K, T, alpha, beta, rho, nu, shift=0.0, method="hagan")`, `sabr_normal_vol(...)` and `z_over_chi(z, rho)`. `alpha_from_atm(atm_vol, F, T, beta, rho, nu, shift=0.0)`; `calibrate_sabr(F, strikes, vols, T, beta, shift=0.0, vol_type="lognormal", method="hagan", weights=None, atm_vol=None, jac="exact"|"2-point")` returns a `SABRFit(model, errors, rmse)`. The default Jacobian is exact: forward-mode jets through the vol formula, with the ATM-pinned $\alpha$ differentiated implicitly.
 - `ArbitrageFreeSABR(model, F, T, n=400, n_steps=100, n_sd=4.0)`: the Hagan et al. (2014) density PDE. `.solve()` returns a `SABRDensity` with `mass()`, `mean()`, `call(K)`, `put(K)`, `implied_vol(K, vol="lognormal")` and the absorbed masses `P_L`, `P_R`. `sabr_paths(model, F0, T, n_steps, n_paths, seed=0, bridge=True)` returns `SABRPaths` with `call(K)` and `put(K)` (absorption at $-$shift).
 - `strip_caplet_vols(caps, flat_vols, discount, projection=None, model="black", shift=0.0, bounds=(1e-6, 5.0))` bootstraps a piecewise-constant `CapletVolCurve(expiries, vols)`.
 - `SwaptionCube(expiries, tenors, models)` with `sabr(expiry, tenor)` (interpolated parameters), `vol(expiry, tenor, K, F, vol_type="lognormal")` and `SwaptionCube.calibrate(expiries, tenors, forwards, strikes, vols, beta, shift=0.0, vol_type="lognormal")`.
@@ -5501,7 +5508,7 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
 
 ### Fitting One Structure
 - `BinnedData.from_sample(sample, dt)`: bins and a Gaussian smoothing kernel fixed once per data set. It provides `probabilities(model)`, `pointwise_loglik(model)`, `kernel_matrix()` and `gof_statistic(probabilities, n_params)`.
-- `fit_structure(structure, summary, method="likelihood"|"cumulants", *, location=True, n_starts=4, rng=None, binned=None, maxiter=400, initial=None)` returns a `FitResult`. `with_location(structure)` appends the drift leaf.
+- `fit_structure(structure, summary, method="likelihood"|"cumulants", *, location=True, n_starts=4, rng=None, binned=None, maxiter=400, initial=None, gradient="exact"|"2-point")` returns a `FitResult`; L-BFGS-B uses the exact gradient by default. `with_location(structure)` appends the drift leaf.
 - `FitResult` has:
   - the fitted model, `loglik`, `aic`, `bic` and `n_params`;
   - `g_statistic`, `g_pvalue`, `ks_distance` (the CDF gap) and `converged`;
@@ -5527,7 +5534,7 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
 - `martingale_correction(model)` returns $\omega = -K_X(1)$. It raises when $E[e^{X_1}] = \infty$.
 - `cos_prices(model, spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0)`: European prices under $S_T = S_0 e^{(r-q+\omega)T + X_T}$.
 - `OptionQuotes.from_arrays(spot, strikes, maturities, prices, call=True, rate=0.0, dividend=0.0)` provides `forwards`, `discounts`, `implied_vols(prices=None)` and `maturity_groups()`. `model_prices(model, quotes)` prices every quote.
-- `fit_options(structure, quotes, *, n_starts=3, rng=None, initial=None, n_terms=1024, maxiter=300)`: vega-weighted least squares. Its `extras` hold `iv_rmse`, `iv_max_error`, `price_rel_rmse` and `iv_rmse@T`.
+- `fit_options(structure, quotes, *, n_starts=3, rng=None, initial=None, n_terms=1024, maxiter=300, jac="exact"|"2-point")`: vega-weighted least squares, with the exact residual Jacobian by default. Its `extras` hold `iv_rmse`, `iv_max_error`, `price_rel_rmse` and `iv_rmse@T`.
 - `discover_from_options(quotes, *, grammar=None, criterion="bic", search="beam", beam_width=3, max_terms=None, n_starts=2, seed=0, n_terms=1024, exclude_degenerate=False)`. It warns when the pricing errors depend on maturity.
 
 ### Command Line
@@ -5573,3 +5580,57 @@ Frequencies combine by Bonferroni. `expect_not_rejected(p, level=LEVEL, what="")
 - `SuiteReport` has `ok`, `counts`, `failures`, `report[name]`, `summary()`, `str(report)`, `to_markdown()`, `to_dict()` and `raise_if_failed()` (which raises `SuiteFailure`).
 - `law_tests(*laws, n_examples=100, seed=0, **check_kw)` returns a pytest test function with one case per law. `assert_holds(law, n_examples=100, seed=0)` checks one law inside a test. Both honour `SPXA_LAW_EXAMPLES` and `SPXA_LAW_SEED` (`spxa.laws.testing.resolve_settings`).
 - `spxa-laws [--examples N] [--seed S] [--names a,b] [--tags t,u] [--exclude-tags v] [--format text|markdown|json] [-o FILE] [--fail-fast] [--no-shrink] [--quiet] [--list]`, also available as `python -m spxa.laws`. It exits with 0 when every law is verified, 1 otherwise and 2 on bad arguments.
+
+---
+
+## Exact Derivatives (`spxa.graph.autodiff`)
+
+Derivatives labelled `EXACT` (jets or authored adjoints), `NUMERICAL` (a reported difference) or `STOCHASTIC` (Monte Carlo, with standard errors). Theory: `docs/theory/exact_derivatives.md`.
+
+### Transforms & Jets
+- `spxa.grad(f)`, `spxa.value_and_grad(f)`, `spxa.jacobian(f)` and `spxa.hessian(f)` (from `spxa.graph.autodiff.api`) return functions of `x`. The argument can be a scalar or an array of any shape. `grad` and `hessian` need a real scalar output. `jacobian` has shape `f.shape + x.shape`.
+- `spxa.graph.autodiff.jet`:
+  - `Jet(value, grad, hess=None)`, `variables(values, order=1)`, `variable_vector(values, order=1)`;
+  - `value_of`, `grad_of`, `hess_of`, `is_jet`, `stack`, `jet_jacobian(fun, x)` and `jet_hessian(fun, x)`.
+  - Jets work through NumPy ufuncs, array functions (including `np.where`, `np.sum`, `np.prod`, `np.maximum`) and SciPy special functions.
+  - `JetError` is raised wherever derivatives would be lost.
+- `spxa.graph.autodiff.taylor`: `TSeries` and `taylor_variable(z0, order)`, truncated Taylor arithmetic whose coefficients may be jets.
+
+### Differentiable Processes
+- `DiffProcess(process, free=None)` (also `spxa.DiffProcess`) parses a zoo expression built with `+`, scaling and `@`. Parameter names look like `"VarianceGamma.sigma"`. `free` selects names or `Param`s. It has:
+  - `names`, `values`, `all_names`, `analytic`, `exactness`, `with_values(theta)` and `to_process(theta=None)`;
+  - `char_exponent(u, theta=None)`, `log_char`, `char_func` and `log_mgf`. `theta` may be a jet;
+  - `char_exponent_and_grad(u, theta=None)` and `char_exponent_hessian(u, theta=None)`;
+  - `cumulants(order, theta=None)` and `cumulants_and_jacobian(order, theta=None)`;
+  - `__story__()`.
+- `spxa.graph.autodiff.families.RULES`: the differentiable family rules. `register_rule(FamilyRule(...))` adds one. `check_against_zoo(dp, u)` in `spxa.graph.autodiff.process` compares with the wrapped process.
+
+### Fourier Prices
+- `spxa.graph.autodiff.fourier` prices under $S_T = S_0e^{(r-q)T + \omega T + X_T}$ with $\omega = -\psi(-i)$:
+  - `cos_price(dp, spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0, theta=None, track_interval=True)`;
+  - `carr_madan_price(..., alpha=1.5, u_max=400.0, panel=1.0, order=16, theta=None)`;
+  - `lewis_price(..., u_max=400.0, panel=1.0, order=16, theta=None)`.
+- `price_and_gradient(dp, spot, strikes, maturity, method="cos"|"carr_madan"|"lewis", hessian=False, theta=None, **kw)` returns a `PricingResult(prices, jacobian, names, method, hessian, exactness, notes)` with `__story__()`.
+- `fourier_price_node(dp, params, spot, strikes, maturity, method="cos", name=None, **kw)` is a graph node with an exact VJP.
+
+### Calibration Derivatives
+- `spxa.graph.autodiff.discovery`:
+  - `FreeModel(structure, x)` provides `log_mgf`, `char_exponent` and `cumulants(order, theta)` in free coordinates;
+  - `options_residual_jacobian(structure, quotes, x, vega, n_terms=1024)`;
+  - `likelihood_value_and_grad(structure, binned, x, floor=1e-300)`;
+  - `cumulant_value_and_grad(structure, target, x, dt, weights=None, drift_at=None)`.
+- The options `fit_structure(gradient=)`, `fit_options(jac=)` and `calibrate_sabr(jac=)` are documented in their sections. `LeastSquaresOptimizer.minimize(residual_fn, x0, bounds=None, jac=None)` accepts a residual Jacobian.
+
+### Monte Carlo Gradients
+- `spxa.graph.autodiff.montecarlo`:
+  - payoffs: `call(K)`, `put(K)`, `digital_call(K)`, or `Payoff(fn, lipschitz, label)`;
+  - `pathwise_gradient(dp, payoff, spot, maturity, rate=0.0, dividend=0.0, n_paths=100_000, rng=None, theta=None)`, for Lipschitz payoffs;
+  - `likelihood_ratio_gradient(...)`, for single families with closed densities;
+  - `malliavin_greeks(dp, payoff, spot, maturity, ...)`, which returns delta and vega.
+- Each returns an `MCGradient(value, value_se, grad, grad_se, names, method, n_paths)` with `z_scores(reference)` and `__story__()`.
+- `gamma_shape_derivative(a, g)` and `inverse_gaussian_reparam(mean, shape, x)` are the implicit reparameterisations.
+
+### Gradient Tape & Exactness
+- `GradientTape(graph).gradient(target, sources=None, feed_dict=None, grad_output=None, *, strict=None)` returns a `GradientResult`. This is a `dict` with `exactness`, `source_exactness` and `notes`. `strict=True` raises `InexactGradientError`.
+- `GradientTape.jacobian(...)`; the functions `jvp(...)` and `forward_hessian(...)` in `spxa.graph.autodiff.tape`; `graph_hessian` and `compute_graph_hessian` in `spxa.graph.autodiff.hessian`.
+- `GradientExactness` has the levels `EXACT`, `NUMERICAL` and `STOCHASTIC`; `worst(levels)` combines them.
