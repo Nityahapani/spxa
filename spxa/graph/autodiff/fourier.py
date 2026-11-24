@@ -10,12 +10,15 @@ so :math:`e^{-(r-q)t}S_t` is a martingale whenever :math:`E[e^{X_1}] < \infty`.
 :math:`X` is a :class:`~spxa.graph.autodiff.process.DiffProcess`; drift in
 :math:`X` cancels in :math:`X_T + \omega T`, so its derivative is exactly zero.
 
-Three pricers share one discretisation contract: **the quadrature (the COS
-interval :math:`[a, b]`, the Fourier grid and its weights) depends only on the
-current parameter values and is held fixed when differentiating**. The
-returned gradients are therefore the exact derivatives of the discretised
-price, computed in forward mode through the closed-form characteristic
-exponent; no finite differences are involved. As the discretisation is
+The returned gradients are the exact derivatives of the discretised price,
+computed in forward mode through the closed-form characteristic exponent; no
+finite differences are involved. The Carr–Madan and Lewis grids do not depend
+on the parameters. The COS interval :math:`[a, b]` does, through the
+cumulants; with ``track_interval=True`` (the default) that dependence is
+differentiated too, so the gradient is the derivative of the price exactly as
+``cos_price`` computes it (and agrees with differences of it to rounding).
+``track_interval=False`` freezes the interval at the current values, which
+differs from the tracked gradient by the (tiny) truncation sensitivity. As the discretisation is
 refined, price and gradient converge together (the integrands are analytic in
 the parameters, so the quadrature error of the derivative has the same order
 as that of the price).
@@ -334,10 +337,16 @@ class PricingResult:
     notes: Dict[str, Any] = field(default_factory=dict)
 
     def __story__(self) -> str:
+        if self.method == "cos" and self.notes.get("track_interval", True):
+            grid = "the truncation interval [a, b] differentiated with the cumulants"
+        elif self.method == "cos":
+            grid = "the truncation interval frozen at the parameter values"
+        else:
+            grid = "the quadrature nodes fixed"
         return (
             f"{self.method} prices of {self.prices.size} options; d price / d "
             f"({', '.join(self.names)}) by forward-mode jets through the closed-form "
-            "characteristic exponent with the quadrature held fixed (EXACT derivative of the "
+            f"characteristic exponent, {grid} ({self.exactness.name} derivative of the "
             "discretised price)"
         )
 
@@ -366,7 +375,8 @@ def price_and_gradient(
         prices = np.asarray(out, dtype=float)
         jac = np.zeros(prices.shape + (n,))
         hes = np.zeros(prices.shape + (n, n)) if hessian else None
-    return PricingResult(prices, jac, dp.names, method, hes)
+    notes = {"track_interval": bool(kwargs.get("track_interval", True))} if method == "cos" else {}
+    return PricingResult(prices, jac, dp.names, method, hes, notes=notes)
 
 
 def fourier_price_node(

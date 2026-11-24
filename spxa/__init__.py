@@ -864,10 +864,30 @@ __all__ = [
     "vol",
     "discovery",
     "laws",
+    # exact derivatives (spxa.graph.autodiff), loaded on first use
+    "grad",
+    "value_and_grad",
+    "jacobian",
+    "hessian",
+    "DiffProcess",
 ]
+
+_AUTODIFF = {
+    "grad": "spxa.graph.autodiff.api",
+    "value_and_grad": "spxa.graph.autodiff.api",
+    "jacobian": "spxa.graph.autodiff.api",
+    "hessian": "spxa.graph.autodiff.api",
+    "DiffProcess": "spxa.graph.autodiff.process",
+}
 
 
 def __getattr__(name: str):
+    if name in _AUTODIFF:
+        import importlib
+
+        obj = getattr(importlib.import_module(_AUTODIFF[name]), name)
+        globals()[name] = obj
+        return obj
     if name in (
         "diff",
         "ops",

@@ -37,6 +37,25 @@ class TestSurfaceOptimizer:
         np.testing.assert_allclose(res.params, [1.0, 1.0], atol=1e-5)
         assert res.cost < 1e-10
 
+    def test_least_squares_optimizer_exact_jacobian(self):
+        from spxa.graph.autodiff.jet import variable_vector
+
+        def residual_fn(p):
+            x, y = p[0], p[1]
+            return 10.0 * (y - x**2), 1.0 - x
+
+        def resid(p):
+            return np.array(residual_fn(p))
+
+        def jac(p):
+            v = variable_vector(p)
+            return np.array([np.asarray(r.grad) for r in residual_fn(v)])
+
+        opt = LeastSquaresOptimizer(ftol=1e-15, xtol=1e-15, gtol=1e-15)
+        res = opt.minimize(resid, np.array([-1.2, 1.0]), [(-2.0, 2.0), (-2.0, 2.0)], jac=jac)
+        np.testing.assert_allclose(res.params, [1.0, 1.0], atol=1e-12)
+        np.testing.assert_allclose(res.jacobian, [[-20.0, 10.0], [-1.0, 0.0]], atol=1e-10)
+
     def test_differential_evolution_optimizer(self):
         # Multimodal Rastrigin-like residual
         def residual_fn(p):

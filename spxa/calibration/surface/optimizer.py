@@ -94,7 +94,10 @@ class LeastSquaresOptimizer(SurfaceOptimizer):
         residual_fn: Callable[[np.ndarray], np.ndarray],
         x0: np.ndarray,
         bounds: Optional[Sequence[Tuple[float, float]]] = None,
+        jac: Optional[Callable[[np.ndarray], np.ndarray]] = None,
     ) -> OptimizationResult:
+        """Bounded least squares; ``jac`` (residual Jacobian, e.g. from
+        :mod:`spxa.graph.autodiff`) replaces SciPy's 2-point differences."""
         p0 = np.asarray(x0, dtype=float)
         if bounds is not None:
             lbs = [b[0] for b in bounds]
@@ -107,6 +110,7 @@ class LeastSquaresOptimizer(SurfaceOptimizer):
         res = optimize.least_squares(
             residual_fn,
             p0,
+            jac=jac if jac is not None else "2-point",
             bounds=scipy_bounds,
             method=self.method,
             max_nfev=self.max_nfev,

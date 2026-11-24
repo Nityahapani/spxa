@@ -1193,6 +1193,25 @@ def _sum(x: Any, axis: Any = None, keepdims: Any = False, **kw: Any) -> Any:
     return Jet(v, g, h)
 
 
+def _prod(x: Any, axis: Any = None, keepdims: Any = False, **kw: Any) -> Any:
+    """Product over axes by successive jet multiplication (exact with zero factors)."""
+    keepdims = keepdims is True
+    x = _coerce(x)
+    if not isinstance(x, Jet):
+        return np.prod(x, axis=axis, keepdims=keepdims)
+    axes = _norm_axes(axis, x.ndim)
+    keep = [a for a in range(x.ndim) if a not in axes]
+    y = x.transpose(*axes, *keep) if hasattr(x, "transpose") else x
+    out_shape = tuple(x.shape[a] for a in keep)
+    y = y.reshape(-1, *out_shape)
+    acc = y[0]
+    for k in range(1, y.shape[0]):
+        acc = acc * y[k]
+    if keepdims:
+        acc = acc.reshape(tuple(1 if a in axes else x.shape[a] for a in range(x.ndim)))
+    return acc
+
+
 def _mean(x: Any, axis: Any = None, keepdims: Any = False, **kw: Any) -> Any:
     keepdims = keepdims is True
     x = _coerce(x)
@@ -1625,6 +1644,7 @@ def _imag_fn(x: Any) -> Any:
 
 
 _FUNCTIONS: Dict[Any, Callable[..., Any]] = {
+    np.prod: _prod,
     np.sum: _sum,
     np.mean: _mean,
     np.cumsum: _cumsum,
