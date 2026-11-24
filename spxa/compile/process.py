@@ -7,6 +7,8 @@ expression once and returns an object with the evaluation interface of
 Hessian, cumulants and their Jacobian over the free parameters — backed by
 generated code. Every method takes an optional ``theta``: one vector of
 free-parameter values, or a ``(B, n_free)`` batch evaluated in one call.
+Sampling (:meth:`CompiledProcess.simulate`, :meth:`~CompiledProcess.sample_at`,
+:meth:`~CompiledProcess.paths`) runs the fused plan of :mod:`spxa.compile.sampler`.
 
 .. code-block:: python
 
@@ -16,6 +18,7 @@ free-parameter values, or a ``(B, n_free)`` batch evaluated in one call.
     cp = proc.compile()                      # NumPy backend; "numba" or "jax" also
     psi, grad = cp.char_exponent_and_grad(u)  # one fused program
     kappa, jac = cp.cumulants_and_jacobian(4)
+    paths = cp.simulate(252, 10_000, 1.0, rng)  # exact fused sampler
     print(cp.source("grad"))                  # the generated code
 """
 
@@ -27,6 +30,7 @@ import numpy as np
 
 from spxa.compile.kernel import ExponentKernel
 from spxa.compile.lower import Lowered, lower
+from spxa.compile.sampler import Sampler
 
 __all__ = ["CompiledProcess", "compile_process"]
 
@@ -65,6 +69,7 @@ class CompiledProcess:
         self.process = process
         self.lowered: Lowered = lower(process, allow_opaque=allow_opaque)
         self.kernel = ExponentKernel(self.lowered, backend, free, fixed, parallel)
+        self.sampler = Sampler(self.lowered)
         self.backend = backend
         self.parallel = parallel
 
@@ -149,6 +154,48 @@ class CompiledProcess:
     ) -> Tuple[np.ndarray, np.ndarray]:
         r"""Cumulants and :math:`\partial\kappa_n/\partial\theta_k`."""
         return self.kernel.cumulants_and_jacobian(order, theta)
+
+    # ── sampling ────────────────────────────────────────────────────────────
+    def _sampler_theta(self, theta: Optional[Any]) -> np.ndarray:
+        return self.full_theta(None if theta is None else np.asarray(theta, dtype=float))
+
+    def sample_at(
+        self,
+        times: Any,
+        rng: Optional[np.random.Generator] = None,
+        theta: Optional[Any] = None,
+    ) -> np.ndarray:
+        r"""Independent exact draws of :math:`X_{t_k}`, one per entry of ``times``."""
+        return self.sampler.sample_at(times, rng, self._sampler_theta(theta))
+
+    def simulate(
+        self,
+        n_steps: int,
+        n_paths: int = 1,
+        T: float = 1.0,  # noqa: N803
+        rng: Optional[np.random.Generator] = None,
+        theta: Optional[Any] = None,
+    ) -> np.ndarray:
+        """
+        ``(n_paths, n_steps + 1)`` paths over ``[0, T]``, as ``Process.simulate``.
+
+        A ``(B, n_free)`` batch of ``theta`` returns ``(B, n_paths, n_steps + 1)``.
+        """
+        return self.sampler.simulate(n_steps, n_paths, T, rng, self._sampler_theta(theta))
+
+    def paths(
+        self,
+        times: Any,
+        n_paths: int = 1,
+        rng: Optional[np.random.Generator] = None,
+        theta: Optional[Any] = None,
+    ) -> np.ndarray:
+        """Paths observed at the non-decreasing ``times`` (any grid)."""
+        return self.sampler.paths(times, n_paths, rng, self._sampler_theta(theta))
+
+    def sampler_exact(self, theta: Optional[Any] = None) -> bool:
+        """Whether every leaf is drawn by an exact sampler at ``theta``."""
+        return self.sampler.exact(self._sampler_theta(theta))
 
     # ── introspection ───────────────────────────────────────────────────────
     def source(self, what: str = "psi", theta: Optional[Any] = None) -> str:

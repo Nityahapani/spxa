@@ -11,8 +11,8 @@ Usage
 -----
 ``process.compile(backend="numpy" | "numba" | "jax", free=...)`` returns a
 :class:`CompiledProcess` with ``char_exponent``, ``char_exponent_and_grad``,
-``char_exponent_hessian``, ``cumulants`` and ``cumulants_and_jacobian``, for
-one parameter vector or a batch.
+``char_exponent_hessian``, ``cumulants`` and ``cumulants_and_jacobian``, and
+exact ``simulate`` / ``sample_at`` / ``paths``, for one parameter vector or a batch.
 
 Modules
 -------
@@ -30,6 +30,9 @@ codegen
     Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
 process
     :class:`CompiledProcess`, the user-facing object.
+sampler
+    Exact fused samplers: Gaussian merging, aggregated jump sums, robust inverse
+    Gaussian draws, arbitrary grids and parameter batches.
 kernel
     Compiled psi, gradient and Hessian over free parameters, batched and
     specialised on parameter branches.
@@ -43,6 +46,7 @@ from spxa.compile.kernel import ExponentKernel
 from spxa.compile.lower import Lowered, lower
 from spxa.compile.process import CompiledProcess, compile_process
 from spxa.compile.rules import supported_families
+from spxa.compile.sampler import Sampler
 
 __all__ = [
     "CompiledProcess",
@@ -50,6 +54,7 @@ __all__ = [
     "ExponentKernel",
     "lower",
     "Lowered",
+    "Sampler",
     "generate",
     "Program",
     "supported_families",
