@@ -31,6 +31,7 @@ CASES: dict = {
     "sqrt": lambda: I.sqrt(a * a - (b + 1j * u) ** 2.0),
     "trig": lambda: I.sin(a * u) * I.cos(b) + I.tan(0.3 * a * u),
     "sinc": lambda: I.sinc(a * u + b),
+    "sinc_d1": lambda: I.sinc_d1(a * u - b) + I.sinc_d1(a * I.real(u)),
     "gamma_family": lambda: I.gamma(-a) * u + I.digamma(b) + I.polygamma(2, a + b),
     "kve": lambda: I.kve(a - 0.2, b * (2.0 - 1j * u)),
     "where": lambda: I.where(I.ge(a, 0.5), a * u, b * u * u),
@@ -58,7 +59,7 @@ def test_parameter_derivative_matches_central_differences(name: str, k: int) -> 
     np.testing.assert_allclose(got, ref, rtol=2e-7, atol=2e-7)
 
 
-ANALYTIC = [n for n in sorted(CASES) if n not in ("real_imag_abs",)]
+ANALYTIC = [n for n in sorted(CASES) if n not in ("real_imag_abs", "sinc_d1")]
 
 
 @pytest.mark.parametrize("name", ANALYTIC)
@@ -80,6 +81,12 @@ def test_second_derivatives_compose() -> None:
     vals = [evaluate(e, UU, [THETA[0], THETA[1] + s * h]) for s in (-1, 0, 1)]
     ref = (vals[2] - 2 * vals[1] + vals[0]) / h**2
     np.testing.assert_allclose(evaluate(d2, UU, THETA), ref, rtol=1e-6, atol=1e-6)
+
+
+def test_sinc_second_derivative_at_zero() -> None:
+    # d/du sinc'(a u) = a sinc''(a u), and sinc''(0) = -1/3
+    d2 = derivative(I.sinc_d1(a * u), u)
+    np.testing.assert_allclose(evaluate(d2, np.array([0.0, 1e-9]), [2.0]), [-2.0 / 3.0] * 2)
 
 
 def test_derivative_shares_the_value_nodes() -> None:

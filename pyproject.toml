@@ -40,10 +40,14 @@ dev = [
     "matplotlib>=3.7",
     "jax>=0.4.0",
     "jaxlib>=0.4.0",
+    "numba>=0.59",
 ]
 diff = [
     "jax>=0.4.0",
     "jaxlib>=0.4.0",
+]
+compile = [
+    "numba>=0.59",
 ]
 docs = [
     "mkdocs",

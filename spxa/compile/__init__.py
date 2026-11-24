@@ -15,6 +15,8 @@ diff
     Symbolic derivatives in the parameters and in u, sharing nodes with the value.
 evaluate
     NumPy reference interpreter and Taylor-mode interpreter (exact cumulants).
+codegen
+    Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
 """
 
 from __future__ import annotations

@@ -116,6 +116,13 @@ def _rule(node: Expr, da: List[Expr], wrt_u: bool) -> Expr:
         return I.mul(I.add(I.const(1.0), I.mul(node, node)), da[0])
     if op == "sinc":
         return I.mul(I.sinc_d1(a[0]), da[0])
+    if op == "sinc_d1":
+        # sinc'' = -sinc - 2 sinc'/z: no cancellation (sinc' is accurate near 0),
+        # and the removable singularity at z = 0 takes its limit -1/3
+        z = a[0]
+        d2 = I.sub(I.neg(I.sinc(z)), I.div(I.mul(I.const(2.0), node), z))
+        safe = I.where(I.gt(I.abs_(z), I.const(0.0)), d2, I.const(-1.0 / 3.0))
+        return I.mul(safe, da[0])
     if op == "gamma":
         return I.mul(I.mul(node, I.digamma(a[0])), da[0])
     if op == "digamma":
