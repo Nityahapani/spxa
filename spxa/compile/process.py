@@ -19,6 +19,7 @@ Sampling (:meth:`CompiledProcess.simulate`, :meth:`~CompiledProcess.sample_at`,
     psi, grad = cp.char_exponent_and_grad(u)  # one fused program
     kappa, jac = cp.cumulants_and_jacobian(4)
     paths = cp.simulate(252, 10_000, 1.0, rng)  # exact fused sampler
+    prices, jac = cp.cos_price(100.0, strikes, 0.5, rate=0.03, grad=True)
     print(cp.source("grad"))                  # the generated code
 """
 
@@ -196,6 +197,27 @@ class CompiledProcess:
     def sampler_exact(self, theta: Optional[Any] = None) -> bool:
         """Whether every leaf is drawn by an exact sampler at ``theta``."""
         return self.sampler.exact(self._sampler_theta(theta))
+
+    # ── pricing ─────────────────────────────────────────────────────────────
+    def cos_price(
+        self,
+        spot: float,
+        strikes: Any,
+        maturities: Any,
+        rate: float = 0.0,
+        dividend: float = 0.0,
+        call: Any = True,
+        n_terms: int = 1024,
+        width: float = 12.0,
+        theta: Optional[Any] = None,
+        grad: bool = False,
+    ) -> Any:
+        """European prices by COS (and their exact Jacobian); see :func:`spxa.compile.pricing.cos_price`."""
+        from spxa.compile.pricing import cos_price
+
+        return cos_price(
+            self, spot, strikes, maturities, rate, dividend, call, n_terms, width, theta, grad
+        )
 
     # ── introspection ───────────────────────────────────────────────────────
     def source(self, what: str = "psi", theta: Optional[Any] = None) -> str:

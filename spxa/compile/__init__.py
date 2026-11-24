@@ -12,7 +12,8 @@ Usage
 ``process.compile(backend="numpy" | "numba" | "jax", free=...)`` returns a
 :class:`CompiledProcess` with ``char_exponent``, ``char_exponent_and_grad``,
 ``char_exponent_hessian``, ``cumulants`` and ``cumulants_and_jacobian``, and
-exact ``simulate`` / ``sample_at`` / ``paths``, for one parameter vector or a batch.
+exact ``simulate`` / ``sample_at`` / ``paths`` and ``cos_price`` (with its exact
+Jacobian), for one parameter vector or a batch.
 
 Modules
 -------
@@ -30,6 +31,9 @@ codegen
     Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
 process
     :class:`CompiledProcess`, the user-facing object.
+pricing
+    COS prices batched over parameter sets, with the exact Jacobian including the
+    parameter dependence of the truncation interval.
 sampler
     Exact fused samplers: Gaussian merging, aggregated jump sums, robust inverse
     Gaussian draws, arbitrary grids and parameter batches.
