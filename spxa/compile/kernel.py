@@ -63,6 +63,13 @@ def resolve_free(
     return tuple(out)
 
 
+#: Ops of ``u`` for which only Taylor mode gives exact cumulants (see
+#: :meth:`ExponentKernel._symbolic_cumulants`).
+_TAYLOR_ONLY = frozenset({"sinc", "sinc_d1", "kve_dnu", "call", "gamma", "digamma", "polygamma"})
+#: Highest cumulant order taken from generated derivatives.
+_SYMBOLIC_ORDER = 4
+
+
 class _Family:
     """Programs for one set of outputs, specialised on parameter-only branch guards."""
 
@@ -182,6 +189,9 @@ class ExponentKernel:
         if self.psi_expr.kind != I.COMPLEX:
             self.psi_expr = self.psi_expr + I.const(0j)
         self._grad_exprs: Optional[List[Expr]] = None
+        self._cumulant_nodes: Optional[List[Expr]] = None
+        self._u_derivs: Optional[List[Expr]] = None
+        self._symbolic_ok: Optional[bool] = None
         self._hess_exprs: Optional[List[Expr]] = None
         self._du_expr: Optional[Expr] = None
         self._families: Dict[str, _Family] = {}
@@ -356,18 +366,82 @@ class ExponentKernel:
                 "moments), so it has no cumulants"
             )
 
+    def _symbolic_cumulants_ok(self) -> bool:
+        """Whether generated u-derivatives at 0 reproduce Taylor mode exactly."""
+        if self._symbolic_ok is None:
+            self._symbolic_ok = not any(
+                n.depends_u and n.op in _TAYLOR_ONLY for n in I.postorder([self.psi_expr])
+            )
+        return self._symbolic_ok
+
+    def _symbolic_cumulants(
+        self, order: int, params: Sequence[Any], lead: Tuple[int, ...], jac: bool
+    ) -> Optional[Tuple[np.ndarray, Optional[np.ndarray]]]:
+        r"""
+        Cumulants (and their Jacobian) from generated :math:`\partial_u^n\psi(0)`.
+
+        :math:`\kappa_n = \mathrm{Re}\,(-i)^n\psi^{(n)}(0)`. Symbolic and Taylor
+        differentiation agree node by node except where Taylor mode uses
+        dedicated series for removable singularities (``sinc``, ``sinc_d1``, the
+        Bessel order derivative, opaque calls) or refuses (Gamma-type functions
+        of ``u``); those exponents, orders above four and any non-finite result
+        return ``None`` and fall back to Taylor mode. A ``where`` picks its branch
+        from the condition at the expansion point in both.
+        """
+        if order > _SYMBOLIC_ORDER or not self._symbolic_cumulants_ok():
+            return None
+        what = "cum_jac" if jac else "cum"
+        fam = self._families.get(what)
+        if fam is None:
+            if self._u_derivs is None:
+                ds: List[Expr] = [self.psi_expr]
+                for _ in range(_SYMBOLIC_ORDER):
+                    d = derivative(ds[-1], I.U)
+                    assert isinstance(d, Expr)
+                    ds.append(d)
+                self._u_derivs = ds[1:]
+            outs = list(self._u_derivs)
+            if jac:
+                for d in self._u_derivs:
+                    outs += [derivative(d, q) for q in self._new_params]  # type: ignore[misc]
+            # always NumPy: one point per parameter set, so compile time would dominate
+            fam = _Family(outs, self.n_free, "numpy", f"psi_{what}", False)
+            self._families[what] = fam
+        with np.errstate(all="ignore"):
+            res = fam(np.zeros(()), params)
+        rot = [(-1j) ** n for n in range(1, _SYMBOLIC_ORDER + 1)]
+        kappa = np.empty(lead + (order,))
+        for n in range(order):
+            kappa[..., n] = np.real(rot[n] * np.asarray(res[n]))
+        jmat: Optional[np.ndarray] = None
+        if jac:
+            m = self.n_free
+            jmat = np.empty(lead + (order, m))
+            for n in range(order):
+                for k in range(m):
+                    jmat[..., n, k] = np.real(rot[n] * np.asarray(res[_SYMBOLIC_ORDER + n * m + k]))
+        if not np.all(np.isfinite(kappa)) or (jmat is not None and not np.all(np.isfinite(jmat))):
+            return None
+        return kappa, jmat
+
     def cumulants(self, order: int = 4, theta: Optional[Any] = None) -> np.ndarray:
         r"""
-        :math:`\kappa_1..\kappa_{order}` of :math:`X_1`, exactly (Taylor mode).
+        :math:`\kappa_1..\kappa_{order}` of :math:`X_1`, exactly.
 
-        Shape ``(order,)``, or ``(B, order)`` for a batch of parameters.
+        Shape ``(order,)``, or ``(B, order)`` for a batch of parameters. Up to
+        order four they come from generated derivatives of :math:`\psi` at 0;
+        otherwise from Taylor mode.
         """
         from spxa.compile.evaluate import cumulants_from_ir
 
         self._require_analytic()
         params, batched = self._taylor_params(theta)
+        lead = (len(params[0]),) if batched else ()
+        fast = self._symbolic_cumulants(order, params, lead, jac=False)
+        if fast is not None:
+            return fast[0]
         out = cumulants_from_ir(self.psi_expr, order, params)
-        return np.broadcast_to(out, ((len(params[0]),) if batched else ()) + (order,)).copy()
+        return np.broadcast_to(out, lead + (order,)).copy()
 
     def cumulants_and_jacobian(
         self, order: int = 4, theta: Optional[Any] = None
@@ -383,8 +457,14 @@ class ExponentKernel:
         self._require_analytic()
         params, batched = self._taylor_params(theta)
         lead = (len(params[0]),) if batched else ()
+        fast = self._symbolic_cumulants(order, params, lead, jac=True)
+        if fast is not None and fast[1] is not None:
+            return fast[0], fast[1]
         # one Taylor pass: the gradient expressions share most nodes with psi
-        series = cumulants_from_ir_many([self.psi_expr] + self.grad_exprs, order, params)
+        roots = [self.psi_expr] + self.grad_exprs
+        if self._cumulant_nodes is None:
+            self._cumulant_nodes = I.postorder(roots)
+        series = cumulants_from_ir_many(roots, order, params, self._cumulant_nodes)
         kappa = np.broadcast_to(series[0], lead + (order,))
         jac = np.empty(lead + (order, self.n_free))
         for k, ser in enumerate(series[1:]):

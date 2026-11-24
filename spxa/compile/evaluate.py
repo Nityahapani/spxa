@@ -25,7 +25,7 @@ Opaque ``call`` nodes expand through the cumulants of their process,
 from __future__ import annotations
 
 from math import factorial
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import numpy as np
 
@@ -221,9 +221,18 @@ def taylor(
 
 
 def taylor_many(
-    roots: Sequence[Expr], order: int, params: Sequence[Any], u0: Any = 0.0, du: Any = 1.0
+    roots: Sequence[Expr],
+    order: int,
+    params: Sequence[Any],
+    u0: Any = 0.0,
+    du: Any = 1.0,
+    nodes: Optional[Sequence[Expr]] = None,
 ) -> List[List[Any]]:
-    """:func:`taylor` for several roots in one pass (shared nodes are expanded once)."""
+    """
+    :func:`taylor` for several roots in one pass (shared nodes are expanded once).
+
+    ``nodes`` may pass ``ir.postorder(roots)`` precomputed, for repeated calls.
+    """
     from spxa.graph.autodiff.taylor import TaylorError, TSeries
 
     if order < 1:
@@ -231,7 +240,7 @@ def taylor_many(
     useries = TSeries([np.asarray(u0, dtype=complex)[()], complex(du)] + [0.0] * (order - 1))
     vals: Dict[int, Any] = {}
     with np.errstate(all="ignore"):
-        for node in I.postorder(list(roots)):
+        for node in I.postorder(list(roots)) if nodes is None else nodes:
             op = node.op
             if op == "const":
                 vals[id(node)] = node.payload
@@ -302,11 +311,14 @@ def cumulants_from_ir(root: Expr, order: int, params: Sequence[Any]) -> np.ndarr
 
 
 def cumulants_from_ir_many(
-    roots: Sequence[Expr], order: int, params: Sequence[Any]
+    roots: Sequence[Expr],
+    order: int,
+    params: Sequence[Any],
+    nodes: Optional[Sequence[Expr]] = None,
 ) -> List[np.ndarray]:
     """:func:`cumulants_from_ir` for several exponents in one Taylor pass."""
     out = []
-    for coeffs in taylor_many(roots, order, params, 0.0, -1j):
+    for coeffs in taylor_many(roots, order, params, 0.0, -1j, nodes):
         ks = [np.real(factorial(n) * np.asarray(coeffs[n])) for n in range(1, order + 1)]
         out.append(np.stack(np.broadcast_arrays(*ks), axis=-1))
     return out

@@ -89,7 +89,13 @@ class TestJaxPrograms:
             np.testing.assert_allclose(pj, pn, rtol=1e-11, atol=1e-11)
             np.testing.assert_allclose(gj, gn, rtol=1e-10, atol=1e-10)
         # batches 5, 6 and 7 all round up to 8: one compilation per program
-        progs = [p for fam in cj.kernel._families.values() for p in fam.cache.values()]
+        # (the cumulant programs always run on NumPy: one point per parameter set)
+        progs = [
+            p
+            for fam in cj.kernel._families.values()
+            for p in fam.cache.values()
+            if p.backend == "jax"
+        ]
         assert progs
         for prog in progs:
             assert prog.fn.jitted._cache_size() == 1  # type: ignore[attr-defined]
