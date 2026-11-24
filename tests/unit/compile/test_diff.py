@@ -115,6 +115,18 @@ def test_sequences_and_gradient() -> None:
     assert g[0] is b * u and g[1] is a * u
 
 
+def test_piecewise_constant_guards_need_no_derivative() -> None:
+    # Re(u) has no complex derivative, but a guard on it is locally constant
+    e = I.where(I.ge(I.real(u), 0.0), u * u, -(u * u))
+    d = derivative(e, u)
+    z = np.array([-1.5 + 0.2j, 0.7 - 0.1j])
+    got = np.asarray(evaluate(d, z, []), dtype=complex)
+    np.testing.assert_allclose(got, np.where(z.real >= 0, 2 * z, -2 * z), rtol=1e-15)
+    # used outside a guard it still raises
+    with pytest.raises(CompileError, match="not analytic"):
+        derivative(I.where(I.ge(I.real(u), 0.0), I.real(u), u), u)
+
+
 def test_errors() -> None:
     with pytest.raises(CompileError):
         derivative(a * u, a * u)

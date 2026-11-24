@@ -52,13 +52,37 @@ def derivative(roots: Union[Expr, Sequence[Expr]], w: Expr) -> Union[Expr, List[
     wrt_u = w.op == "var"
     d: Dict[int, Expr] = {}
     zero = I.const(0.0)
+    needed = _needed(rs)
     for node in I.postorder(rs):
+        if id(node) not in needed:
+            continue
         if not _depends(node, w) or node.kind == I.BOOL:
             d[id(node)] = zero
             continue
-        d[id(node)] = _rule(node, [d[id(a)] for a in node.args], wrt_u)
+        d[id(node)] = _rule(node, [d.get(id(a), zero) for a in node.args], wrt_u)
     out = [d[id(r)] for r in rs]
     return out[0] if single else out
+
+
+def _needed(roots: Sequence[Expr]) -> set:
+    """
+    Ids of the nodes whose derivative the roots use.
+
+    A boolean node (a ``where`` condition or a comparison) has derivative zero
+    and is not descended into, so a piecewise-constant guard such as
+    ``Re(w) >= 0`` never asks for the derivative of ``Re`` (which has no
+    complex derivative).
+    """
+    seen: set = set()
+    stack = list(roots)
+    while stack:
+        n = stack.pop()
+        if id(n) in seen:
+            continue
+        seen.add(id(n))
+        if n.kind != I.BOOL:
+            stack.extend(n.args)
+    return seen
 
 
 def gradient(expr: Expr, ws: Sequence[Expr]) -> List[Expr]:
