@@ -219,6 +219,21 @@ class CompiledProcess:
             self, spot, strikes, maturities, rate, dividend, call, n_terms, width, theta, grad
         )
 
+    # ── export ──────────────────────────────────────────────────────────────
+    def export(self, path: Optional[str] = None, grad: bool = True) -> str:
+        """
+        Source of a standalone NumPy module for the exponent (and gradient).
+
+        Written to ``path`` when given; see :func:`spxa.compile.export.export_source`.
+        """
+        from spxa.compile.export import export_source
+
+        src = export_source(self, grad)
+        if path is not None:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(src)
+        return src
+
     # ── introspection ───────────────────────────────────────────────────────
     def source(self, what: str = "psi", theta: Optional[Any] = None) -> str:
         """Generated source for ``"psi"``, ``"grad"`` or ``"hess"``."""

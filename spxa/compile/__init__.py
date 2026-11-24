@@ -13,7 +13,8 @@ Usage
 :class:`CompiledProcess` with ``char_exponent``, ``char_exponent_and_grad``,
 ``char_exponent_hessian``, ``cumulants`` and ``cumulants_and_jacobian``, and
 exact ``simulate`` / ``sample_at`` / ``paths`` and ``cos_price`` (with its exact
-Jacobian), for one parameter vector or a batch.
+Jacobian), for one parameter vector or a batch; ``export()`` writes the exponent
+and gradient as a standalone NumPy module.
 
 Modules
 -------
@@ -31,6 +32,8 @@ codegen
     Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
 process
     :class:`CompiledProcess`, the user-facing object.
+export
+    Standalone NumPy source of the exponent and gradient (no spxa dependency).
 pricing
     COS prices batched over parameter sets, with the exact Jacobian including the
     parameter dependence of the truncation interval.
