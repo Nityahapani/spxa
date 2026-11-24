@@ -24,6 +24,7 @@ and named ``"<Family>.<param>"`` with ``"[k]"`` for repeated families and
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -146,7 +147,7 @@ class Lowered:
     params: Tuple[Expr, ...]
     opaque: Tuple[Any, ...]
 
-    @property
+    @cached_property
     def analytic(self) -> bool:
         """Whether :math:`\\psi` is analytic in ``u`` (cumulants, complex ``u``)."""
         return is_analytic(self.psi)
