@@ -21,6 +21,9 @@ lower
     A process expression (``+``, scaling, ``@``) to one exponent over a flat parameter vector.
 codegen
     Straight-line kernels for NumPy (bit-exact with ``evaluate``), Numba and JAX.
+kernel
+    Compiled psi, gradient and Hessian over free parameters, batched and
+    specialised on parameter branches.
 """
 
 from __future__ import annotations
