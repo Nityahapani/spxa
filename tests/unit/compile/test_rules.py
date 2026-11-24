@@ -230,3 +230,108 @@ def test_stable_is_not_analytic() -> None:
         cumulants_from_ir(psi, 2, list(spec.values))
     with pytest.raises(CompileError):
         derivative(psi, I.U)
+
+
+# ── compound Poisson ────────────────────────────────────────────────────────
+
+
+def _cp_cases() -> List[Any]:
+    from spxa.zoo.levy import compound_poisson as cp
+
+    return [
+        cp.CompoundPoisson(2.0, cp.NormalJump(0.1, 0.2)),
+        cp.CompoundPoisson(0.5, cp.ExponentialJump(3.0)),
+        cp.CompoundPoisson(4.0, cp.DoubleExponentialJump(0.4, 5.0, 4.0)),
+        cp.CompoundPoisson(2.0, cp.UniformJump(-0.2, 0.5)),
+        cp.CompoundPoisson(2.0, cp.UniformJump(0.1, 0.1 + 1e-9)),
+        cp.CompoundPoisson(1.5, cp.DiscreteJump([-0.1, 0.0, 0.2], [0.3, 0.2, 0.5])),
+        cp.CompoundPoisson(1.0, 0.25),  # a fixed jump size
+    ]
+
+
+CP_CASES = _cp_cases()
+
+
+def _narrow_uniform(proc: Any) -> bool:
+    jd = proc.jump_dist
+    return type(jd).__name__ == "UniformJump" and jd.high - jd.low < 1e-6
+
+
+def _mp_uniform_psi(rate: float, lo: float, hi: float, uu: np.ndarray) -> np.ndarray:
+    import mpmath as mp
+
+    mp.mp.dps = 50
+    out = []
+    for x in uu:
+        z = mp.mpc(x)
+        phi = (mp.exp(1j * z * hi) - mp.exp(1j * z * lo)) / (1j * z * (mp.mpf(hi) - lo))
+        out.append(complex(rate * (phi - 1)))
+    return np.array(out)
+
+
+@pytest.mark.parametrize("proc", CP_CASES, ids=_ids(CP_CASES))
+def test_compound_poisson_exponent(proc: Any) -> None:
+    spec, params, psi = _leaf_psi(proc)
+    assert spec.family == "CompoundPoisson" and spec.sampler == "compound_poisson"
+    for uu in (U_REAL[U_REAL != 0], U_CPLX):
+        got = evaluate(psi, uu, list(spec.values))
+        if _narrow_uniform(proc):
+            # the zoo's quotient cancels for a narrow law; check against 50 digits
+            jd = proc.jump_dist
+            _close(got, _mp_uniform_psi(proc.rate, jd.low, jd.high, uu), 5e-15)
+        else:
+            _close(got, _zoo_psi(proc, uu), 5e-14)
+    rebuilt = spec.build(spec.values)
+    _close(_zoo_psi(rebuilt, U_REAL), _zoo_psi(proc, U_REAL), 0.0)
+
+
+@pytest.mark.parametrize("proc", CP_CASES, ids=_ids(CP_CASES))
+def test_compound_poisson_cumulants(proc: Any) -> None:
+    spec, params, psi = _leaf_psi(proc)
+    got = cumulants_from_ir(psi, 4, list(spec.values))
+    if _narrow_uniform(proc):
+        from fractions import Fraction
+
+        lo, hi = Fraction(proc.jump_dist.low), Fraction(proc.jump_dist.high)
+        ref = {
+            n: float(Fraction(proc.rate) * (hi ** (n + 1) - lo ** (n + 1)) / ((n + 1) * (hi - lo)))
+            for n in range(1, 5)
+        }
+    else:
+        ref = proc.cumulants(4)
+    for n in range(1, 5):
+        assert got[n - 1] == pytest.approx(ref[n], rel=1e-12, abs=1e-15)
+
+
+@pytest.mark.parametrize("proc", CP_CASES, ids=_ids(CP_CASES))
+def test_compound_poisson_gradient(proc: Any) -> None:
+    spec, params, psi = _leaf_psi(proc)
+    for k, p in enumerate(params):
+        # the IR is analytic in every parameter, even past a constraint such as low < high
+        h = 1e-6 * max(1.0, abs(spec.values[k]))
+        hi = list(spec.values)
+        lo = list(spec.values)
+        hi[k] += h
+        lo[k] -= h
+        ref = (evaluate(psi, U_CPLX, hi) - evaluate(psi, U_CPLX, lo)) / (2 * h)
+        got = evaluate(derivative(psi, p), U_CPLX, list(spec.values))
+        _close(np.broadcast_to(got, U_CPLX.shape), ref, 1e-7)
+
+
+def test_uniform_jumps_are_analytic_at_zero() -> None:
+    proc = CP_CASES[3]
+    spec, params, psi = _leaf_psi(proc)
+    assert complex(evaluate(psi, 0.0, list(spec.values))) == 0j
+    d = derivative(psi, I.U)
+    # psi'(0) = i * rate * E[Y]
+    assert complex(evaluate(d, 0.0, list(spec.values))) == pytest.approx(1j * 2.0 * 0.15)
+
+
+def test_unsupported_jump_law() -> None:
+    from spxa.zoo.levy import compound_poisson as cp
+
+    class Weird(cp.NormalJump):
+        pass
+
+    with pytest.raises(CompileError, match="Weird"):
+        spec_for(cp.CompoundPoisson(1.0, Weird(0.0, 1.0)))

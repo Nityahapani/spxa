@@ -372,6 +372,103 @@ def _r_stable(P: Any) -> LeafSpec:
     return _family_spec("AlphaStable", P, _stable_psi, None, "Nolan (2020) Def. 1.6")
 
 
+# ── compound Poisson with the zoo's jump laws ───────────────────────────────
+
+
+def _cp_build(kind: str, extra: Dict[str, Any]) -> Callable[[Sequence[float]], Any]:
+    def build(p: Sequence[float]) -> Any:
+        from spxa.zoo.levy import compound_poisson as cp
+
+        rate = float(p[0])
+        if kind == "normal":
+            return cp.CompoundPoisson(rate, cp.NormalJump(mean=float(p[1]), std=float(p[2])))
+        if kind == "exponential":
+            return cp.CompoundPoisson(rate, cp.ExponentialJump(rate=float(p[1])))
+        if kind == "double_exponential":
+            return cp.CompoundPoisson(
+                rate, cp.DoubleExponentialJump(p=float(p[1]), eta1=float(p[2]), eta2=float(p[3]))
+            )
+        if kind == "uniform":
+            return cp.CompoundPoisson(rate, cp.UniformJump(low=float(p[1]), high=float(p[2])))
+        return cp.CompoundPoisson(
+            rate, cp.DiscreteJump(values=list(extra["values"]), probs=list(extra["probs"]))
+        )
+
+    return build
+
+
+@leaf_rule("CompoundPoisson")
+def _r_compound_poisson(P: Any) -> LeafSpec:
+    from spxa.zoo.levy import compound_poisson as cp
+
+    jd = P.jump_dist
+    t = type(jd)
+    if t is cp.NormalJump:
+        kind, names, vals = "normal", ("rate", "jump_mean", "jump_std"), _f(P.rate, jd.mean, jd.std)
+
+        def psi(u: Expr, p: Sequence[Expr]) -> Expr:
+            rate, m, s = p
+            return rate * I.expm1(J * m * u - 0.5 * s**2 * u * u)
+
+    elif t is cp.ExponentialJump:
+        kind, names, vals = "exponential", ("rate", "jump_rate"), _f(P.rate, jd.rate)
+
+        def psi(u: Expr, p: Sequence[Expr]) -> Expr:
+            rate, eta = p
+            iu = J * u
+            return rate * iu / (eta - iu)
+
+    elif t is cp.DoubleExponentialJump:
+        kind = "double_exponential"
+        names = ("rate", "jump_p", "jump_eta1", "jump_eta2")
+        vals = _f(P.rate, jd.p, jd.eta1, jd.eta2)
+
+        def psi(u: Expr, p: Sequence[Expr]) -> Expr:
+            rate, q, e1, e2 = p
+            return rate * _double_exp_jump(u, q, e1, e2)
+
+    elif t is cp.UniformJump:
+        kind, names, vals = (
+            "uniform",
+            ("rate", "jump_low", "jump_high"),
+            _f(P.rate, jd.low, jd.high),
+        )
+
+        def psi(u: Expr, p: Sequence[Expr]) -> Expr:
+            rate, lo, hi = p
+            mid, half = (lo + hi) / 2.0, (hi - lo) / 2.0
+            return rate * (I.exp(J * mid * u) * I.sinc(half * u) - 1.0)
+
+    elif t is cp.DiscreteJump:
+        kind, names, vals = "discrete", ("rate",), _f(P.rate)
+        values = tuple(float(v) for v in jd.values)
+        probs = tuple(float(q) for q in jd.probs)
+
+        def psi(u: Expr, p: Sequence[Expr]) -> Expr:
+            (rate,) = p
+            phi_m1: Expr = I.const(0j)
+            for v, q in zip(values, probs):
+                if q != 0.0:
+                    phi_m1 = phi_m1 + q * I.expm1(J * v * u)
+            return rate * phi_m1
+
+    else:
+        raise CompileError(f"no compound-Poisson rule for jump law {t.__name__}")
+    extra: Dict[str, Any] = {"jump": kind}
+    if kind == "discrete":
+        extra.update(values=values, probs=probs)
+    return LeafSpec(
+        family="CompoundPoisson",
+        names=names,
+        values=vals,
+        psi=psi,
+        build=_cp_build(kind, extra),
+        sampler="compound_poisson",
+        extra=extra,
+        reference="Sato (1999) Ex. 8.4",
+    )
+
+
 def supported_families() -> List[str]:
     """Class names with a lowering rule."""
     return sorted(LEAF_RULES)
