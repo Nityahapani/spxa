@@ -59,7 +59,7 @@ The grammar also removes candidates whose law duplicates another candidate's:
 - `(Drift + BM) @ Gamma` is `VG`, `(Drift + BM) @ IG` is `NIG`, and `(Drift + BM) @ Poisson` is `NormalJumps`. Only the family form is generated.
 - Sums are commutative and are put in canonical order, so each multiset of atoms is fitted once.
 
-**Search.** `search="beam"` (the default) is forward selection with a beam. It fits every atom, then repeatedly extends the `beam_width` best structures by one atom each, warm-starting each extension from its parent's estimate. `search="exhaustive"` fits every structure. With a beam as wide as the atom list, both visit every structure and agree on the best BIC; this is tested.
+**Search.** `search="beam"` (the default) is forward selection with a beam. It fits every atom, then repeatedly extends the `beam_width` best structures by one atom each, warm-starting each extension from its parent's estimate. An extension reached from several parents is fitted from each parent's warm start and keeps the best optimum, so one parent's local optimum cannot shadow a better basin. `search="exhaustive"` fits every structure. With a beam as wide as the atom list, both visit every structure and agree on the best BIC; this is tested.
 
 ## 3. Fitting one structure
 
@@ -72,6 +72,14 @@ $$
 $$
 
 Because the bins and kernel are shared, log-likelihoods and therefore AIC and BIC are comparable across structures. Goodness of fit is a Wald-type statistic on the smoothed counts that accounts for their covariance. The report quotes its p-value and the largest gap between the model and empirical CDFs.
+
+**Validity of the COS probabilities.** The interval $[a, b]$ is fixed per data set, with centre $c$ and half-width $w$ at least twelve standard deviations and twice the largest deviation of the sample. The cosine series sees the smoothed law $Y = X_{\Delta t} + hZ$ only through its even $2(b-a)$-periodic fold. Mass outside $[a, b]$ is reflected back onto it, which only ever raises the likelihood. A law and its translate by $2(b-a)$ give identical bin probabilities, and a vanishing-rate Gamma component spreads its mass over the whole line, so it acts as a flat floor that absorbs outliers. The probabilities are exact (up to the series cut) only when that mass is negligible. Markov's inequality on the fourth moment certifies it from the exact cumulants of $Y$:
+
+$$
+P(|Y - c| \ge w) \le \frac{\kappa_4 + 3\kappa_2^2 + 4d\kappa_3 + 6d^2\kappa_2 + d^4}{w^4}, \qquad d = \kappa_1 - c.
+$$
+
+A model that matches the data's cumulants has a bound of at most $3(1 + h^2/\kappa_2)^2/12^4$, about $1.45\times10^{-4}$ at the usual $h = 0.02\sqrt{\kappa_2}$. Models whose bound exceeds $10^{-2}$ are inadmissible and lie on the objective's penalty plateau (`BinnedData.outside_mass_bound`). On Merton data the guard rejects a jump mean of $+0.80$, which is the true $-0.03$ translated by $2(b-a) = 0.83$ and otherwise scores a higher likelihood than the true parameters.
 
 **What the binned likelihood can see.** Information beyond the outermost bins enters only through the tail-bin counts. A component that acts mainly through a few very large jumps is therefore hard to identify from a few thousand returns. One example is a gamma subordinator with low activity $a$. The search then prefers the simpler structure, which is the correct inference from that sample. The bootstrap frequencies (§5) make this visible.
 

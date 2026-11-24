@@ -91,6 +91,37 @@ def test_every_structure_is_fitted_once(small_report: DiscoveryReport) -> None:
         assert k in keys
 
 
+def test_extensions_keep_the_best_fit_over_every_parents_warm_start(
+    vg_sample: np.ndarray, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # a structure reached from several beam parents is fitted once per distinct
+    # warm start, and the report holds the best of those optima: one parent's
+    # local optimum must not shadow a better basin reachable from another
+    import spxa.discovery.search as search_mod
+
+    calls: dict[str, list[tuple[object, float]]] = {}
+    original = search_mod.fit_structure
+
+    def spy(structure, summary, **kwargs):
+        res = original(structure, summary, **kwargs)
+        init = kwargs.get("initial")
+        warm = None if init is None else tuple(tuple(t) for t in init)
+        calls.setdefault(with_location(structure).key(), []).append((warm, res.objective))
+        return res
+
+    monkeypatch.setattr(search_mod, "fit_structure", spy)
+    g = grammar_from_names(["BM", "VG", "NIG", "Gamma"], max_terms=2)
+    report = discover(vg_sample, dt=DT, grammar=g, n_starts=2)
+    revisited = 0
+    for c in report.candidates:
+        attempts = calls[c.structure_key]
+        warm_starts = [w for w, _ in attempts]
+        assert len(warm_starts) == len(set(warm_starts))  # no duplicate work
+        assert c.objective == min(obj for _, obj in attempts)
+        revisited += len(attempts) > 1
+    assert revisited > 0  # the grammar does reach some extensions twice
+
+
 def test_beam_agrees_with_exhaustive_search(vg_sample: np.ndarray) -> None:
     g = grammar_from_names(["BM", "VG", "Gamma"], max_terms=2)
     beam = discover(vg_sample, dt=DT, grammar=g, n_starts=2, beam_width=5)

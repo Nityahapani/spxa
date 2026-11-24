@@ -98,6 +98,41 @@ def test_binned_data() -> None:
     )
 
 
+def test_cos_probabilities_alias_and_the_outside_mass_bound_certifies_them() -> None:
+    from scipy import stats
+
+    from spxa.discovery.fit import _PENALTY, _Objective
+
+    x = np.random.default_rng(1).normal(0.001, 0.01, 2_000)
+    dt = 1.0
+    b = BinnedData.from_sample(x, dt)
+    structure = leaf(BROWNIAN) + leaf(DRIFT)
+    true = Model(structure, [(0.01,), (0.001,)])
+    # the cosine series sees only the 2(b - a)-periodic fold: a translate of
+    # the law by one period has the same bin probabilities, to rounding
+    shifted = Model(structure, [(0.01,), (0.001 + 2 * (b.b - b.a),)])
+    np.testing.assert_allclose(b.probabilities(shifted), b.probabilities(true), atol=1e-12)
+
+    # the bound is Markov's inequality on the exact fourth moment about the centre
+    c, w = 0.5 * (b.a + b.b), 0.5 * (b.b - b.a)
+    s2 = 0.01**2 + b.bandwidth**2
+    for model, mean in ((true, 0.001), (shifted, 0.001 + 2 * (b.b - b.a))):
+        d = mean - c
+        expected = (3 * s2**2 + 6 * d**2 * s2 + d**4) / w**4
+        assert b.outside_mass_bound(model) == pytest.approx(expected, rel=1e-10)
+        # and it really bounds the Gaussian tail mass
+        tail = stats.norm.sf(w, loc=abs(d), scale=np.sqrt(s2)) + stats.norm.cdf(
+            -w, loc=abs(d), scale=np.sqrt(s2)
+        )
+        assert tail <= b.outside_mass_bound(model)
+    assert b.outside_mass_bound(true) < 2e-4 and b.outside_mass_bound(shifted) > 1.0
+
+    # the aliased translate is inadmissible; the true law is not
+    obj = _Objective(with_location(structure), summarize(x, dt), "likelihood", b)
+    assert obj(true.to_free()) < _PENALTY
+    assert obj(shifted.to_free()) == _PENALTY
+
+
 def test_bins_merge_around_a_near_atom() -> None:
     # VG over a week with ν = 0.25: the Gamma clock is ~0 for a large share of weeks
     x = vg_increments(SIGMA, NU, THETA, DT, 3_000, seed=4, mu=MU)

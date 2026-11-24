@@ -51,6 +51,9 @@ DEGENERATE_SHARE = 1e-4
 
 Method = Literal["likelihood", "cumulants"]
 _PENALTY = 1e12
+# models whose certified mass outside the COS interval exceeds this are outside
+# the domain where the binned likelihood is valid (BinnedData.outside_mass_bound)
+_MAX_OUTSIDE_MASS = 1e-2
 
 
 @dataclass(frozen=True)
@@ -207,6 +210,33 @@ class BinnedData:
         J = float(np.sum(proj**2 / (n * w[keep])))
         dof = max(int(keep.sum()) - n_params, 1)
         return J, float(stats.chi2.sf(J, dof)), dof
+
+    def outside_mass_bound(self, model: Model) -> float:
+        r"""Certified bound on the mass of :math:`Y = X_{\Delta t} + hZ` outside :math:`[a, b]`.
+
+        The cosine expansion on :math:`[a, b]` sees the law only through its
+        even :math:`2(b-a)`-periodic extension: mass outside the interval folds
+        back onto it, so a law and its translate by :math:`2(b-a)` give the same
+        bin probabilities. The probabilities are exact, up to the series
+        truncation, only when that mass is negligible. With :math:`c` the centre
+        and :math:`w` the half-width of the interval, Markov's inequality on the
+        fourth moment about :math:`c` bounds it by
+
+        .. math:: P(|Y - c| \ge w) \le \frac{E[(Y-c)^4]}{w^4},\qquad
+                  E[(Y-c)^4] = \kappa_4 + 3\kappa_2^2 + 4d\kappa_3 + 6d^2\kappa_2 + d^4,
+
+        where :math:`d = \kappa_1 - c` and :math:`\kappa_j` are the exact
+        cumulants of :math:`Y` (:math:`\kappa_2` includes the kernel's
+        :math:`h^2`). Returns ``inf`` when a cumulant is not finite.
+        """
+        k = np.asarray(model.cumulants(4, t=self.dt), dtype=float)
+        if not np.all(np.isfinite(k)):
+            return float("inf")
+        c, w = 0.5 * (self.a + self.b), 0.5 * (self.b - self.a)
+        d = k[0] - c
+        k2 = k[1] + self.bandwidth**2
+        m4 = k[3] + 3.0 * k2**2 + 4.0 * d * k[2] + 6.0 * d**2 * k2 + d**4
+        return float(m4 / w**4)
 
     def probabilities(self, model: Model, floor: float = 1e-300) -> np.ndarray:
         r"""Bin probabilities of :math:`X_{\Delta t} + hZ` under ``model``."""
@@ -510,6 +540,12 @@ class _Objective:
                     r = k - self.target
                     return float(np.sum(self.weights[1:] * r[1:] ** 2))
                 assert self.binned is not None
+                # the cosine series folds mass outside [a, b] back onto it, which
+                # only ever raises the likelihood: a law that leaves the interval
+                # (a translate by 2(b - a), a vanishing-rate Gamma spreading mass
+                # over the whole line) can look better than the truth
+                if not self.binned.outside_mass_bound(m) <= _MAX_OUTSIDE_MASS:
+                    return _PENALTY
                 val = -float(self.binned.counts @ np.log(self.binned.probabilities(m)))
             return val if np.isfinite(val) else _PENALTY
         except (ValueError, FloatingPointError, ZeroDivisionError, OverflowError):

@@ -181,6 +181,7 @@ def discover(
         )
 
     fitted: dict[str, FitResult] = {}
+    tried: set[tuple[str, Optional[tuple[tuple[float, ...], ...]]]] = set()
     rng = np.random.default_rng(seed)
 
     def fit(
@@ -188,9 +189,15 @@ def discover(
         initial: Optional[list[tuple[float, ...]]] = None,
         starts: int = n_starts,
     ) -> Optional[FitResult]:
+        # A structure reached from several beam parents is fitted from every
+        # parent's warm start and the best optimum is kept: one parent's local
+        # optimum (e.g. a degenerate jump fit) must not shadow a better basin
+        # reachable from another parent.
         key = with_location(structure).key()
-        if key in fitted:
-            return fitted[key]
+        attempt = (key, None if initial is None else tuple(tuple(t) for t in initial))
+        if attempt in tried or (key in fitted and initial is None):
+            return fitted.get(key)
+        tried.add(attempt)
         try:
             res = fit_structure(
                 structure,
@@ -202,10 +209,12 @@ def discover(
                 initial=initial,
             )
         except (RuntimeError, ValueError, FloatingPointError) as exc:
-            report_warnings.append(f"{structure.key()}: fit failed ({exc})")
-            return None
-        fitted[key] = res
-        return res
+            if key not in fitted:
+                report_warnings.append(f"{structure.key()}: fit failed ({exc})")
+            return fitted.get(key)
+        if key not in fitted or res.objective < fitted[key].objective:
+            fitted[key] = res
+        return fitted[key]
 
     def rank_key(r: FitResult) -> tuple[float, ...]:
         if method == "cumulants":
@@ -225,7 +234,7 @@ def discover(
         level = [r for r in (fit(a) for a in grammar.atoms()) if r is not None]
         for _ in range(2, top + 1):
             parents = sorted(level, key=rank_key)[:beam_width]
-            level = []
+            keys: dict[str, None] = {}
             for parent in parents:
                 for child in grammar.extensions(_strip_location(parent.model.structure)):
                     init = with_location(canonical(child))
@@ -233,7 +242,9 @@ def discover(
                         canonical(child), _warm_start(parent, init, 0.5 * std), extension_starts
                     )
                     if res is not None:
-                        level.append(res)
+                        keys[init.key()] = None
+            # one entry per structure, holding its best fit over all warm starts
+            level = [fitted[k] for k in keys]
     else:
         raise ValueError(f"search must be 'beam' or 'exhaustive', got {search!r}")
 

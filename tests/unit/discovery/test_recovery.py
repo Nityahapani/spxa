@@ -46,6 +46,21 @@ def test_merton_jump_diffusion_is_brownian_motion_plus_normal_jumps() -> None:
     assert r.best.g_pvalue > 0.05
 
 
+@pytest.mark.parametrize("seed", [7, 11, 12])
+def test_merton_recovery_does_not_depend_on_the_search_seed(seed: int) -> None:
+    # with these seeds the NormalJumps atom lands in a degenerate optimum
+    # (hundreds of jumps a year, mean jump ~ -0.77, offset by the drift); the
+    # BM + NormalJumps extension must still be fitted from the BM parent's warm
+    # start rather than inherit that basin. Before the fix all three picked VG.
+    x = merton_increments(0.05, 0.15, 10.0, -0.03, 0.04, DT, 5_000, seed=3)
+    r = discover(x, dt=DT, grammar=GRAMMAR, n_starts=2, seed=seed)
+    assert r.best.structure_key == "BM + NormalJumps + Drift"
+    assert r.candidates[1].bic - r.best.bic > 6
+    (sigma,), (lam, jm, js), _ = r.best.model.params
+    assert sigma == pytest.approx(0.15, rel=0.1)
+    assert 4.0 < lam < 20.0 and -0.06 < jm < 0.0 and 0.02 < js < 0.07
+
+
 def test_variance_gamma_beats_its_neighbours() -> None:
     x = vg_increments(0.2, 0.25, -0.3, 1 / 52, 2_000, seed=7, mu=0.1)
     g = grammar_from_names(["BM", "VG", "NIG", "NormalJumps"], max_terms=1)

@@ -88,6 +88,16 @@ Theme: exact derivatives through the process algebra. Every derivative is labell
   - they take process parameters as inputs, so gradients now reach them;
   - the CGF uses the continuous logarithm;
   - moments of orders 3 and 4 are correct.
+- **The binned discovery likelihood could prefer aliased fits.** The COS expansion on the fixed
+  interval $[a, b]$ sees a law only through its even $2(b-a)$-periodic fold, which only ever adds mass
+  inside the interval. A law that leaves it scored as well as, or better than, the truth: on Merton
+  data a jump mean of $+0.80$ (the true $-0.03$ translated by $2(b-a) = 0.83$) beat the true
+  parameters, and vanishing-rate Gamma components spread their mass over the line as a flat
+  outlier floor. `BinnedData.outside_mass_bound` now bounds the mass outside $[a, b]$ by Markov's
+  inequality on the exact fourth moment, and models above $10^{-2}$ are inadmissible. Beam search
+  also fits an extension reached from several parents from every parent's warm start and keeps the
+  best optimum; before, the first parent's basin shadowed the others. Merton recovery no longer
+  depends on the platform or the search seed, and the discovery tests run in half the time.
 
 ## [1.2.0] — 2026-11-21
 
