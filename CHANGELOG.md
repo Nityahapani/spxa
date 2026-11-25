@@ -4,6 +4,8 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-11-25
+
 Theme: exact derivatives through the process algebra. Every derivative is labelled `EXACT`,
 `NUMERICAL` or `STOCHASTIC`; see `docs/theory/exact_derivatives.md`.
 
