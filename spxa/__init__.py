@@ -904,6 +904,9 @@ def __getattr__(name: str):
         "vol",
         "discovery",
         "laws",
+        # spxa.compile is reachable as an attribute but kept out of __all__, so
+        # that `from spxa import *` never shadows the builtin compile()
+        "compile",
     ):
         import importlib
 

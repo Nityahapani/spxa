@@ -227,6 +227,10 @@ the running library. All signatures are exact.
    - [Calibration Derivatives](#calibration-derivatives)
    - [Monte Carlo Gradients](#monte-carlo-gradients)
    - [Gradient Tape & Exactness](#gradient-tape-exactness)
+26. [Compiled Kernels (`spxa.compile`)](#compiled-kernels-spxacompile)
+   - [Compiling a Process](#compiling-a-process)
+   - [Evaluation, Sampling & Pricing](#evaluation-sampling-pricing)
+   - [Lower-level Interfaces](#lower-level-interfaces)
 
 ---
 
@@ -5636,3 +5640,28 @@ Derivatives labelled `EXACT` (jets or authored adjoints), `NUMERICAL` (a reporte
 - `GradientTape(graph).gradient(target, sources=None, feed_dict=None, grad_output=None, *, strict=None)` returns a `GradientResult`. This is a `dict` with `exactness`, `source_exactness` and `notes`. `strict=True` raises `InexactGradientError`.
 - `GradientTape.jacobian(...)`; the functions `jvp(...)` and `forward_hessian(...)` in `spxa.graph.autodiff.tape`; `graph_hessian` and `compute_graph_hessian` in `spxa.graph.autodiff.hessian`.
 - `GradientExactness` has the levels `EXACT`, `NUMERICAL` and `STOCHASTIC`; `worst(levels)` combines them.
+
+## Compiled Kernels (`spxa.compile`)
+
+Generated NumPy, Numba or JAX kernels for a Lévy process expression: the exponent, exact parameter derivatives, cumulants, a fused exact sampler, and COS prices with the exact Jacobian. Guide: `docs/compile.md`.
+
+### Compiling a Process
+- `process.compile(backend="numpy"|"numba"|"jax", free=None, fixed=None, parallel=False, allow_opaque=True)` and `spxa.compile.compile_process(process, ...)` return a `CompiledProcess`. `free` selects parameter names (`"<Family>.<param>"`, as in `DiffProcess`) or indices; the other parameters are folded in.
+- `spxa.compile.supported_families()` lists the zoo families with lowering rules.
+- `CompileError` is raised for unsupported expressions. `BackendUnavailable` means the backend package is missing; `BackendUnsupported` means the backend cannot generate an operation (JAX: the `kve` of generalised hyperbolic, opaque calls).
+
+### Evaluation, Sampling & Pricing
+`CompiledProcess` has:
+- `names`, `all_names`, `values`, `n_params`, `analytic`, `full_theta(theta)`, `with_values(theta)`, `to_process(theta=None)` and `story(theta=None)`;
+- `char_exponent(u, theta=None)`, `char_exponent_and_grad`, `char_exponent_hessian`, `log_char(u, t)`, `char_func(u, t)` and `log_mgf(z)`. `theta` is one vector or a `(B, n_free)` batch; outputs have shape `u.shape` or `(B,) + u.shape`, with a trailing parameter axis for gradients;
+- `cumulants(order=4, theta=None)` and `cumulants_and_jacobian(order=4, theta=None)`, exact;
+- `simulate(n_steps, n_paths=1, T=1.0, rng=None, theta=None)`, `sample_at(times, rng=None, theta=None)`, `paths(times, n_paths=1, rng=None, theta=None)` and `sampler_exact(theta=None)`;
+- `cos_price(spot, strikes, maturities, rate=0.0, dividend=0.0, call=True, n_terms=1024, width=12.0, theta=None, grad=False)`. Prices have shape `(M,)` or `(B, M)`; with `grad=True` the exact Jacobian `(..., M, n_free)` is returned as well, including the truncation interval;
+- `export(path=None, grad=True)`, the source of a standalone NumPy module (`NAMES`, `THETA0`, `psi`, `char_func`, `psi_and_grad`), and `source(what="psi", theta=None)`, the generated kernel source.
+
+### Lower-level Interfaces
+- `spxa.compile.ir`: the expression DAG (`Expr`, `param`, `const`, `U`, `postorder`, `substitute`); `spxa.compile.diff.derivative(roots, w)`.
+- `spxa.compile.evaluate`: `evaluate(roots, u, params)`; `taylor`, `taylor_many`, `cumulants_from_ir` and `cumulants_from_ir_many` (Taylor mode).
+- `spxa.compile.lower.lower(process)` returns a `Lowered(psi, names, values, tree, params, opaque)`. `spxa.compile.kernel.ExponentKernel(lowered, backend, free, fixed, parallel)` is the compiled exponent behind `CompiledProcess.kernel`.
+- `spxa.compile.codegen.generate(outputs, n_params, backend, name, parallel)` returns a `Program`, callable as `program(u, *params)` and holding its `source`.
+- `spxa.compile.pricing.cos_price(cp, ...)`, `spxa.compile.sampler.Sampler` and `spxa.compile.export.export_source(cp, grad=True)`.

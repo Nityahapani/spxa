@@ -446,6 +446,33 @@ class Process(ABC):
             node=node,
         )
 
+    def compile(
+        self,
+        backend: str = "numpy",
+        free: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> Any:
+        r"""
+        Compile this Lévy process expression into fused kernels.
+
+        Lowers the composition once to a single expression for
+        :math:`\psi(u;\theta)` and generates code for the exponent, its
+        gradient and Hessian in the parameters, and exact cumulants, for one
+        parameter vector or a batch. See :class:`spxa.compile.CompiledProcess`.
+
+        Parameters
+        ----------
+        backend :
+            ``"numpy"`` (default), ``"numba"`` or ``"jax"``.
+        free :
+            Parameter names or indices to expose (default: all).
+        **kwargs :
+            ``fixed``, ``parallel``, ``allow_opaque``.
+        """
+        from spxa.compile.process import compile_process
+
+        return compile_process(self, backend=backend, free=free, **kwargs)
+
     def morph(
         self,
         other: Process,

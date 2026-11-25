@@ -28,7 +28,7 @@ Chapter 4, Table 4.1.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -38,6 +38,33 @@ from spxa.core.process import Process
 from spxa.core.properties import ProcessProperties
 from spxa.core.triplet import LevyTriplet
 from spxa.story.narrator import CompositionNode, NodeKind
+
+
+def sample_inverse_gaussian(mean: Any, shape: Any, rng: np.random.Generator) -> np.ndarray:
+    r"""
+    Draws from IG(mean :math:`m`, shape :math:`s`), robust to tiny parameters.
+
+    Michael, Schucany & Haas (1976): with :math:`\nu = Z^2`,
+    :math:`a = m\nu/(2s)` and :math:`x_1 = m/(1 + a + \sqrt{a(a + 2)})` (the smaller
+    root of the quadratic, written without cancellation), return :math:`x_1`
+    with probability :math:`m/(m + x_1)`, else :math:`m^2/x_1 = m(1 + a + \sqrt{a(a+2)})`.
+
+    Only the ratio :math:`m/s` enters, so the draw stays exact when :math:`s`
+    alone would underflow: a subordinated NIG evaluates IG(:math:`\delta t/\gamma`,
+    :math:`(\delta t)^2`) at clock increments :math:`t` as small as
+    :math:`10^{-200}`, where ``Generator.wald`` raises ``scale <= 0``. Entries with
+    :math:`m = 0` are 0. ``mean`` and ``shape`` broadcast; one normal and one
+    uniform are drawn per entry.
+    """
+    m, sh = np.broadcast_arrays(np.asarray(mean, dtype=float), np.asarray(shape, dtype=float))
+    nu = rng.standard_normal(m.shape) ** 2
+    uni = rng.random(m.shape)
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        a = m * nu / (2.0 * sh)
+        root = 1.0 + a + np.sqrt(a) * np.sqrt(a + 2.0)  # no overflow of a(a+2)
+        x1 = m / root
+        out = np.where(uni * (m + x1) <= m, x1, m * root)
+    return np.where(m > 0, out, 0.0)
 
 
 def _ig_levy_measure(mu: float, lam: float) -> DensityLevyMeasure:
@@ -260,7 +287,7 @@ class InverseGaussianProcess(Process):
         t = np.asarray(times, dtype=float)
         out = np.zeros(t.shape)
         pos = t > 0
-        out[pos] = rng.wald(self.mu * t[pos], self.lam * t[pos] ** 2)
+        out[pos] = sample_inverse_gaussian(self.mu * t[pos], self.lam * t[pos] ** 2, rng)
         return out
 
     def simulate(

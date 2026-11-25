@@ -81,6 +81,7 @@ nav:
   - API reference: api.md
   - Example gallery: gallery.md
   - Differentiable SDEs: diff.md
+  - Compiled kernels: compile.md
   - Portfolio & Risk: risk.md
   - Stochastic Calculus: calculus.md
   - Process registry: https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md

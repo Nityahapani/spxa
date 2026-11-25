@@ -59,7 +59,7 @@ The grammar also removes candidates whose law duplicates another candidate's:
 - `(Drift + BM) @ Gamma` is `VG`, `(Drift + BM) @ IG` is `NIG`, and `(Drift + BM) @ Poisson` is `NormalJumps`. Only the family form is generated.
 - Sums are commutative and are put in canonical order, so each multiset of atoms is fitted once.
 
-**Search.** `search="beam"` (the default) is forward selection with a beam. It fits every atom, then repeatedly extends the `beam_width` best structures by one atom each, warm-starting each extension from its parent's estimate. `search="exhaustive"` fits every structure. With a beam as wide as the atom list, both visit every structure and agree on the best BIC; this is tested.
+**Search.** `search="beam"` (the default) is forward selection with a beam. It fits every atom, then repeatedly extends the `beam_width` best structures by one atom each, warm-starting each extension from its parent's estimate. A structure reached from several parents is fitted from each parent's estimate, and the best optimum is kept, so the ranking does not depend on which parent arrives first. `search="exhaustive"` fits every structure. With a beam as wide as the atom list, both visit every structure and agree on the best BIC; this is tested.
 
 ## 3. Fitting one structure
 
