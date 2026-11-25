@@ -4,7 +4,7 @@ spxa — Stochastic Process Algebra
 Stochastic processes as first-class algebraic objects.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 from spxa.core import (
     ExactnessError,

@@ -110,7 +110,7 @@ guides.
   author = {Nityahapani},
   title = {spxa: Stochastic Process Algebra \& Computational Graph Engine},
   url = {https://github.com/Nityahapani/spxa},
-  version = {1.2.0},
+  version = {1.3.0},
   year = {2026},
 }
 ```
