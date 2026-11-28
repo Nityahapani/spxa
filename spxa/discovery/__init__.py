@@ -40,7 +40,10 @@ Search
 Monitoring
     :class:`PageCUSUM` watches new increments for a change from a fitted law
     to a specified alternative, with a guaranteed in-control average run
-    length (:class:`MonitorResult`, :class:`Alarm`).
+    length (:class:`MonitorResult`, :class:`Alarm`). :class:`ShiryaevRoberts`
+    covers several alternatives at once, such as :func:`local_alternatives` in
+    every direction, and :func:`average_run_length` computes run lengths exactly.
+    ``report.monitor()`` builds either detector from a discovered model.
 Option prices
     :func:`cos_prices` prices European options with a fitted model as the
     risk-neutral driver (made a martingale by :func:`martingale_correction`).
@@ -58,7 +61,14 @@ from spxa.discovery.bayes import (
     laplace_evidence,
 )
 from spxa.discovery.density import COSDistribution, model_distribution
-from spxa.discovery.monitor import Alarm, MonitorResult, PageCUSUM
+from spxa.discovery.monitor import (
+    Alarm,
+    MonitorResult,
+    PageCUSUM,
+    ShiryaevRoberts,
+    average_run_length,
+    local_alternatives,
+)
 from spxa.discovery.smc import SMCEvidence, smc_evidence
 from spxa.discovery.posterior import (
     MixtureDistribution,
@@ -181,6 +191,9 @@ __all__ = [
     "PosteriorPrices",
     # monitoring
     "PageCUSUM",
+    "ShiryaevRoberts",
+    "local_alternatives",
+    "average_run_length",
     "MonitorResult",
     "Alarm",
     # search
