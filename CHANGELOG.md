@@ -4,6 +4,8 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-11-28
+
 Theme: inference beyond a single best fit. Posterior probabilities over discovered structures,
 live monitoring of a fitted model, and Lévy-driven CARMA processes.
 
