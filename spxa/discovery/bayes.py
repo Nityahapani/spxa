@@ -60,10 +60,11 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 import numpy as np
-from scipy import optimize
+from scipy import optimize, stats
+from scipy.special import logsumexp
 
 from spxa.discovery.expr import Model, Node
 from spxa.discovery.fit import BinnedData, FitResult, initial_params
@@ -74,6 +75,8 @@ __all__ = [
     "default_prior",
     "Evidence",
     "laplace_evidence",
+    "ImportanceEvidence",
+    "importance_evidence",
 ]
 
 #: Free coordinates that are natural parameters themselves (not logs, logits
@@ -351,6 +354,104 @@ def laplace_evidence(
         hessian=H,
         converged=bool(np.max(np.abs(g)) <= max(gtol, 1e-6 * max(1.0, abs(v)))),
         n_obs=binned.n,
+    )
+
+
+# ── importance sampling ───────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class ImportanceEvidence:
+    """An importance-sampling estimate of the evidence.
+
+    Attributes
+    ----------
+    log_evidence :
+        :math:`\\log \\hat Z`, where :math:`\\hat Z` is the unbiased estimate of
+        the evidence.
+    standard_error :
+        Delta-method standard error of :math:`\\log\\hat Z`, i.e. the coefficient
+        of variation of :math:`\\hat Z`.
+    ess :
+        Kish effective sample size of the importance weights.
+    n_draws :
+        Number of proposal draws.
+    laplace :
+        The Laplace approximation that centred the proposal.
+    """
+
+    log_evidence: float
+    standard_error: float
+    ess: float
+    n_draws: int
+    laplace: Evidence = field(repr=False)
+
+    @property
+    def laplace_error(self) -> float:
+        """Laplace value minus this estimate."""
+        return self.laplace.log_evidence - self.log_evidence
+
+
+def _log_target(evidence: Evidence, binned: BinnedData) -> Callable[[np.ndarray], float]:
+    def f(x: np.ndarray) -> float:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                m = Model.from_free(evidence.structure, x)
+                ll = float(binned.counts @ np.log(binned.probabilities(m)))
+        except (ValueError, FloatingPointError, ZeroDivisionError, OverflowError):
+            return -np.inf
+        return ll + evidence.prior.log_density(x) if np.isfinite(ll) else -np.inf
+
+    return f
+
+
+def importance_evidence(
+    evidence: Evidence,
+    binned: BinnedData,
+    *,
+    n_draws: int = 2000,
+    df: float = 5.0,
+    inflate: float = 1.2,
+    rng: Optional[np.random.Generator] = None,
+) -> ImportanceEvidence:
+    r"""Importance-sampling estimate of the evidence around a Laplace fit.
+
+    The proposal is a multivariate :math:`t_\nu` with location :math:`\hat x`
+    and scale matrix :math:`(\text{inflate})^2 H^{-1}`. Its tails are heavier
+    than the posterior's in the usual regular cases, which keeps the weights'
+    variance finite. With draws :math:`x_s` and log weights
+    :math:`\log w_s = \ell(x_s) + \log\pi(x_s) - \log q(x_s)`,
+
+    .. math::
+        \hat Z = \frac1S \sum_s w_s, \qquad
+        \operatorname{se}(\log\hat Z) \approx
+        \frac{\operatorname{sd}(w)}{\sqrt S\,\bar w}, \qquad
+        \text{ESS} = \frac{(\sum_s w_s)^2}{\sum_s w_s^2}.
+
+    Draws where the model cannot be evaluated get weight zero. That is correct,
+    because the likelihood is zero there.
+    """
+    if n_draws < 2:
+        raise ValueError("n_draws must be at least 2")
+    if not (df > 0 and inflate > 0):
+        raise ValueError("df and inflate must be positive")
+    rng = rng if rng is not None else np.random.default_rng(0)
+    k = evidence.n_params
+    shape = inflate**2 * evidence.covariance
+    shape = 0.5 * (shape + shape.T)
+    q = stats.multivariate_t(loc=evidence.mode, shape=shape, df=df, seed=rng)
+    xs = np.asarray(q.rvs(size=n_draws)).reshape(n_draws, k)
+    log_q = np.asarray(q.logpdf(xs), dtype=float).reshape(n_draws)
+    target = _log_target(evidence, binned)
+    log_t = np.array([target(x) for x in xs])
+    lw = log_t - log_q
+    log_z = float(logsumexp(lw) - np.log(n_draws))
+    w = np.exp(lw - np.max(lw))
+    se = float(np.std(w, ddof=1) / (np.sqrt(n_draws) * np.mean(w)))
+    ess = float(np.sum(w) ** 2 / np.sum(w**2))
+    return ImportanceEvidence(
+        log_evidence=log_z, standard_error=se, ess=ess, n_draws=n_draws, laplace=evidence
     )
 
 
