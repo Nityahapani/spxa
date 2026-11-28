@@ -29,8 +29,11 @@ never fitted has probability zero.
 The Laplace evidence can be off by a fraction of a nat when a structure is
 weakly identified, as with a rare-jump part on data without jumps. Pass
 ``evidence="importance"`` to replace each Laplace value with the unbiased
-importance-sampling estimate (:func:`~spxa.discovery.bayes.importance_evidence`).
-Its Monte Carlo error then propagates to the probabilities: with
+importance-sampling estimate (:func:`~spxa.discovery.bayes.importance_evidence`),
+or ``evidence="smc"`` for the sequential Monte Carlo estimate
+(:func:`~spxa.discovery.smc.smc_evidence`). SMC is slower, but it does not
+rest on a few heavy importance weights when a posterior is far from Gaussian.
+The Monte Carlo error then propagates to the probabilities: with
 :math:`P_i = \operatorname{softmax}_i(\log\pi + \log Z)` and independent
 errors :math:`s_j` in :math:`\log \hat Z_j`, the delta method gives
 
@@ -59,6 +62,7 @@ from spxa.discovery.density import COSDistribution, model_distribution
 from spxa.discovery.expr import Model, Node
 from spxa.discovery.fit import BinnedData, FitResult
 from spxa.discovery.pricing import cos_prices
+from spxa.discovery.smc import SMCEvidence, smc_evidence
 
 __all__ = [
     "StructurePosterior",
@@ -201,14 +205,15 @@ class StructurePosterior:
         Sampling interval of the data (the default prediction horizon).
     log_evidences :
         The :math:`\\log p(D\\mid M_i)` behind :attr:`probabilities`: the
-        Laplace values, or the importance-sampling estimates.
+        Laplace values, or the importance-sampling or SMC estimates.
     standard_errors :
         Monte Carlo standard errors of :attr:`log_evidences` (zero for Laplace).
     method :
-        ``"laplace"`` or ``"importance"``.
-    importance :
-        The :class:`~spxa.discovery.bayes.ImportanceEvidence` per structure when
-        ``method == "importance"``, else empty.
+        ``"laplace"``, ``"importance"`` or ``"smc"``.
+    refined :
+        Per structure, the :class:`~spxa.discovery.bayes.ImportanceEvidence` or
+        :class:`~spxa.discovery.smc.SMCEvidence` behind :attr:`log_evidences`.
+        Empty for Laplace.
     """
 
     evidences: list[Evidence]
@@ -220,7 +225,7 @@ class StructurePosterior:
     log_evidences: np.ndarray = field(default_factory=lambda: np.zeros(0))
     standard_errors: np.ndarray = field(default_factory=lambda: np.zeros(0))
     method: str = "laplace"
-    importance: list[ImportanceEvidence] = field(default_factory=list)
+    refined: list[Union[ImportanceEvidence, SMCEvidence]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.log_evidences.size == 0:
@@ -272,7 +277,7 @@ class StructurePosterior:
         return self.evidences[: min(n, len(self.evidences))]
 
     def table(self, top: int = 10, digits: int = 4) -> str:
-        mc = self.method == "importance"
+        mc = self.method != "laplace"
         head = f"{'#':>3}  {'P(M|D)':>8}  {'BIC wt':>8}  {'log Z':>11}"
         head += f"  {'se':>6}" if mc else ""
         rows = [head + f"  {'Occam':>8}  structure"]
@@ -441,7 +446,7 @@ def structure_posterior(
     prior: Union[None, GaussianPrior, Callable[[Node], GaussianPrior]] = None,
     model_prior: ModelPrior = None,
     top: Optional[int] = None,
-    evidence: Literal["laplace", "importance"] = "laplace",
+    evidence: Literal["laplace", "importance", "smc"] = "laplace",
     n_draws: int = 2000,
     rng: Optional[np.random.Generator] = None,
 ) -> StructurePosterior:
@@ -468,14 +473,21 @@ def structure_posterior(
     top :
         Use only the ``top`` best candidates by BIC.
     evidence :
-        ``"laplace"`` (default) or ``"importance"``. The latter refines each
-        Laplace evidence by importance sampling with ``n_draws`` draws from
-        ``rng`` and reports Monte Carlo errors (:attr:`StructurePosterior.probability_se`).
+        ``"laplace"`` (default), ``"importance"`` or ``"smc"``. The last two
+        refine each Laplace evidence by Monte Carlo and report its error
+        (:attr:`StructurePosterior.probability_se`). ``"importance"`` uses
+        ``n_draws`` draws. ``"smc"`` uses four independent runs of
+        ``n_draws // 4`` particles each, which costs several times more
+        likelihood evaluations.
+    n_draws, rng :
+        Monte Carlo budget per structure, and the generator.
     """
     from spxa.discovery.report import DiscoveryReport
 
-    if evidence not in ("laplace", "importance"):
-        raise ValueError(f"evidence must be 'laplace' or 'importance', got {evidence!r}")
+    if evidence not in ("laplace", "importance", "smc"):
+        raise ValueError(f"evidence must be 'laplace', 'importance' or 'smc', got {evidence!r}")
+    if evidence != "laplace" and n_draws < 8:
+        raise ValueError("n_draws must be at least 8")
     if isinstance(candidates, DiscoveryReport):
         if candidates.method != "likelihood" or candidates.binned is None:
             raise ValueError("posterior probabilities need a likelihood-mode report")
@@ -525,16 +537,20 @@ def structure_posterior(
 
     log_z = np.array([e.log_evidence for e in evidences])
     se = np.zeros(len(evidences))
-    refined: list[ImportanceEvidence] = []
-    if evidence == "importance":
+    refined: list[Union[ImportanceEvidence, SMCEvidence]] = []
+    if evidence != "laplace":
         rng = rng if rng is not None else np.random.default_rng(0)
         for i, ev in enumerate(evidences):
-            imp = importance_evidence(ev, binned, n_draws=n_draws, rng=rng)
-            refined.append(imp)
-            log_z[i], se[i] = imp.log_evidence, imp.standard_error
+            mc: Union[ImportanceEvidence, SMCEvidence]
+            if evidence == "importance":
+                mc = importance_evidence(ev, binned, n_draws=n_draws, rng=rng)
+            else:
+                mc = smc_evidence(ev, binned, n_particles=n_draws // 4, n_runs=4, rng=rng)
+            refined.append(mc)
+            log_z[i], se[i] = mc.log_evidence, mc.standard_error
         if not np.all(np.isfinite(log_z)):
             bad = [e.structure.key() for e, z in zip(evidences, log_z) if not np.isfinite(z)]
-            raise ValueError(f"importance sampling found no mass for {bad}")
+            raise ValueError(f"the Monte Carlo evidence found no mass for {bad}")
 
     log_pi = _log_model_prior(model_prior, [e.structure for e in evidences])
     log_post = log_pi + log_z
@@ -553,5 +569,5 @@ def structure_posterior(
         log_evidences=log_z[order],
         standard_errors=se[order],
         method=evidence,
-        importance=[refined[i] for i in order] if refined else [],
+        refined=[refined[i] for i in order] if refined else [],
     )
