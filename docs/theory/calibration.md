@@ -159,6 +159,22 @@ The product of the incremental terms is an **unbiased** estimator of the likelih
 
 Working in $\log v$ keeps the variance filter positive. The Schwartz measurement equation is affine, so its UKF is the exact Kalman filter for the Euler-discretised state.
 
+### 3.4 CARMA processes: an exact Kalman filter
+
+A Lévy-driven CARMA(p, q) process (`CARMAProcess`, see [Beyond Lévy](beyond_levy.md)) observed at times $t_0 < t_1 < \dots$ is a *linear* state-space model with exact transitions:
+
+$$
+X_{k+1} = F_kX_k + W_k,\quad Y_k = \mu + b^\top X_k,\qquad F_k = e^{A\Delta_k},\quad \mathrm{Var}(W_k) = \sigma^2\big(\Sigma - F_k\Sigma F_k^\top\big).
+$$
+
+Here $\sigma^2 = \kappa_2(L_1)$, and $\Sigma$ solves $A\Sigma + \Sigma A^\top + e_pe_p^\top = 0$. `carma_kalman_filter` starts the Kalman filter from the stationary law, so its prediction-error decomposition gives the exact Gaussian likelihood. It matches the dense Toeplitz Gaussian likelihood to $2\times10^{-11}$ on an even grid, and to $10^{-9}$ on irregular times (Jones 1981).
+
+- **Lévy drivers.** For a Lévy driver the filter is the best *linear* predictor, and the Gaussian likelihood becomes a quasi-likelihood. Its maximiser is still consistent and asymptotically normal (Schlemm & Stelzer 2012). The filter only uses second moments, which see the driver only through $\sigma^2$.
+- **Speed.** On an even grid the covariance recursion does not depend on the data and converges geometrically, in 85 steps for the CARMA(3, 1) of the tests. After that, the filter is a fixed linear recursion. Its modes run through `scipy.signal.lfilter`, so a likelihood on 5000 points takes 4 ms. Irregular grids use the full recursion, with all transitions batched through the eigenvectors of $A$.
+- **Fitting.** `fit_carma(y, p, q, dt)` profiles out $\sigma^2$ and $\mu$ exactly: the innovations are linear in $\mu$, and their variances scale with $\sigma^2$. The search runs over the zeros only. $a$ and $b$ are products of factors $z^2 + c_1z + c_2$ and $z + c_0$ with $c_i > 0$, optimised in $\log c_i$. A real polynomial has all its zeros in $\mathrm{Re}\,z < 0$ exactly when it factors this way. So every trial point is causal, and the MA polynomial is minimum-phase with $b_q = 1$, which removes the reflection ambiguity $\mu_j \leftrightarrow -\bar\mu_j$ that leaves the spectrum unchanged. The starting point maps a discrete Yule–Walker AR(p) fit to continuous time.
+- **Example.** On 3000 observations of a Gamma-driven CARMA(2, 1) (true $a = (1.2, 1)$, $b_0 = 0.8$, $\sigma = 0.866$, mean 1.2), the QMLE gives $a = (1.23, 0.98)$, $b_0 = 0.74$, $\sigma = 0.846$ and mean 1.197. The standardised innovations are uncorrelated but keep the driver's skewness.
+- **Order selection.** `select_carma_order` ranks every CARMA(p, q) with $p \le$ `max_p` by BIC or AIC.
+
 ---
 
 ## 4. Inference, standard errors and model selection
@@ -313,6 +329,7 @@ Berkowitz has much more power than KS in small samples and also detects serial d
 * Burnham, K. P. & Anderson, D. R. (2002). *Model Selection and Multimodel Inference* (2nd ed.). Springer.
 * Carr, P. & Madan, D. (1999). Option valuation using the fast Fourier transform. *Journal of Computational Finance*, 2(4), 61–73.
 * Christoffersen, P., Heston, S. & Jacobs, K. (2009). The shape and term structure of the index option smirk: why multifactor stochastic volatility models work so well. *Management Science*, 55(12), 1914–1932.
+* Brockwell, P. J., Davis, R. A. & Yang, Y. (2011). Estimation for non-negative Lévy-driven CARMA processes. *Journal of Business & Economic Statistics*, 29(2), 250–259.
 * Del Moral, P. (2004). *Feynman–Kac Formulae: Genealogical and Interacting Particle Systems with Applications*. Springer.
 * Diebold, F. X., Gunther, T. A. & Tay, A. S. (1998). Evaluating density forecasts with applications to financial risk management. *International Economic Review*, 39(4), 863–883.
 * Feuerverger, A. & McDunnough, P. (1981). On the efficiency of empirical characteristic function procedures. *Journal of the Royal Statistical Society B*, 43(1), 20–27.
@@ -320,8 +337,10 @@ Berkowitz has much more power than KS in small samples and also detects serial d
 * Hagan, P. S., Kumar, D., Lesniewski, A. S. & Woodward, D. E. (2002). Managing smile risk. *Wilmott Magazine*, September, 84–108.
 * Hansen, L. P. (1982). Large sample properties of generalized method of moments estimators. *Econometrica*, 50(4), 1029–1054.
 * Heston, S. L. (1993). A closed-form solution for options with stochastic volatility with applications to bond and currency options. *Review of Financial Studies*, 6(2), 327–343.
+* Jones, R. H. (1981). Fitting a continuous time autoregression to discrete data. In D. F. Findley (ed.), *Applied Time Series Analysis II*, 651–682. Academic Press.
 * Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. *Journal of Financial Economics*, 3(1–2), 125–144.
 * Newey, W. K. & West, K. D. (1987). A simple, positive semi-definite, heteroskedasticity and autocorrelation consistent covariance matrix. *Econometrica*, 55(3), 703–708.
+* Schlemm, E. & Stelzer, R. (2012). Quasi maximum likelihood estimation for strongly mixing state space models and multivariate Lévy-driven CARMA processes. *Electronic Journal of Statistics*, 6, 2185–2234.
 * Schwartz, E. S. (1997). The stochastic behavior of commodity prices: implications for valuation and hedging. *Journal of Finance*, 52(3), 923–973.
 * Rosenblatt, M. (1952). Remarks on a multivariate transformation. *Annals of Mathematical Statistics*, 23(3), 470–472.
 * Wan, E. A. & van der Merwe, R. (2000). The unscented Kalman filter for nonlinear estimation. *Proc. IEEE Adaptive Systems for Signal Processing, Communications, and Control Symposium*, 153–158.
