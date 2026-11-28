@@ -19,6 +19,9 @@ derivatives of the objective *as implemented*:
     running maximum and floored; the gradient follows the active branch of
     each (zero where a clip or the floor is active, the running-maximum's
     source element otherwise), i.e. the derivative almost everywhere.
+``likelihood_value_grad_hess``
+    The same likelihood with its exact Hessian, from second-order jets. The
+    Laplace evidence of :mod:`spxa.discovery.bayes` uses it.
 ``cumulant_value_and_grad``
     The cumulant objective, including the profiled drift.
 
@@ -41,6 +44,7 @@ __all__ = [
     "FreeModel",
     "options_residual_jacobian",
     "likelihood_value_and_grad",
+    "likelihood_value_grad_hess",
     "cumulant_value_and_grad",
 ]
 
@@ -144,12 +148,16 @@ def _running_max_source(F: np.ndarray) -> np.ndarray:
     return np.maximum.accumulate(np.where(is_src, idx, 0))
 
 
-def likelihood_value_and_grad(
-    structure: Node, binned: Any, x: Sequence[float], floor: float = 1e-300
-) -> Tuple[float, np.ndarray]:
-    """Negative binned log-likelihood and its exact gradient in the free coordinates."""
+def _binned_cdf(
+    structure: Node, binned: Any, x: Sequence[float], order: int
+) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    """Clipped, monotone COS bin CDF with its derivatives on the active branches.
+
+    Returns the values at the bin edges (including the end points 0 and 1),
+    their gradient ``(m, n)`` and, for ``order=2``, their Hessian ``(m, n, n)``.
+    """
     fm = FreeModel(structure, x)
-    th = variable_vector(fm.values)
+    th = variable_vector(fm.values, order=order)
     u = binned.u
     psi = fm.char_exponent(u, th)
     phi = np.exp(binned.dt * psi) * np.exp(-0.5 * (binned.bandwidth * u) ** 2)
@@ -159,10 +167,23 @@ def likelihood_value_and_grad(
     n = fm.values.size
     Fv = np.concatenate([[0.0], np.real(value_of(F_in)), [1.0]])
     Fg = np.concatenate([np.zeros((1, n)), np.real(F_in.grad), np.zeros((1, n))])
+    Fh = None
+    if order == 2:
+        Fh = np.concatenate([np.zeros((1, n, n)), np.real(F_in.hess), np.zeros((1, n, n))])
     clipped = np.clip(Fv, 0.0, 1.0)
-    Fg = np.where(((Fv < 0.0) | (Fv > 1.0))[:, None], 0.0, Fg)
+    outside = (Fv < 0.0) | (Fv > 1.0)
+    Fg = np.where(outside[:, None], 0.0, Fg)
     src = _running_max_source(clipped)
-    Fa, Fg = clipped[src], Fg[src]
+    if Fh is not None:
+        Fh = np.where(outside[:, None, None], 0.0, Fh)[src]
+    return clipped[src], Fg[src], Fh
+
+
+def likelihood_value_and_grad(
+    structure: Node, binned: Any, x: Sequence[float], floor: float = 1e-300
+) -> Tuple[float, np.ndarray]:
+    """Negative binned log-likelihood and its exact gradient in the free coordinates."""
+    Fa, Fg, _ = _binned_cdf(structure, binned, x, order=1)
     p = np.diff(Fa)
     pg = np.diff(Fg, axis=0)
     floored = p <= floor
@@ -172,6 +193,42 @@ def likelihood_value_and_grad(
     val = -float(counts @ np.log(p))
     grad = -(counts / p) @ pg
     return val, np.asarray(grad, dtype=float)
+
+
+def likelihood_value_grad_hess(
+    structure: Node, binned: Any, x: Sequence[float], floor: float = 1e-300
+) -> Tuple[float, np.ndarray, np.ndarray]:
+    r"""Negative binned log-likelihood, its exact gradient and its exact Hessian.
+
+    With bin probabilities :math:`p_j(x)` and smoothed counts :math:`c_j`, the
+    objective is :math:`f = -\sum_j c_j \log p_j` and
+
+    .. math::
+        \nabla^2 f = \sum_j c_j \Bigl(\frac{\nabla p_j \nabla p_j^\top}{p_j^2}
+        - \frac{\nabla^2 p_j}{p_j}\Bigr),
+
+    with :math:`\nabla p_j` and :math:`\nabla^2 p_j` carried exactly by
+    second-order jets through :math:`\psi`, the COS series and the bin
+    differences. As for the gradient, a clipped, floored or running-maximum
+    bin contributes the derivative of its active branch. The Hessian is
+    symmetrised to remove rounding asymmetry.
+    """
+    Fa, Fg, Fh = _binned_cdf(structure, binned, x, order=2)
+    assert Fh is not None
+    p = np.diff(Fa)
+    pg = np.diff(Fg, axis=0)
+    ph = np.diff(Fh, axis=0)
+    floored = p <= floor
+    p = np.maximum(p, floor)
+    pg = np.where(floored[:, None], 0.0, pg)
+    ph = np.where(floored[:, None, None], 0.0, ph)
+    counts = binned.counts
+    val = -float(counts @ np.log(p))
+    w = counts / p
+    grad = -w @ pg
+    hess = np.einsum("j,ja,jb->ab", w / p, pg, pg) - np.einsum("j,jab->ab", w, ph)
+    hess = 0.5 * (hess + hess.T)
+    return val, np.asarray(grad, dtype=float), np.asarray(hess, dtype=float)
 
 
 # ── cumulant objective ────────────────────────────────────────────────────────

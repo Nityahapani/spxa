@@ -4,6 +4,15 @@ All notable changes to spxa are documented here. Follows [Keep a Changelog](http
 
 ## [Unreleased]
 
+Theme: inference beyond a single best fit. Posterior probabilities over discovered structures,
+live monitoring of a fitted model, and Lévy-driven CARMA processes.
+
+### Added
+
+- **Exact likelihood Hessian** (`spxa.graph.autodiff.discovery.likelihood_value_grad_hess`): the
+  binned discovery likelihood with its Hessian in the free coordinates, from second-order jets.
+  It matches differences of the exact gradient to $10^{-8}$ relative on seven structures.
+
 ## [1.3.0] — 2026-11-25
 
 Theme: exact derivatives through the process algebra. Every derivative is labelled `EXACT`,
