@@ -51,11 +51,15 @@ DEGENERATE_SHARE = 1e-4
 
 Method = Literal["likelihood", "cumulants"]
 _PENALTY = 1e12
+#: Widest COS interval :meth:`BinnedData.cos_grid` builds, as a multiple of the
+#: data's interval. Generic starting members need up to 7.5. A law that needs
+#: more lies far from the data and gets the penalty value.
+MAX_WIDENING = 12.0
 
 
 @dataclass(frozen=True)
 class BinnedData:
-    r"""Increments on fixed bins, with a fixed COS grid for the model's bin probabilities.
+    r"""Increments on fixed bins, with COS grids for the model's bin probabilities.
 
     At short horizons many pure-jump laws have unbounded densities. VG with
     :math:`\Delta t/\nu < 1/2` is one example. Their characteristic functions
@@ -72,10 +76,13 @@ class BinnedData:
     raw one, and the contrast stays consistent. The bandwidth is
     :math:`\max(0.02\,\hat\sigma_{\Delta t}, 9(b-a)/(\pi N_{max}))`, a few
     percent of a standard deviation in practice. The expansion is truncated at
-    :math:`u = 6/h`, where the kernel factor is below :math:`1.6\times10^{-8}`. The COS interval :math:`[a, b]`
-    is fixed per data set from the empirical cumulants, so the sine matrix
-    is computed once and each model evaluation costs one characteristic-function
-    call and one matrix product.
+    :math:`u = 6/h`, where the kernel factor is below :math:`1.6\times10^{-8}`. The base COS
+    interval :math:`[a, b]` comes from the empirical cumulants, and its sine
+    matrix is computed once. A model whose own range leaves :math:`[a, b]` gets a
+    wider interval with proportionally more terms (:meth:`cos_grid`), so the
+    series cannot fold its outside mass back onto the data. Wider grids are
+    cached. Each model evaluation costs one characteristic-function call and
+    one matrix product.
 
     Bin edges are empirical quantiles at levels evenly spaced on the logit
     scale, from :math:`q_0` to :math:`1-q_0` with
@@ -98,6 +105,9 @@ class BinnedData:
     sine: np.ndarray = field(repr=False)
     kernel_covariance: np.ndarray = field(repr=False)
     sample: Optional[np.ndarray] = field(default=None, repr=False)
+    _grids: dict[tuple[float, float], tuple[np.ndarray, np.ndarray]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
 
     @property
     def n(self) -> int:
@@ -208,12 +218,66 @@ class BinnedData:
         dof = max(int(keep.sum()) - n_params, 1)
         return J, float(stats.chi2.sf(J, dof)), dof
 
-    def probabilities(self, model: Model, floor: float = 1e-300) -> np.ndarray:
-        r"""Bin probabilities of :math:`X_{\Delta t} + hZ` under ``model``."""
-        phi = model.char_func(self.u, t=self.dt) * np.exp(-0.5 * (self.bandwidth * self.u) ** 2)
-        coef = 2.0 / (self.b - self.a) * np.real(phi * np.exp(-1j * self.u * self.a))
+    def cos_grid(self, model: Model) -> tuple[float, float, np.ndarray, np.ndarray]:
+        r"""The COS interval, frequencies and sine matrix for ``model``.
+
+        The cosine series represents a law on its interval. Mass outside the
+        interval is not lost but reflected back into it, because the basis is the
+        even periodic extension. A fixed interval would let a model gain
+        likelihood from mass far from the data. For example, a compound Poisson
+        part with jumps of -85% on a sample whose moves stay within ±16% has
+        reflections that land next to zero, and on such data it beat the true
+        Merton model by 3 log-likelihood units.
+
+        The model's own range is
+        :math:`\kappa_1 \pm 12\sqrt{\kappa_2 + h^2 + \sqrt{\kappa_4}}` of
+        :math:`X_{\Delta t} + hZ` (Fang & Oosterlee's rule). When it lies inside
+        :math:`[a, b]`, the precomputed grid is returned. Otherwise each end is
+        extended outwards in whole steps of :math:`(b-a)/4` until the range
+        fits, and the number of terms grows in proportion, which keeps the
+        frequency cut-off :math:`u = 6/h`. The quantised ends make the grid
+        piecewise constant in the parameters, so exact derivatives of the
+        probabilities are exact derivatives of a fixed expansion.
+
+        Raises ``ValueError`` for a law whose interval would be more than
+        :data:`MAX_WIDENING` times the data's.
+        """
+        k = model.cumulants(4, t=self.dt)
+        mu = float(k[0])
+        half = 12.0 * np.sqrt(float(k[1]) + self.bandwidth**2 + np.sqrt(max(float(k[3]), 0.0)))
+        if not (np.isfinite(mu) and np.isfinite(half)):
+            raise ValueError("the model's cumulants are not finite")
+        lo, hi = mu - half, mu + half
+        if lo >= self.a and hi <= self.b:
+            return self.a, self.b, self.u, self.sine
+        step = 0.25 * (self.b - self.a)
+        A = self.a - step * max(np.ceil((self.a - lo) / step), 0.0)
+        B = self.b + step * max(np.ceil((hi - self.b) / step), 0.0)
+        cached = self._grids.get((float(A), float(B)))
+        if cached is not None:
+            return float(A), float(B), cached[0], cached[1]
+        if (B - A) > MAX_WIDENING * (self.b - self.a):
+            raise ValueError(
+                f"the model's law spans [{lo:.3g}, {hi:.3g}], more than {MAX_WIDENING:g} times "
+                f"the data's interval [{self.a:.3g}, {self.b:.3g}]"
+            )
+        n = int(np.ceil(self.n_terms * (B - A) / (self.b - self.a)))
+        u = np.arange(n) * np.pi / (B - A)
+        j = np.arange(1, n)
         inner = self.edges[1:-1]
-        F = (inner - self.a) / (self.b - self.a) + self.sine @ coef[1:]
+        sine = np.sin(np.outer(np.pi * (inner - A) / (B - A), j)) * ((B - A) / (j * np.pi))
+        if len(self._grids) >= 32:  # bounded: each grid is n_bins x n doubles
+            self._grids.pop(next(iter(self._grids)))
+        self._grids[(float(A), float(B))] = (u, sine)
+        return float(A), float(B), u, sine
+
+    def probabilities(self, model: Model, floor: float = 1e-300) -> np.ndarray:
+        r"""Bin probabilities of :math:`X_{\Delta t} + hZ` under ``model``, on :meth:`cos_grid`."""
+        A, B, u, sine = self.cos_grid(model)
+        phi = model.char_func(u, t=self.dt) * np.exp(-0.5 * (self.bandwidth * u) ** 2)
+        coef = 2.0 / (B - A) * np.real(phi * np.exp(-1j * u * A))
+        inner = self.edges[1:-1]
+        F = (inner - A) / (B - A) + sine @ coef[1:]
         F = np.maximum.accumulate(np.clip(np.concatenate([[0.0], F, [1.0]]), 0.0, 1.0))
         return np.maximum(np.diff(F), floor)
 

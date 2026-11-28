@@ -73,6 +73,16 @@ $$
 
 Because the bins and kernel are shared, log-likelihoods and therefore AIC and BIC are comparable across structures. Goodness of fit is a Wald-type statistic on the smoothed counts that accounts for their covariance. The report quotes its p-value and the largest gap between the model and empirical CDFs.
 
+**The COS interval follows the model.** A cosine series on $[a, b]$ represents the even periodic extension of the law, so mass outside the interval is not dropped but folded back inside it. If $[a, b]$ were fixed by the data, a model could gain likelihood from mass far from every observation. This happened: on 3000 daily returns of a Merton jump diffusion (jump mean $-2\%$), the maximiser on a fixed interval put the jump mean at $-85\%$. Its jumps left $[a, b] \approx [-0.44, 0.43]$, their reflections landed near zero, and it scored 3 log-likelihood units above the true parameters. With an honest expansion it scores 8700 units below them.
+
+Each model's bin probabilities are therefore computed on an interval that contains its own range, $\kappa_1 \pm 12\sqrt{\kappa_2 + h^2 + \sqrt{\kappa_4}}$ for one step of $X_{\Delta t} + hZ$. This is Fang & Oosterlee's rule with their constant doubled.
+
+- If the range lies within $[a, b]$, the precomputed grid is used.
+- Otherwise each end moves out in whole steps of $(b-a)/4$, and the number of terms grows in proportion, which keeps the frequency cut-off at $6/h$.
+- A law needing more than 12 times the data's interval gets the optimiser's penalty value. Such laws lie far from the data; generic starting points need at most 7.5.
+
+Because the ends are quantised, the grid is piecewise constant in the parameters. Exact derivatives are those of a fixed expansion, and where the grid switches the two expansions agree to $3\times10^{-14}$. In 72 fits of `BM + NormalJumps` (24 Merton samples, 3 seeds each), the fixed interval sent the jump mean beyond $\pm 0.2$ in 43 fits, with values from $-0.85$ to $+3.2$. The adaptive interval did so in none. A binned search costs about twice as much as before.
+
 **What the binned likelihood can see.** Information beyond the outermost bins enters only through the tail-bin counts. A component that acts mainly through a few very large jumps is therefore hard to identify from a few thousand returns. One example is a gamma subordinator with low activity $a$. The search then prefers the simpler structure, which is the correct inference from that sample. The bootstrap frequencies (§5) make this visible.
 
 ### From summary statistics: matching cumulants
@@ -173,6 +183,7 @@ The tests simulate exact increments and check:
 - a Merton jump diffusion is recovered as `BM + NormalJumps`;
 - VG beats its neighbours with weight above 0.95;
 - a VG + Gamma sum is recovered up to near-equivalence;
+- the binned likelihood cannot gain from mass outside the data's range: previously aliased Merton samples recover the true jump mean, and wide-grid probabilities match Monte Carlo where the fixed interval was off by 20 standard deviations;
 - sandwich standard errors agree with the sampling spread of the estimates;
 - the option fitter recovers VG parameters from a 27-quote surface;
 - mixed quotes trigger the maturity warning.

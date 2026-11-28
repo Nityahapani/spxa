@@ -21,6 +21,23 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
 
   Laplace matches adaptive quadrature to $8\times10^{-5}$ at $n = 2000$, and its error falls like $1/n$.
 
+### Fixed
+
+- **The binned discovery likelihood could exploit COS aliasing.** The cosine series on the
+  data's interval $[a, b]$ folds a law's outside mass back inside, so a model could gain likelihood
+  from mass far from every observation. On Merton returns with jump mean $-2\%$, the maximiser put
+  the jump mean at $-85\%$ and beat the true parameters by 3 log-likelihood units.
+  `BinnedData.cos_grid` now widens the interval in quarter steps until it holds the model's
+  $\kappa_1 \pm 12\sqrt{\kappa_2 + h^2 + \sqrt{\kappa_4}}$ range, with proportionally more terms.
+  Laws needing more than `MAX_WIDENING = 12` times the data's interval get the penalty value. Exact
+  gradients and Hessians use the same grid.
+  - Effect: in 72 stress fits of `BM + NormalJumps` to Merton samples, the fixed interval sent the
+    jump mean beyond $\pm 0.2$ in 43 fits; the adaptive one did so in none.
+  - Test change: `VG - Gamma` now reaches its near-equivalent optimum, so
+    `test_sum_of_pure_jump_laws_up_to_near_equivalence` expects all three near-equivalent sums at
+    the top, and checks that each one fits.
+  - Cost: binned fits take about twice as long.
+
 ## [1.3.0] — 2026-11-25
 
 Theme: exact derivatives through the process algebra. Every derivative is labelled `EXACT`,
