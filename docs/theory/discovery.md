@@ -181,7 +181,17 @@ $$
 
 Because $q$ is normalised, the product of the mean incremental weights estimates $Z$. Temperatures are chosen adaptively, so that the conditional effective sample size stays at 95% of $N$ (Zhou, Johansen & Aston 2016). Particles where the likelihood is zero (laws the binned likelihood rejects) drop out at the first step. The standard error comes from independent runs, four by default; with so few runs it is itself good to only about 40%.
 
-The engine `tempered_smc` was tested on targets with known normalising constants: a correlated Gaussian from an offset reference, the skewed $\log$-Gamma with shape 0.3, and a half-normal that is zero on half the reference. Its estimates match the exact values within their standard errors. Averaged over 60 runs per setting, the log-Gamma estimates lie within 1.2 standard errors (about 0.004) of $\log\Gamma(0.3)$. On 250 weekly VG returns, SMC and importance sampling agree to 0.02 nats, and both put Laplace 0.25 nats low. The cost is about $N(1 + 3T)$ likelihood evaluations per run, with $T \approx 6$–$10$ temperatures here.
+The engine `tempered_smc` was tested on targets with known normalising constants: a correlated Gaussian from an offset reference, the skewed $\log$-Gamma with shape 0.3, and a half-normal that is zero on half the reference. Its estimates match the exact values within their standard errors. Averaged over 60 runs per setting, the log-Gamma estimates lie within 1.2 standard errors (about 0.004) of $\log\Gamma(0.3)$. On 250 weekly VG returns, SMC and importance sampling agree to 0.02 nats, and both put Laplace 0.25 nats low. The weakly identified jump structure of §7 shows the difference between the two:
+
+| estimate of $\log p(D\mid M)$ for `BM + NormalJumps` on 2000 Brownian returns | value |
+|---|---|
+| Laplace | −6512.888 |
+| importance sampling, 4000 draws (ESS 2–8%), over seeds | −6512.25 to −6512.47 |
+| importance sampling, 20 000 draws (ESS 2.5–4%), 3 seeds | −6512.43, −6512.38, −6512.37 |
+| SMC, 4 runs × 250 particles | −6512.364 ± 0.062 |
+| SMC reference, 4 runs × 2000 particles | −6512.362 ± 0.019 |
+
+Laplace is 0.53 nats low here. The cost is about $N(1 + 3T)$ likelihood evaluations per run, with $T \approx 6$–$10$ temperatures here.
 
 **Priors.** `GaussianPrior(mean, sd)` puts independent normals on the free coordinates. `default_prior(structure, std, scale=2)` centres them at the starting member (the data's standard deviation spread over the summands). The standard deviations are `scale` for logarithmic, logit and `arctanh` coordinates, and `scale` $\cdot\,\sigma_1$ for the three untransformed ones: the drift, the VG $\theta$ and the normal jump mean. Here $\sigma_1$ is the data's standard deviation per unit time. Bayes factors depend on the prior widths of parameters that two structures do not share (Lindley 1957). Pass your own prior when you have real information.
 
@@ -208,7 +218,7 @@ These probabilities differ from BIC weights in two ways. They use each structure
 
 BIC charges the jump part $\frac32\log n \approx 11.4$ for its three parameters. The evidence charges only the prior volume the data rule out. Rare large jumps are barely constrained by 2000 Gaussian returns, so their prior volume is largely kept. On data with jumps (Merton, $n = 3000$) or VG data, the true structure gets probability above $1 - 10^{-12}$.
 
-**Monte Carlo evidence.** `evidence="importance"` replaces each Laplace value by the importance-sampling estimate, and `evidence="smc"` by the SMC estimate (four runs of `n_draws // 4` particles). Weakly identified structures are where Laplace errs: in the table it is 0.45 nats low for the jump structure. The estimates' standard errors $s_j$ propagate to the probabilities by the delta method,
+**Monte Carlo evidence.** `evidence="importance"` replaces each Laplace value by the importance-sampling estimate, and `evidence="smc"` by the SMC estimate (four runs of `n_draws // 4` particles). Weakly identified structures are where Laplace errs: in the table it is about 0.5 nats low for the jump structure (0.53 against the SMC reference in §6). The estimates' standard errors $s_j$ propagate to the probabilities by the delta method,
 
 $$
 \operatorname{se}(P_i)^2 = \sum_j \big(P_i(\delta_{ij} - P_j)\big)^2 s_j^2,
