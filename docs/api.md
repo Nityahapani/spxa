@@ -5532,8 +5532,21 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
 
 ### Evidence
 - `GaussianPrior(mean, sd)`: independent normals on the free coordinates, with `log_density(x)`, `grad(x)`, `hess()` and `sample(size, rng)`. `default_prior(structure, std, scale=2.0)` is centred at the starting member; `REAL_COORDINATES` lists the untransformed coordinates, which are scaled by `std`.
-- `laplace_evidence(fit, binned, *, prior=None, x0=None, gtol=1e-8, maxiter=200)` returns an `Evidence` with `log_evidence`, `mode`, `model`, `log_likelihood`, `log_prior`, `hessian`, `covariance`, `log_det_hessian`, `log_occam_factor`, `bic_equivalent`, `converged` and `draws(n, rng)`. `fit` is a `FitResult` or a structure with `x0`. It raises `ValueError` when the posterior Hessian at the mode is not positive definite.
+- `laplace_evidence(fit, binned, *, prior=None, x0=None, gtol=1e-8, maxiter=200)` returns an `Evidence` with `log_evidence`, `mode`, `model`, `log_likelihood`, `log_prior`, `hessian`, `covariance`, `log_det_hessian`, `log_occam_factor`, `bic_equivalent`, `converged`, `mode_gap` and `draws(n, rng)`. `fit` is a `FitResult` or a structure with `x0`. It raises `ValueError` when the posterior Hessian at the mode is not positive definite. `mode_gap` $= \tfrac12 g^\top H^{-1} g$ is the error the reported mode adds to the log evidence. `converged` means `mode_gap <= MODE_GAP_TOLERANCE` ($10^{-6}$ nats) or the gradient met `gtol`.
 - `importance_evidence(evidence, binned, *, n_draws=2000, df=5.0, inflate=1.2, rng=None)` returns an `ImportanceEvidence(log_evidence, standard_error, ess, n_draws, laplace)` with `laplace_error`.
+
+### Structure Posterior & Model Averaging
+- `structure_posterior(candidates, binned=None, *, prior=None, model_prior=None, top=None, evidence="laplace"|"importance", n_draws=2000, rng=None)`.
+  - `candidates` is a likelihood-mode `DiscoveryReport` (also available as `report.posterior(**kwargs)`) or a list of likelihood `FitResult`s on `binned`.
+  - `prior` is a `GaussianPrior`, a callable `structure -> GaussianPrior`, or `None` for `default_prior`.
+  - `model_prior` is `None` (uniform), a mapping from structure key to weight, or a callable `structure -> weight`.
+  - `evidence="importance"` refines every Laplace value by importance sampling.
+- `StructurePosterior` holds:
+  - the fields `evidences`, `probabilities`, `log_evidences`, `standard_errors`, `probability_se` (delta method), `log_model_prior`, `bic`, `skipped`, `method`, `importance` and `dt`;
+  - the lookups `best`, `keys`, `probability(structure)`, `bic_weights()`, `bayes_factor(i, j)`, `credible_set(level=0.95)`, `cumulants(order, t)` and `table(top, digits)`;
+  - `predictive(t=None, *, n_draws=0, rng=None, n_terms=1024, min_probability=1e-6)`, which returns a `MixtureDistribution`;
+  - `option_prices(spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, *, n_draws=0, rng=None, n_terms=1024)`, which returns `PosteriorPrices(mean, sd, by_structure, probabilities, discarded)`.
+- `MixtureDistribution(weights, components, cumulants)` is a mixture of `COSDistribution`s. It has `pdf`, `cdf`, `quantile`, `support`, and the exact `mean` and `variance`.
 
 ### Inference: Standard Errors, Vuong & Bootstrap
 - `parameter_uncertainty(result, summary, binned=None)` returns a `ParameterUncertainty(names, estimates, covariance, method)` with `standard_errors`, `confidence_intervals(level)` and `table()`. Likelihood fits use the sandwich method and cumulant fits use GMM.
