@@ -46,7 +46,6 @@ from typing import Any, Callable, Literal, Mapping, Optional, Sequence, Union
 
 import numpy as np
 from scipy import optimize
-from scipy.special import logsumexp
 
 from spxa.discovery.bayes import (
     Evidence,
@@ -165,8 +164,9 @@ class PosteriorPrices:
         The structure probabilities used, renormalised over the structures that
         could be priced.
     discarded :
-        Per structure, the number of parameter draws without a risk-neutral price
-        (:math:`E[e^{X_1}] = \\infty`), which were left out.
+        Per structure, the number of parameter draws without a finite
+        risk-neutral price (:math:`E[e^{X_1}] = \\infty`, or overflow), which
+        were left out.
     """
 
     mean: np.ndarray
@@ -372,8 +372,11 @@ class StructurePosterior:
         r"""Model-averaged European prices (:func:`~spxa.discovery.pricing.cos_prices`).
 
         Each structure is made risk-neutral by its own martingale correction.
-        With draws, a draw that has no finite :math:`E[e^{X_1}]` is discarded
-        and counted. The mean and standard deviation follow the law of total
+        With draws, a draw is discarded and counted when it has no finite
+        :math:`E[e^{X_1}]`, or when its prices overflow. That happens, for
+        example, for a weakly identified jump part drawn with jumps of
+        standard deviation 9.5 in log price, whose correction is about
+        :math:`-5\times10^{18}`. The mean and standard deviation follow the law of total
         expectation and variance over structures and draws.
         """
         sets = self._parameter_sets(n_draws, rng)
@@ -387,13 +390,13 @@ class StructurePosterior:
                 try:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        vals.append(
-                            cos_prices(
-                                m, spot, strikes, maturity, rate, dividend, call, n_terms=n_terms
-                            )
+                        v = cos_prices(
+                            m, spot, strikes, maturity, rate, dividend, call, n_terms=n_terms
                         )
                 except (ValueError, FloatingPointError, OverflowError):
                     continue
+                if np.all(np.isfinite(v)):
+                    vals.append(v)
             discarded.append(len(models) - len(vals))
             if not vals:
                 continue
@@ -496,13 +499,27 @@ def structure_posterior(
     skipped: list[tuple[str, str]] = []
     for f in fits:
         s = f.model.structure
+        # a malformed prior is the caller's error, not a missing approximation
+        pi = _coerce_prior(prior, s, binned)
+        if pi.n != f.model.to_free().size:
+            raise ValueError(
+                f"the prior for {s.key()} has {pi.n} coordinates, the structure {f.model.to_free().size}"
+            )
         try:
-            ev = laplace_evidence(f, binned, prior=_coerce_prior(prior, s, binned))
+            ev = laplace_evidence(f, binned, prior=pi)
         except (ValueError, np.linalg.LinAlgError, FloatingPointError) as exc:
             skipped.append((s.key(), str(exc)))
             continue
         evidences.append(ev)
         bics.append(float(f.bic) if f.bic is not None else np.nan)
+    stalled = [e.structure.key() for e in evidences if not e.converged]
+    if stalled:
+        warnings.warn(
+            f"the posterior mode search did not converge for {stalled}; their evidences are"
+            " approximate",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     if not evidences:
         raise ValueError("no candidate has a Laplace approximation: " + "; ".join(skipped[0]))
 
@@ -521,7 +538,10 @@ def structure_posterior(
 
     log_pi = _log_model_prior(model_prior, [e.structure for e in evidences])
     log_post = log_pi + log_z
-    probs = np.exp(log_post - logsumexp(log_post))
+    # shift by the maximum (exact) before exponentiating; z - logsumexp(z)
+    # would lose |z| * eps, about 1e-12 for log evidences near -6500
+    probs = np.exp(log_post - np.max(log_post))
+    probs /= probs.sum()
     order = np.argsort(-probs, kind="stable")
     return StructurePosterior(
         evidences=[evidences[i] for i in order],
