@@ -1,0 +1,1903 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/compile/">
+      
+      
+        <link rel="prev" href="../diff/">
+      
+      
+        <link rel="next" href="../risk/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Compiled kernels - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#compiled-kernels-spxacompile" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Compiled kernels
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../theory/levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Example gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compiled kernels
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/laws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Property-based laws
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/exact_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact derivatives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled kernels
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled kernels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-lowering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Lowering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-derivatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Derivatives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Backends
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Sampling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-cos-prices-with-the-exact-jacobian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. COS prices with the exact Jacobian
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-standalone-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Standalone export
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="compiled-kernels-spxacompile">Compiled kernels (<code>spxa.compile</code>)</h1>
+<p><code>spxa.compile</code> turns a Lévy process expression into generated code that evaluates its
+characteristic exponent, the exact parameter gradient and Hessian, the cumulants and their
+Jacobian, a fused exact sampler, and COS option prices with their exact Jacobian. One
+expression gives one kernel, for NumPy, Numba or JAX, and either one parameter vector or a
+batch of them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo.levy</span><span class="w"> </span><span class="kn">import</span> <span class="n">BrownianMotion</span><span class="p">,</span> <span class="n">CGMY</span><span class="p">,</span> <span class="n">GammaProcess</span><span class="p">,</span> <span class="n">KouJumpDiffusion</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">X</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">BrownianMotion</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">KouJumpDiffusion</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">@</span> <span class="n">GammaProcess</span><span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">CGMY</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">cp</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>                    <span class="c1"># backend="numpy" | "numba" | "jax"</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">cp</span><span class="o">.</span><span class="n">names</span>                            <span class="c1"># ('BrownianMotion.mu', ..., 'scale', 'GammaProcess.a', ...)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">psi</span><span class="p">,</span> <span class="n">grad</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">char_exponent_and_grad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">1001</span><span class="p">))</span>   <span class="c1"># (1001,), (1001, 15)</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">cp</span><span class="o">.</span><span class="n">cumulants</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>                     <span class="c1"># [-0.064064, 0.219823, -0.014432, 0.026146]</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">prices</span><span class="p">,</span> <span class="n">jac</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">cos_price</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>      <span class="c1"># (9,), (9, 15)</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>                                  <span class="c1"># 64 parameter sets</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">P</span><span class="p">,</span> <span class="n">J</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">cos_price</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># (64, 9), (64, 9, 15)</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="n">paths</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">simulate</span><span class="p">(</span><span class="mi">252</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>       <span class="c1"># (1000, 253), exact</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="n">source</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="s2">"model.py"</span><span class="p">)</span>      <span class="c1"># standalone NumPy module: psi, char_func, psi_and_grad</span>
+</code></pre></div>
+<p><code>X.compile(free=["GammaProcess.a", "CGMY.C"])</code> exposes only those parameters and folds the
+others in as constants. <code>cp.to_process(theta)</code> rebuilds the zoo expression at any parameter
+vector, and <code>cp.story()</code> prints it.</p>
+<h2 id="1-lowering">1. Lowering</h2>
+<p>Every zoo Lévy family in <code>spxa.compile.supported_families()</code> has a lowering rule that writes
+its exponent as an expression over named parameters. The families are <code>AlphaStable</code>,
+<code>BrownianMotion</code>, <code>CGMY</code>, <code>CompoundPoisson</code> (normal, exponential, double-exponential,
+uniform and discrete jumps), <code>Drift</code>, <code>GammaProcess</code>, <code>GeneralizedHyperbolicProcess</code>,
+<code>InverseGaussianProcess</code>, <code>KouJumpDiffusion</code>, <code>MeixnerProcess</code>, <code>MertonJumpDiffusion</code>, <code>NIG</code>,
+<code>NegativeBinomialProcess</code>, <code>NormalTemperedStableProcess</code>, <code>PoissonProcess</code>, <code>TemperedStable</code>
+and <code>VarianceGamma</code>. Compositions lower as</p>
+<div class="arithmatex">\[
+\psi_{X+Y}(u) = \psi_X(u) + \psi_Y(u),\qquad
+\psi_{cX}(u) = \psi_X(cu),\qquad
+\psi_{X\circ T}(u) = \psi_T\!\left(-i\,\psi_X(u)\right),
+\]</div>
+<p>the last being subordination of <span class="arithmatex">\(X\)</span> by a subordinator <span class="arithmatex">\(T\)</span> (<code>X @ T</code>). Parameters form one flat
+vector, named <code>"&lt;Family&gt;.&lt;param&gt;"</code>. Repeated families are numbered (<code>"NIG[1].alpha"</code>) and scale
+factors are named <code>scale</code>, <code>scale[1]</code>, …; the layout is the same as <code>DiffProcess</code>.</p>
+<p>The intermediate representation (<code>spxa.compile.ir</code>) is a hash-consed DAG of real, complex
+and Boolean nodes. Building a node folds constants and applies algebraic identities, and equal
+subexpressions are stored once. Numerically delicate forms are rules, not rewrites: the
+overflow-free <span class="arithmatex">\(\log\cosh\)</span>, <code>expm1</code>/<code>log1p</code> where they matter, <span class="arithmatex">\(\mathrm{sinc}\)</span> with a series
+near zero, the CGMY series bands around the <span class="arithmatex">\(\Gamma(-Y)\)</span> poles at <span class="arithmatex">\(Y = 0, 1\)</span>, and the order
+derivative of <span class="arithmatex">\(K_\nu\)</span> for the generalised hyperbolic family.</p>
+<h2 id="2-derivatives">2. Derivatives</h2>
+<p><code>spxa.compile.diff.derivative(roots, w)</code> differentiates symbolically with respect to a
+parameter or to <span class="arithmatex">\(u\)</span> and shares nodes with the value. Gradients, Hessians, <span class="arithmatex">\(\partial\psi/\partial u\)</span>
+and its parameter gradient are all such derivatives, emitted together, so common
+subexpressions are computed once per evaluation.</p>
+<p>Cumulants are <span class="arithmatex">\(\kappa_n = \mathrm{Re}\,(-i)^n\psi^{(n)}(0)\)</span>, and their Jacobian is
+<span class="arithmatex">\(\partial_\theta\kappa_n = \mathrm{Re}\,(-i)^n\partial_\theta\psi^{(n)}(0)\)</span>. Up to order four
+both come from one generated program. A <code>where</code> takes its branch from the condition at
+<span class="arithmatex">\(u = 0\)</span>, which is also what Taylor-mode arithmetic does, so the two agree node by node. Taylor
+mode (<code>spxa.compile.evaluate.taylor</code>) handles the rest: exponents that use <code>sinc</code>, <code>sinc_d1</code>,
+the Bessel order derivative or an opaque call in <span class="arithmatex">\(u\)</span> (their dedicated series handle the
+removable singularity at 0), orders above four, and any non-finite generated value.</p>
+<p>Exponents that use <span class="arithmatex">\(\mathrm{Re}\)</span>, <span class="arithmatex">\(\mathrm{Im}\)</span>, <span class="arithmatex">\(|\cdot|\)</span> or <span class="arithmatex">\(\mathrm{sign}\)</span> of a
+<span class="arithmatex">\(u\)</span>-dependent value outside a comparison (α-stable components) are not analytic at 0.
+<code>cp.analytic</code> is then <code>False</code>, and cumulants and COS prices raise <code>CompileError</code>.</p>
+<h2 id="3-backends">3. Backends</h2>
+<p><code>spxa.compile.codegen.generate(outputs, n_params, backend)</code> emits straight-line code:</p>
+<table>
+<thead>
+<tr>
+<th>backend</th>
+<th>code</th>
+<th>notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"numpy"</code></td>
+<td>vectorised NumPy</td>
+<td>bit-identical to the reference interpreter <code>evaluate</code></td>
+</tr>
+<tr>
+<td><code>"numba"</code></td>
+<td>one <code>@njit</code> loop over points (and parameter rows), <code>parallel=</code> optional</td>
+<td>scalar complex helpers for <code>exp</code>, <code>expm1</code>, <code>**</code> and division</td>
+</tr>
+<tr>
+<td><code>"jax"</code></td>
+<td><code>jax.numpy</code> under <code>jax.jit</code>, 64-bit</td>
+<td>no <code>kve</code> (generalised hyperbolic) or opaque calls: <code>BackendUnsupported</code></td>
+</tr>
+</tbody>
+</table>
+<p>Numba and JAX agree with NumPy to a few <span class="arithmatex">\(10^{-16}\)</span> relative. Edge cases that change finite
+results are matched to NumPy explicitly: <span class="arithmatex">\(0^{y}\)</span> for complex <span class="arithmatex">\(y\)</span> with <span class="arithmatex">\(\mathrm{Re}\,y &gt; 0\)</span> is <span class="arithmatex">\(0\)</span>
+on all three, not <code>nan</code>, and Numba's complex division by zero follows NumPy. Non-finite results
+can differ in the imaginary part only. At overflow, complex <code>expm1</code> on the real axis is the exact
+real value <code>inf + 0j</code> on Numba and JAX, where NumPy forms <code>inf + nan j</code>. JAX also returns
+<code>inf + 0j</code> for a complex value divided by zero.</p>
+<p>Parameter-only branch conditions (such as the CGMY bands) are evaluated before the call. The
+kernel is specialised on the pattern, so a parameter vector or batch on one side of every
+branch runs straight-line code.</p>
+<p>JAX compiles once per input shape. Arrays are padded to power-of-two lengths on every non-unit
+axis, repeating edge values, and the outputs are sliced back. A calibration loop that changes
+its batch size, strike count or frequency grid therefore compiles a logarithmic number of
+times. After the first call, single-parameter COS prices on JAX take about as long as on NumPy.</p>
+<h2 id="4-sampling">4. Sampling</h2>
+<p><code>cp.simulate(n_steps, n_paths=1, T=1.0, rng=None)</code>, <code>cp.sample_at(times, rng)</code> and
+<code>cp.paths(times, n_paths, rng)</code> draw exact increments from the lowered tree:</p>
+<ul>
+<li>Gaussian components of a sum are merged into one normal draw.</li>
+<li>Compound Poisson jump sums are aggregated per step: draw the jump count, then the sum of that
+  many jumps in one call.</li>
+<li>Subordination draws clock increments, then the subordinated process at those random times
+  (vectorised <code>sample_at</code>).</li>
+<li>Inverse Gaussian variates use the Michael–Schucany–Haas transform in a form free of
+  cancellation for small shape-to-mean ratios. This also fixes the zoo <code>NIG</code> and
+  <code>InverseGaussianProcess</code> samplers.</li>
+<li><code>theta</code> may be a <code>(n_paths, n_free)</code> batch: one parameter set per path.</li>
+</ul>
+<p><code>cp.sampler_exact()</code> reports whether every component has an exact sampler.</p>
+<h2 id="5-cos-prices-with-the-exact-jacobian">5. COS prices with the exact Jacobian</h2>
+<p><code>cp.cos_price(spot, strikes, maturities, rate=0.0, dividend=0.0, call=True, n_terms=1024,
+width=12.0, theta=None, grad=False)</code> prices European options under
+<span class="arithmatex">\(S_T = S_0 e^{(r-q)T + \omega T + X_T}\)</span> with <span class="arithmatex">\(\omega = -\psi(-i)\)</span>. It uses the COS expansion on
+<span class="arithmatex">\([a, b] = c_1 \pm L\sqrt{c_2 + \sqrt{c_4}}\)</span>, where <span class="arithmatex">\(c_n = \kappa_n T\)</span> and <span class="arithmatex">\(L\)</span> = <code>width</code>.
+Quotes with the same maturity share one expansion, and <code>theta</code> may be a batch.</p>
+<p>The Jacobian differentiates everything that depends on <span class="arithmatex">\(\theta\)</span>, including the truncation
+interval. With <span class="arithmatex">\(u_k = k\pi/(b-a)\)</span>, the exponent of the <span class="arithmatex">\(k\)</span>-th term is
+<span class="arithmatex">\(g_k = iu_k\left((r-q+\omega)T - a\right) + T\psi(u_k)\)</span>, and</p>
+<div class="arithmatex">\[
+\frac{\partial u_k}{\partial\theta} = -u_k\,\frac{\partial_\theta b - \partial_\theta a}{b - a},
+\]</div>
+<p>so the term derivative combines <span class="arithmatex">\(\partial_\theta\psi(u_k)\)</span>, <span class="arithmatex">\(\partial_u\psi(u_k)\)</span>, the
+derivatives of <span class="arithmatex">\(\omega\)</span>, of <span class="arithmatex">\(a\)</span> and <span class="arithmatex">\(b\)</span> (through the cumulant Jacobian), and the closed-form
+derivatives of the payoff coefficients in the end points. Prices and the Jacobian match the
+graph COS pricer (<code>spxa.graph.autodiff.fourier</code>, <code>track_interval=True</code>) to <span class="arithmatex">\(10^{-12}\)</span>. The
+Jacobian also agrees with central differences of the computed price to <span class="arithmatex">\(2\times10^{-7}\)</span>, the
+error of the differences themselves.</p>
+<h2 id="6-standalone-export">6. Standalone export</h2>
+<p><code>cp.export(path=None, grad=True)</code> returns, and optionally writes, the source of a module that
+needs only NumPy and, for Gamma, digamma and Bessel functions, SciPy. It defines <code>NAMES</code>,
+<code>THETA0</code>, <code>psi(u, theta)</code>, <code>char_func(u, t, theta)</code> and <code>psi_and_grad(u, theta)</code>. The exported
+functions are the general programs: they are valid for every <span class="arithmatex">\(\theta\)</span>, and they agree bit for
+bit with the in-process NumPy kernel. Opaque leaves and a free generalised hyperbolic
+<code>lambda_param</code> (its <span class="arithmatex">\(K_\lambda\)</span> order derivative needs spxa) raise <code>CompileError</code>.</p>
+<h2 id="7-verification">7. Verification</h2>
+<p><code>tests/unit/compile</code> holds more than 500 tests:</p>
+<ul>
+<li>each lowering rule against the zoo exponent;</li>
+<li>gradients and Hessians against <code>DiffProcess</code>;</li>
+<li>the Numba and JAX backends against NumPy;</li>
+<li>the samplers' empirical characteristic functions;</li>
+<li>COS prices and Jacobians against the graph pricer and against differences;</li>
+<li>exported modules, imported with spxa blocked.</li>
+</ul>
+<p>The conformance suite (<code>test_conformance.py</code>) builds 24 random composition trees from a fixed
+seed. They cover sums, scalings, subordination by every subordinator family, and clocks of
+clocks up to depth three, and each tree is checked end to end:</p>
+<ul>
+<li><span class="arithmatex">\(\psi\)</span> against the zoo, to <span class="arithmatex">\(10^{-9}\)</span> (scaled);</li>
+<li>the gradient against <code>DiffProcess</code>, or against fourth-order differences of the rebuilt
+  process for compound Poisson, to <span class="arithmatex">\(10^{-6}\)</span>;</li>
+<li>cumulants 1–4 against the zoo, to <span class="arithmatex">\(10^{-8}\)</span> relative;</li>
+<li>the sampler's empirical characteristic function, within <span class="arithmatex">\(4.5/\sqrt n\)</span>;</li>
+<li>Numba and JAX against NumPy, to <span class="arithmatex">\(10^{-12}\)</span>.</li>
+</ul>
+<h2 id="8-performance">8. Performance</h2>
+<p><code>python benchmarks/compile_report.py</code> prints the table below for every installed backend
+(2-CPU Linux machine, NumPy backend, 4096 frequencies, composite = the example above). Each
+baseline is the fastest uncompiled route: a leaf's closed-form <code>char_exponent</code>, a composite's
+<code>_char_exponent</code> (the path that sums, scalings and subordination use), <code>DiffProcess</code> for
+gradients, and the graph COS pricer once per parameter set for batches.</p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">uncompiled (ms)</th>
+<th style="text-align: right;">compiled (ms)</th>
+<th style="text-align: right;">speed-up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Merton <span class="arithmatex">\(\psi\)</span> (leaf, closed form)</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">0.13</td>
+<td style="text-align: right;">0.6×</td>
+</tr>
+<tr>
+<td>composite <span class="arithmatex">\(\psi\)</span> (Kou has no vectorised zoo exponent)</td>
+<td style="text-align: right;">51.5</td>
+<td style="text-align: right;">0.61</td>
+<td style="text-align: right;">85×</td>
+</tr>
+<tr>
+<td>composite <span class="arithmatex">\(\psi\)</span>, vectorised families only</td>
+<td style="text-align: right;">0.46</td>
+<td style="text-align: right;">0.43</td>
+<td style="text-align: right;">1.1×</td>
+</tr>
+<tr>
+<td>composite <span class="arithmatex">\(\psi\)</span> + gradient (15 parameters)</td>
+<td style="text-align: right;">12.8</td>
+<td style="text-align: right;">1.61</td>
+<td style="text-align: right;">7.9×</td>
+</tr>
+<tr>
+<td>vectorised composite <span class="arithmatex">\(\psi\)</span> + gradient (16 parameters)</td>
+<td style="text-align: right;">10.1</td>
+<td style="text-align: right;">1.98</td>
+<td style="text-align: right;">5.1×</td>
+</tr>
+<tr>
+<td>COS prices + Jacobian, 9 strikes</td>
+<td style="text-align: right;">6.67</td>
+<td style="text-align: right;">2.56</td>
+<td style="text-align: right;">2.6×</td>
+</tr>
+<tr>
+<td>COS prices + Jacobian, 9 strikes × 64 parameter sets</td>
+<td style="text-align: right;">427</td>
+<td style="text-align: right;">141</td>
+<td style="text-align: right;">3.0×</td>
+</tr>
+</tbody>
+</table>
+<p>The gains come from fusing the whole expression, from generated derivatives, and from batching.
+A single closed-form family is already as fast as NumPy allows, and the compiled call overhead
+makes it slower. The sampler is bound by random-number generation: fused simulation is
+comparable to the zoo for single families and up to about 2.5× faster for sums of several
+components. Numba and JAX give similar numbers on CPU (JAX was up to about 15% faster on the
+gradient rows on this machine). <code>benchmarks/test_compile_benchmarks.py</code> tracks the same
+quantities in the benchmark workflow.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1823 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/exact_derivatives/">
+      
+      
+        <link rel="prev" href="../laws/">
+      
+      
+        <link rel="next" href="../../tutorials/01_first_composition/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Exact derivatives - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#exact-derivatives-through-the-process-algebra" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Exact derivatives
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Example gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../compile/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compiled kernels
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../laws/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Property-based laws
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact derivatives
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact derivatives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-jets-forward-mode-for-numpy-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Jets: forward mode for NumPy code
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-algebra-is-closed-under-differentiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The algebra is closed under differentiation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-fourier-prices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Fourier prices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-calibration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Calibration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-monte-carlo-gradients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Monte Carlo gradients
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-is-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What is tested
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled kernels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="exact-derivatives-through-the-process-algebra">Exact derivatives through the process algebra</h1>
+<p>Prices, cumulants, likelihoods and calibration residuals all depend on a process's parameters. spxa computes their derivatives exactly, in the sense of automatic differentiation: the derivative of the number the code computes, accurate to rounding, with no difference quotients. Every derivative is labelled with how it was obtained:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Label</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>EXACT</code></td>
+<td style="text-align: left;">forward-mode jets or authored adjoints through closed forms</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>NUMERICAL</code></td>
+<td style="text-align: left;">a finite difference somewhere on the route (a fallback that is reported)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>STOCHASTIC</code></td>
+<td style="text-align: left;">an unbiased Monte Carlo estimate, returned with standard errors</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">spxa</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.zoo.levy</span><span class="w"> </span><span class="kn">import</span> <span class="n">VarianceGamma</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">vg</span> <span class="o">=</span> <span class="n">spxa</span><span class="o">.</span><span class="n">DiffProcess</span><span class="p">(</span><span class="n">VarianceGamma</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">))</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">exkurt</span><span class="p">(</span><span class="n">th</span><span class="p">):</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">k</span> <span class="o">=</span> <span class="n">vg</span><span class="o">.</span><span class="n">cumulants</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">th</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="k">return</span> <span class="n">k</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">/</span> <span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">spxa</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">exkurt</span><span class="p">)(</span><span class="n">vg</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>     <span class="c1"># d(excess kurtosis) / d(sigma, nu, theta), exact</span>
+</code></pre></div>
+<h2 id="1-jets-forward-mode-for-numpy-code">1. Jets: forward mode for NumPy code</h2>
+<p>A jet carries a value <span class="arithmatex">\(v\)</span>, its gradient <span class="arithmatex">\(\nabla v \in \mathbb C^n\)</span> and, optionally, its Hessian. It implements NumPy's <code>__array_ufunc__</code> and <code>__array_function__</code> protocols and has rules for the SciPy special functions used by the zoo: <span class="arithmatex">\(\Gamma\)</span>, <span class="arithmatex">\(\log\Gamma\)</span>, <span class="arithmatex">\(\psi\)</span>, <span class="arithmatex">\(\psi^{(k)}\)</span>, the error functions, <span class="arithmatex">\(\log\Phi\)</span> and the Bessel functions <span class="arithmatex">\(K_\nu\)</span> and <span class="arithmatex">\(K_\nu e^{x}\)</span>. The rules for <span class="arithmatex">\(K_\nu\)</span> cover its <em>order</em> derivative, which the generalised hyperbolic and variance gamma densities need. Code written with these operations differentiates without change.</p>
+<p>Jets refuse to lose information. <code>float()</code> of a jet, an operation without a rule, or an object array raises <code>JetError</code>. A derivative is exact or the call fails; it is never silently a difference quotient.</p>
+<p><code>spxa.grad</code>, <code>spxa.value_and_grad</code>, <code>spxa.jacobian</code> and <code>spxa.hessian</code> wrap any such function, in the style of JAX. A complex output is differentiated as a holomorphic function of the real argument.</p>
+<h2 id="2-the-algebra-is-closed-under-differentiation">2. The algebra is closed under differentiation</h2>
+<p><code>DiffProcess(X)</code> parses a zoo expression built with <span class="arithmatex">\(+\)</span>, scaling and <span class="arithmatex">\(@\)</span> into a tree of differentiable closed forms. Every primitive Lévy family has its exponent <span class="arithmatex">\(\psi(u;\theta)\)</span> written for jets. The composition rules are the same as for values:</p>
+<div class="arithmatex">\[
+\psi_{X+Y} = \psi_X + \psi_Y, \qquad \psi_{cX}(u) = \psi_X(cu), \qquad \psi_{X\circ T}(u) = \psi_T\big(-i\psi_X(u)\big),
+\]</div>
+<p>so the chain rule gives, for example,</p>
+<div class="arithmatex">\[
+\partial_{\theta_X}\psi_{X\circ T}(u) = -i\,\psi_T'(w)\,\partial_{\theta_X}\psi_X(u), \qquad w = -i\psi_X(u).
+\]</div>
+<p><strong>Cumulants.</strong> <span class="arithmatex">\(\kappa_n = n!\,[z^n]\,K(z)\)</span> with <span class="arithmatex">\(K(z) = \psi(-iz)\)</span>. spxa evaluates <span class="arithmatex">\(K\)</span> on a truncated Taylor series in <span class="arithmatex">\(z\)</span> whose coefficients are jets in <span class="arithmatex">\(\theta\)</span>. The cumulants and their full Jacobian then come from one pass, with no contour integral and no differences.</p>
+<p><strong>Hessians.</strong> Second-order jets give <span class="arithmatex">\(\partial^2_\theta\psi\)</span> and Hessians of anything built from it.</p>
+<p>The <code>GRADIENTS</code> laws (§6) check every rule against Richardson differences of the zoo's own closed forms, which are a separate code path.</p>
+<h2 id="3-fourier-prices">3. Fourier prices</h2>
+<p><code>spxa.graph.autodiff.fourier</code> prices European options with the risk-neutral convention</p>
+<div class="arithmatex">\[
+S_T = S_0\exp\big((r-q)T + \omega T + X_T\big), \qquad \omega = -\psi(-i),
+\]</div>
+<p>by COS (Fang &amp; Oosterlee 2008), Carr–Madan (1999) or Lewis (2001). <code>price_and_gradient</code> returns the prices and their exact Jacobian, and Hessians on request. Drift in <span class="arithmatex">\(X\)</span> cancels in <span class="arithmatex">\(X_T + \omega T\)</span>, so its derivative is exactly zero.</p>
+<p>The derivative is of the discretised price. Carr–Madan and Lewis use composite Gauss–Legendre nodes that do not depend on <span class="arithmatex">\(\theta\)</span>. The COS interval</p>
+<div class="arithmatex">\[
+[a, b] = c_1 \pm L\sqrt{c_2 + \sqrt{c_4}}
+\]</div>
+<p>does depend on <span class="arithmatex">\(\theta\)</span>, through the cumulants. With <code>track_interval=True</code> (the default) that dependence is differentiated as well, so the gradient agrees with differences of <code>cos_price</code> to rounding. A frozen interval (<code>track_interval=False</code>) misses the truncation sensitivity. For variance gamma fits this was up to <span class="arithmatex">\(4\times10^{-4}\)</span> in the option-fit Jacobian, enough to stall a least-squares fit. Brownian motion has <span class="arithmatex">\(c_4 = 0\)</span>, where <span class="arithmatex">\(\sqrt{\cdot}\)</span> is not differentiable; there the term is treated as the constant 0, which is its exact value.</p>
+<h2 id="4-calibration">4. Calibration</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Calibrator</th>
+<th style="text-align: left;">Exact derivative</th>
+<th style="text-align: left;">Option</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>discovery.fit_structure</code></td>
+<td style="text-align: left;">binned likelihood or cumulant distance (L-BFGS-B gradient)</td>
+<td style="text-align: left;"><code>gradient="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>discovery.fit_options</code></td>
+<td style="text-align: left;">vega-weighted COS residuals (least-squares Jacobian)</td>
+<td style="text-align: left;"><code>jac="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rates.calibrate_sabr</code></td>
+<td style="text-align: left;">Hagan and Obłój implied vols</td>
+<td style="text-align: left;"><code>jac="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vol.calibrate_svi_butterfly_free</code>, <code>vol.calibrate_svi_surface</code></td>
+<td style="text-align: left;">SVI objective, Durrleman's <span class="arithmatex">\(g\)</span> and calendar gaps (SLSQP gradients)</td>
+<td style="text-align: left;"><code>jac="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vol.calibrate_ssvi</code></td>
+<td style="text-align: left;">SSVI objective through <span class="arithmatex">\(\rho\)</span> and the curvature parameters</td>
+<td style="text-align: left;"><code>jac="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rates.calibrate_hull_white</code> (global mode)</td>
+<td style="text-align: left;">swaption and cap prices in <span class="arithmatex">\((\sigma_0, \dots, \sigma_{n-1}, a)\)</span> (least-squares Jacobian)</td>
+<td style="text-align: left;"><code>jac="exact"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>LeastSquaresOptimizer.minimize</code></td>
+<td style="text-align: left;">any residual Jacobian you supply</td>
+<td style="text-align: left;"><code>jac=</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each defaults to the exact derivative; <code>"2-point"</code> restores SciPy's differences.</p>
+<p><strong>Implicit parameters.</strong> When <code>calibrate_sabr</code> pins <span class="arithmatex">\(\alpha\)</span> to the at-the-money vol, <span class="arithmatex">\(\alpha(\rho,\nu)\)</span> solves <span class="arithmatex">\(g(\alpha,\rho,\nu) = \sigma_{ATM}(\alpha,\rho,\nu) - \sigma = 0\)</span>. The implicit function theorem gives <span class="arithmatex">\(\partial\alpha = -\partial g/g_\alpha\)</span>, which is exact to first order. A consequence is checked by the tests: the pinned at-the-money vol has zero gradient.</p>
+<p><strong>Likelihood Hessian.</strong> <code>spxa.graph.autodiff.discovery.likelihood_value_grad_hess</code> returns the binned likelihood with its exact Hessian in the free coordinates. Second-order jets carry <span class="arithmatex">\(\nabla p_j\)</span> and <span class="arithmatex">\(\nabla^2 p_j\)</span> of every bin probability through <span class="arithmatex">\(\psi\)</span>, the COS series and the bin differences. Then</p>
+<div class="arithmatex">\[\nabla^2\Bigl(-\sum_j c_j \log p_j\Bigr) = \sum_j c_j\Bigl(\frac{\nabla p_j\nabla p_j^\top}{p_j^2} - \frac{\nabla^2 p_j}{p_j}\Bigr).\]</div>
+<p>At the maximum this is the observed information. The Laplace evidence of <code>spxa.discovery.bayes</code> is built on it.</p>
+<p><strong>Objectives with kinks.</strong> The binned likelihood clips probabilities at a floor and takes a running maximum. Jets differentiate the branch taken, which is the derivative almost everywhere. On the penalty plateau the gradient is zero. If a gradient is not finite, <code>fit_structure</code> falls back to a difference for that step, and <code>fit_options</code> zeroes the Jacobian rows whose derivatives are not finite or whose residual sits at the penalty.</p>
+<h2 id="5-monte-carlo-gradients">5. Monte Carlo gradients</h2>
+<p><code>spxa.graph.autodiff.montecarlo</code> returns <span class="arithmatex">\(V(\theta) = e^{-rT}E[f(S_T)]\)</span>, its gradient and per-coordinate standard errors. The result is labelled <code>STOCHASTIC</code>.</p>
+<p><strong>Pathwise.</strong> <span class="arithmatex">\(X_T = g(\theta,\xi)\)</span> is differentiated per path. Gamma and inverse Gaussian variates use <em>implicit reparameterisation</em> (Figurnov, Mohamed &amp; Mnih 2018). For <span class="arithmatex">\(G = F^{-1}(U;\theta)\)</span>,</p>
+<div class="arithmatex">\[
+\frac{\partial G}{\partial\theta} = -\frac{\partial_\theta F(G;\theta)}{f(G;\theta)}.
+\]</div>
+<p>For a unit Gamma(<span class="arithmatex">\(a\)</span>) variate, the lower series <span class="arithmatex">\(\partial_a P(a,x) = \sum_n t_n\big(\log x - \psi(a+n+1)\big)\)</span>, with <span class="arithmatex">\(t_n = e^{-x}x^{a+n}/\Gamma(a+n+1)\)</span>, is used for <span class="arithmatex">\(x \le a + 1 + 4\sqrt a\)</span>. In the upper tail, <span class="arithmatex">\(P \to 1\)</span> and that sum cancels catastrophically: it lost up to 4 digits at <span class="arithmatex">\(x \approx a + 4\sqrt a\)</span> for <span class="arithmatex">\(a = 1000\)</span>. There spxa uses instead</p>
+<div class="arithmatex">\[
+\frac{\partial G}{\partial a} = \int_0^\infty \big(\log(x+s) - \psi(a)\big)\Big(1 + \frac sx\Big)^{a-1}e^{-s}\,ds,
+\]</div>
+<p>an integral without cancellation, by Gauss–Laguerre quadrature after the substitution <span class="arithmatex">\(s = u/r\)</span>, <span class="arithmatex">\(r = 1 - (a-1)/x\)</span>. The two branches agree with mpmath to <span class="arithmatex">\(10^{-11}\)</span> for <span class="arithmatex">\(a \in [0.02, 1000]\)</span> and <span class="arithmatex">\(U \in [10^{-6}, 1 - 10^{-12}]\)</span>.</p>
+<p>Poisson counts are not differentiable in their rate, so the rate enters through the score <span class="arithmatex">\(N/\lambda - T\)</span>. The resulting hybrid pathwise/score estimator is still unbiased. Pathwise needs a payoff that is Lipschitz in <span class="arithmatex">\(S_T\)</span>; a digital is refused.</p>
+<p><strong>Likelihood ratio.</strong> With <span class="arithmatex">\(Y = X_T + \omega T\)</span>, whose density is <span class="arithmatex">\(p_T(y - \omega T;\theta)\)</span>,</p>
+<div class="arithmatex">\[
+\partial_\theta V = e^{-rT}E\big[f(S_T)\,\partial_\theta\log p_T(Y - \omega T;\theta)\big].
+\]</div>
+<p>The score includes the martingale correction and comes from jets through the closed densities of Brownian motion, Gamma, inverse Gaussian, variance gamma and NIG. Any payoff works.</p>
+<p><strong>Malliavin.</strong> For a Brownian component <span class="arithmatex">\(\sigma W\)</span> plus independent jumps, the delta weight is <span class="arithmatex">\(W_T/(S_0\sigma T)\)</span> and the vega weight is <span class="arithmatex">\(W_T^2/(\sigma T) - W_T - 1/\sigma\)</span> (Fournié et al. 1999).</p>
+<p>Tests pool fixed seeds against COS and Black–Scholes references. They check that the estimators are unbiased (pooled <span class="arithmatex">\(|z| &lt; 4\)</span>) and that the standard errors are calibrated (per-seed <span class="arithmatex">\(z\)</span>-scores have unit spread).</p>
+<h2 id="6-what-is-tested">6. What is tested</h2>
+<ul>
+<li><strong>Jet rules.</strong> Every rule is checked against the complex step, mpmath or high-order differences.</li>
+<li><strong>The <code>GRADIENTS</code> laws</strong> in <code>spxa.laws</code> (seven laws):</li>
+<li><span class="arithmatex">\(\partial\psi\)</span>, <span class="arithmatex">\(\partial\kappa\)</span> and COS Jacobians match differences of independent code;</li>
+<li>the sum, scaling and subordination chain rules hold;</li>
+<li>Hessians are symmetric and consistent.</li>
+</ul>
+<p>Over 12 seeds × 300 examples per law no law failed. Mutation tests show that a derivative off by <span class="arithmatex">\(10^{-4}\)</span> is caught.
+- <strong>Differences use steps of <span class="arithmatex">\(10^{-4}\)</span> relative to the parameter.</strong> At <span class="arithmatex">\(10^{-3}\)</span>, the Richardson truncation error near CGMY's <span class="arithmatex">\(\Gamma(-Y)\)</span> pole (<span class="arithmatex">\(Y = 1.9\)</span>) reached <span class="arithmatex">\(1.2\times10^{-6}\)</span> and falsified a jet derivative that mpmath confirms.
+- <strong>Discovery gradients.</strong> The exponents and cumulants in free coordinates match differences to <span class="arithmatex">\(10^{-9}\)</span> relative, for all eleven families and four composites. The likelihood and cumulant objectives match differences to <span class="arithmatex">\(10^{-8}\)</span> of the largest gradient entry on five structures, and the option-residual Jacobian does so on six. The likelihood Hessian matches Richardson differences of the exact gradient to <span class="arithmatex">\(10^{-8}\)</span> of its largest entry on seven structures (observed <span class="arithmatex">\(10^{-10}\)</span> to <span class="arithmatex">\(10^{-12}\)</span>), including a subordinated one and an eight-parameter sum.</p>
+<p><strong>Known limitations.</strong></p>
+<ul>
+<li>The generalised hyperbolic Lévy density uses a truncated quadrature, so its triplet mean <span class="arithmatex">\(\kappa_1\)</span> is off by about <span class="arithmatex">\(2.5\times10^{-9}\)</span>. The characteristic exponent and its derivatives are unaffected.</li>
+<li><code>jacobian</code> and <code>price_and_gradient</code> use forward mode, so they cost about <span class="arithmatex">\(n+1\)</span> evaluations for <span class="arithmatex">\(n\)</span> parameters. For the calibrators here, <span class="arithmatex">\(n \le 10\)</span>. The COS payoff matrix depends on the parameters only through <span class="arithmatex">\([a, b]\)</span>, so its two partial derivatives are taken in closed form and chained. An exact options Jacobian then costs three to four residual evaluations for three to five parameters, less than two-point differences (<span class="arithmatex">\(n + 1\)</span>).</li>
+<li>The Heston-joint calibrator still uses differences. The Hull–White bootstrap solves one <span class="arithmatex">\(\sigma\)</span> per expiry by bracketing and needs no derivative. <code>calibrate_svi</code> needs none: it searches <span class="arithmatex">\((m, \sigma)\)</span> by Nelder–Mead around an exact linear solve.</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li>Carr, P. &amp; Madan, D. (1999). Option valuation using the fast Fourier transform. <em>J. Comput. Finance</em> 2(4).</li>
+<li>Fang, F. &amp; Oosterlee, C. W. (2008). A novel pricing method for European options based on Fourier-cosine series expansions. <em>SIAM J. Sci. Comput.</em> 31(2).</li>
+<li>Figurnov, M., Mohamed, S. &amp; Mnih, A. (2018). Implicit reparameterization gradients. <em>NeurIPS</em>.</li>
+<li>Fournié, E., Lasry, J.-M., Lebuchoux, J., Lions, P.-L. &amp; Touzi, N. (1999). Applications of Malliavin calculus to Monte Carlo methods in finance. <em>Finance Stoch.</em> 3.</li>
+<li>Glasserman, P. (2003). <em>Monte Carlo Methods in Financial Engineering</em>. Springer, ch. 7.</li>
+<li>Griewank, A. &amp; Walther, A. (2008). <em>Evaluating Derivatives</em>, 2nd ed. SIAM.</li>
+<li>Lewis, A. (2001). A simple option formula for general jump-diffusion and other exponential Lévy processes. SSRN 282110.</li>
+<li>Madan, D., Carr, P. &amp; Chang, E. (1998). The variance gamma process and option pricing. <em>Eur. Finance Rev.</em> 2.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

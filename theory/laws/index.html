@@ -1,0 +1,1832 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Stochastic processes as first-class algebraic objects">
+      
+      
+      
+        <link rel="canonical" href="https://nityahapani.github.io/spxa/theory/laws/">
+      
+      
+        <link rel="prev" href="../discovery/">
+      
+      
+        <link rel="next" href="../exact_derivatives/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
+    
+    
+      
+        <title>Property-based laws - spxa</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#property-based-testing-of-stochastic-algebra" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="spxa" class="md-header__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spxa
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Property-based laws
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../levy_khintchine/" class="md-tabs__link">
+          
+  
+  
+  Theory
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/01_first_composition/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../gallery/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Example gallery
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../diff/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Differentiable SDEs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../compile/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Compiled kernels
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../risk/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Portfolio & Risk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../calculus/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Stochastic Calculus
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Process registry
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="spxa" class="md-nav__button md-logo" aria-label="spxa" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spxa
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Nityahapani/spxa" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Nityahapani/spxa
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Theory
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../levy_khintchine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lévy–Khintchine
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triplet_arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Triplet arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../beyond_levy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Beyond Lévy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_morphing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Morphing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../information_geometry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Information geometry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_paths_signatures/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough paths & signatures
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rough_volatility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Rough volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../copulas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Copulas & dependence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stochastic_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pde/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PDE & PIDE methods
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../market/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Market conventions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interest rates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Volatility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Estimation & calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Property-based laws
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Property-based laws
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-strategies-and-shrinking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Strategies and shrinking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-laws-and-their-outcomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Laws and their outcomes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-library" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. The library
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-laws-about-random-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Laws about random output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-suites-reports-pytest-and-the-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Suites, reports, pytest and the shell
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-what-the-laws-found-in-spxa" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. What the laws found in spxa
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exact_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact derivatives
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01_first_composition/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 1 — First Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02_finance_models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 2 — Finance Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03_physics_applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial 3 — Physics Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../gallery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Example gallery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diff/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Differentiable SDEs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compiled kernels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../risk/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Portfolio & Risk
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../calculus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stochastic Calculus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/Nityahapani/spxa/blob/main/PROCESS_REGISTRY.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Process registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="property-based-testing-of-stochastic-algebra">Property-based testing of stochastic algebra</h1>
+<p><code>spxa.laws</code> turns the axioms of stochastic process algebra into executable tests. You declare a law, for example</p>
+<div class="arithmatex">\[
+E[X + Y] = E[X] + E[Y], \qquad \varphi_{X \circ T}(u) = e^{\psi_T(-i\psi_X(u))}, \qquad \text{martingale}(X) \Rightarrow \text{martingale}(cX),
+\]</div>
+<p>and spxa searches randomised processes and parameters for a counterexample. If it finds one, it shrinks it to a minimal one and reports it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws</span><span class="w"> </span><span class="kn">import</span> <span class="n">compositions</span><span class="p">,</span> <span class="n">expect_close</span><span class="p">,</span> <span class="n">law</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws.quantities</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nd">@law</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">compositions</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">Y</span><span class="o">=</span><span class="n">compositions</span><span class="p">(</span><span class="n">max_depth</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">mean_is_additive</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">):</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="sd">"""E[X + Y] = E[X] + E[Y]"""</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">expect_close</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">X</span> <span class="o">+</span> <span class="n">Y</span><span class="p">),</span> <span class="n">mean</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">mean</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">mean_is_additive</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">n_examples</span><span class="o">=</span><span class="mi">200</span><span class="p">))</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># mean_is_additive: VERIFIED (no counterexample in 200 examples)</span>
+</code></pre></div>
+<p>The ideas are those of QuickCheck (Claessen &amp; Hughes 2000) and Hypothesis (MacIver, Hatfield-Dodds et al. 2019), specialised to processes. Strategies generate Lévy processes and their compositions, and the library states the theory of Lévy processes as laws. A statistical layer covers laws about random output, such as simulators. <a href="https://github.com/Nityahapani/spxa/blob/main/examples/09_property_based_laws.py"><code>examples/09_property_based_laws.py</code></a> walks through all of it.</p>
+<h2 id="1-strategies-and-shrinking">1. Strategies and shrinking</h2>
+<p>A <code>Strategy</code> draws an example from a <code>numpy.random.Generator</code>, together with the ways the example can be simplified. Each example is a rose tree (<code>Tree</code>): the root is the value and the children are simpler values. Because the tree is built alongside the value, shrinking works through <code>map</code>, <code>filter</code>, <code>flatmap</code> and composite strategies with no extra code. This is the "integrated shrinking" of Hedgehog and of Hypothesis's internal representation.</p>
+<p>Shrinking is a greedy descent. The children of the current counterexample are tried simplest first, and the first child that fails <em>in the same way</em> replaces it: a violation must stay a violation, and an error must raise the same exception type. The result is locally minimal, meaning none of its direct simplifications fails.</p>
+<p>Floats shrink towards a target (0, or <code>simplest=</code>). A float counts as simpler when its shortest decimal representation is shorter. Counterexamples therefore read <code>Drift(mu=0.1)</code>, not <code>Drift(mu=1e-16)</code>.</p>
+<p><strong>Processes.</strong> <code>PRIMITIVES</code> holds one strategy per Lévy family in the zoo, with parameters that shrink to round values. <code>compositions(max_depth=…)</code> builds expression trees with <code>+</code>, <code>c * X</code>, <code>-X</code> and <code>X @ T</code>. A composite counterexample shrinks first to its operands, so a law that fails for <code>X + Y</code> because of <code>X</code> alone is reported with <code>X</code>. Generic draws almost never have mean exactly zero, so <code>martingales()</code> centres them as <span class="arithmatex">\(X_t - E[X_1]t\)</span>. Otherwise laws with a martingale hypothesis would hold vacuously. α-stable processes have no finite variance and are included only on request (<code>levy_processes(heavy_tails=True)</code>, <code>alpha_stables()</code>).</p>
+<h2 id="2-laws-and-their-outcomes">2. Laws and their outcomes</h2>
+<p>A <code>Law</code> pairs a predicate with one strategy per argument. Inside a law:</p>
+<ul>
+<li><code>expect_close(a, b, rtol, atol)</code> requires <span class="arithmatex">\(|a - b| \le \text{atol} + \text{rtol}\max(|a|, |b|)\)</span> elementwise, with exact equality for infinities;</li>
+<li><code>expect(condition, message, **details)</code> and <code>implies(premise, conclusion)</code>;</li>
+<li><code>assume(condition)</code> discards examples outside the law's domain.</li>
+</ul>
+<p><code>Law.check(n_examples, seed)</code> returns a <code>LawResult</code> with one of four statuses:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Status</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>verified</code></td>
+<td style="text-align: left;">no counterexample in <code>n_examples</code> examples. This is evidence, not proof.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>falsified</code></td>
+<td style="text-align: left;">the predicate failed. The shrunk and the original counterexamples are kept.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>error</code></td>
+<td style="text-align: left;">evaluation raised another exception. This is a counterexample too.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>unsatisfiable</code></td>
+<td style="text-align: left;"><code>assume</code> discarded too many examples. Nothing was learned.</td>
+</tr>
+</tbody>
+</table>
+<p>Every example comes from one generator seeded by <code>seed</code>, so a check, and every counterexample it reports, is reproducible.</p>
+<p><strong>A false law.</strong> <code>martingale(X) =&gt; martingale(X + c)</code> is false for <span class="arithmatex">\(c \ne 0\)</span>, because <span class="arithmatex">\(X + c\,t\)</span> has mean <span class="arithmatex">\(c\,t\)</span>. Checking it gives at once</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>martingale_plus_constant: FALSIFIED after 0 passing examples (seed 1)
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  counterexample (shrunk in 6 steps):
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    X = Drift(mu=0.0)
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    c = -0.1
+</code></pre></div>
+<p>The process shrinks to the simplest martingale and the constant to a short non-zero number.</p>
+<h2 id="3-the-library">3. The library</h2>
+<p><code>spxa.laws.library</code> states the theory as 53 laws in eight groups. The default tolerances for closed-form identities are a relative <span class="arithmatex">\(10^{-6}\)</span> and an absolute <span class="arithmatex">\(10^{-9}\)</span>, at frequencies <span class="arithmatex">\(u \in [-4, 4]\)</span>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Group</th>
+<th style="text-align: right;">Laws</th>
+<th style="text-align: left;">What it states</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>AXIOMS</code></td>
+<td style="text-align: right;">5</td>
+<td style="text-align: left;"><span class="arithmatex">\(\varphi(0) = 1\)</span>, <span class="arithmatex">\(\lvert\varphi\rvert \le 1\)</span>, <span class="arithmatex">\(\varphi(-u) = \overline{\varphi(u)}\)</span>, <span class="arithmatex">\(\varphi_{s+t} = \varphi_s\varphi_t\)</span>, even cumulants <span class="arithmatex">\(\ge 0\)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ALGEBRA</code></td>
+<td style="text-align: right;">10</td>
+<td style="text-align: left;">cumulants and cfs of sums, scalings and negation: additivity, commutativity, associativity, <span class="arithmatex">\(\kappa_n(cX) = c^n\kappa_n(X)\)</span>, …</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SUBORDINATION</code></td>
+<td style="text-align: right;">7</td>
+<td style="text-align: left;"><span class="arithmatex">\(\psi_{X\circ T}(u) = \psi_T(-i\psi_X(u))\)</span>, the subordinated cumulants <span class="arithmatex">\(\kappa_1 = \kappa_1^T\kappa_1^X\)</span>, <span class="arithmatex">\(\kappa_2 = \kappa_1^T\kappa_2^X + \kappa_2^T(\kappa_1^X)^2\)</span>, <span class="arithmatex">\(\kappa_3\)</span>, deterministic and additive clocks, associativity</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TRIPLET</code></td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">a primitive's closed forms against its Lévy–Khintchine triplet and its Lévy measure (moments, tails, truncated first moments, jump exponent)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CUMULANTS</code></td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">cumulants recovered from the cf by Cauchy's integral formula, convexity of the cumulant generating function</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PROPERTIES</code></td>
+<td style="text-align: right;">9</td>
+<td style="text-align: left;">martingale, subordinator, moment and self-similarity flags against the quantities they claim, and their closure under the operators</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SIMULATION</code></td>
+<td style="text-align: right;">7</td>
+<td style="text-align: left;">simulated paths and <code>sample_at</code> draws against the cf and the cumulants (§4)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GRADIENTS</code></td>
+<td style="text-align: right;">7</td>
+<td style="text-align: left;">exact parameter derivatives (forward-mode jets) of <span class="arithmatex">\(\psi\)</span>, of the cumulants and of COS prices against Richardson differences of the zoo closed forms; the chain rules <span class="arithmatex">\(\partial\psi_{cX}(u) = \partial\psi_X(cu)\)</span>, <span class="arithmatex">\(\partial_c\psi_{cX} = u\psi_X'(cu)\)</span> and <span class="arithmatex">\(\partial\psi_{X\circ T} = -i\psi_T'(w)\,\partial\psi_X\)</span>; symmetry of the Hessian</td>
+</tr>
+</tbody>
+</table>
+<p>The subordination laws rest on Bochner's formula: for an independent subordinator <span class="arithmatex">\(T\)</span>, <span class="arithmatex">\(E[e^{iuX_{T_t}}] = E[e^{T_t\psi_X(u)}] = e^{t\psi_T(-i\psi_X(u))}\)</span> (Sato 1999, Thm 30.1). Its cumulant form follows from composing the cumulant generating functions, <span class="arithmatex">\(K_{X\circ T} = K_T\circ K_X\)</span>. A Lévy process is a martingale exactly when <span class="arithmatex">\(E\lvert X_1\rvert &lt; \infty\)</span> and <span class="arithmatex">\(E[X_1] = 0\)</span>. That is why <code>martingale_flag_is_complete</code> matters: a <code>False</code> flag is also a claim.</p>
+<h2 id="4-laws-about-random-output">4. Laws about random output</h2>
+<p>A law about a simulator cannot demand equality, but it can demand that a test with a known false-alarm rate does not reject. <code>spxa.laws.stats</code> provides such tests, and <code>expect_not_rejected(p)</code> fails the law when <span class="arithmatex">\(p\)</span> is below <code>LEVEL</code> <span class="arithmatex">\(= 10^{-6}\)</span>.</p>
+<p><strong>Empirical characteristic function.</strong> For <span class="arithmatex">\(n\)</span> draws, <span class="arithmatex">\(\bar\varphi_n(u) = n^{-1}\sum_k e^{iuX_k}\)</span> has</p>
+<div class="arithmatex">\[
+\operatorname{Var}\operatorname{Re}\bar\varphi_n(u) = \frac{1}{n}\Big[\frac{1 + \operatorname{Re}\varphi(2u)}{2} - (\operatorname{Re}\varphi(u))^2\Big],\qquad
+\operatorname{Var}\operatorname{Im}\bar\varphi_n(u) = \frac{1}{n}\Big[\frac{1 - \operatorname{Re}\varphi(2u)}{2} - (\operatorname{Im}\varphi(u))^2\Big],
+\]</div>
+<p>because <span class="arithmatex">\(\cos^2 x = (1 + \cos 2x)/2\)</span> (Feuerverger &amp; Mureika 1977). The summands are bounded, so the normal approximation holds for every law, heavy-tailed ones included. Several frequencies are combined by Bonferroni. The other tests are a z-test of the sample mean, one of the sample variance using <span class="arithmatex">\(\operatorname{Var}s^2 = \kappa_4/n + 2\kappa_2^2/(n-1)\)</span>, and a test of independence through the joint empirical cf of two increments against <span class="arithmatex">\(\varphi(u)\varphi(v)\)</span>.</p>
+<p><strong>False alarms.</strong> With level <span class="arithmatex">\(\alpha\)</span> per example, a check of <span class="arithmatex">\(n\)</span> examples of a correct law fails with probability at most <span class="arithmatex">\(n\alpha\)</span>. At 100 examples that is once in <span class="arithmatex">\(10^4\)</span> runs. Each example draws its own seed from the law's strategies, so a counterexample replays exactly. Pure drifts have no sampling noise: every z-score divides by the standard error plus <span class="arithmatex">\(10^{-10}\)</span> times the scale of the quantity tested, so rounding never rejects.</p>
+<p><code>SIMULATION</code> uses these tests on the terminal value, on single increments, on the independence of increments, on the mean and variance, and on <code>sample_at</code> at mixed horizons. Its processes include α-stables and depth-1 compositions, so the simulators of sums, multiples and time changes are tested too.</p>
+<h2 id="5-suites-reports-pytest-and-the-shell">5. Suites, reports, pytest and the shell</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws</span><span class="w"> </span><span class="kn">import</span> <span class="n">Suite</span><span class="p">,</span> <span class="n">default_suite</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALGEBRA</span><span class="p">,</span> <span class="n">SUBORDINATION</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">report</span> <span class="o">=</span> <span class="n">Suite</span><span class="p">(</span><span class="s2">"algebra"</span><span class="p">,</span> <span class="n">ALGEBRA</span><span class="p">,</span> <span class="n">SUBORDINATION</span><span class="p">)</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">n_examples</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>                  <span class="c1"># summary line, table, every counterexample</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">report</span><span class="o">.</span><span class="n">to_markdown</span><span class="p">()</span>           <span class="c1"># table plus collapsible counterexamples</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">report</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>               <span class="c1"># JSON-ready</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">report</span><span class="o">.</span><span class="n">raise_if_failed</span><span class="p">()</span>       <span class="c1"># SuiteFailure (an AssertionError) unless all verified</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">default_suite</span><span class="p">()</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"subordination"</span><span class="p">],</span> <span class="n">exclude_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"simulation"</span><span class="p">])</span>
+</code></pre></div>
+<p>Under pytest, <code>law_tests</code> produces one parametrised case per law. A failing case prints the full report with the shrunk counterexample and its seed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># tests/test_laws.py</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws</span><span class="w"> </span><span class="kn">import</span> <span class="n">law_tests</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spxa.laws.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALGEBRA</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">test_algebra</span> <span class="o">=</span> <span class="n">law_tests</span><span class="p">(</span><span class="n">ALGEBRA</span><span class="p">,</span> <span class="n">n_examples</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</code></pre></div>
+<p><code>SPXA_LAW_EXAMPLES</code> and <code>SPXA_LAW_SEED</code> override the example count and the seed without editing the tests, for example in a nightly job.</p>
+<p>From the shell, <code>spxa-laws</code> (or <code>python -m spxa.laws</code>) checks the library. It exits with 0 when every law is verified, 1 otherwise and 2 on bad arguments:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>spxa-laws --tags algebra,subordination --examples 300 --seed 7
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>spxa-laws --exclude-tags simulation --format markdown -o laws.md
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>spxa-laws --list
+</code></pre></div>
+<h2 id="6-what-the-laws-found-in-spxa">6. What the laws found in spxa</h2>
+<p>Running the library over the zoo while it was being written found defects in spxa itself. Each one was fixed in its own commit with a regression test:</p>
+<ul>
+<li><strong>Triplets and measures.</strong> The drift of <code>LevyTriplet.scale</code> and of the Gamma, Poisson and Meixner triplets; the inverse Gaussian Lévy measure; the NTS triplet, which carried the wrong measure; the α-stable triplet; negative binomial and compound Poisson measures inside sums and scalings.</li>
+<li><strong>Characteristic functions.</strong> The cf and cumulants of <code>X @ T</code> and of composites containing it went through a triplet that does not exist for <code>@</code>, and raised. <code>char_exp_subordinated</code> took <span class="arithmatex">\(\psi_X\)</span> from the principal logarithm. The GH exponent wrapped by <span class="arithmatex">\(2\pi\)</span> once <span class="arithmatex">\(\delta\lvert\beta\rvert\)</span> was of order one, which flipped the sign of <span class="arithmatex">\(\varphi(u, t)\)</span> at non-integer <span class="arithmatex">\(t\)</span>. The Meixner cf collapsed to 0 once <span class="arithmatex">\(\cosh\)</span> overflowed. CGMY needed closed forms at the poles <span class="arithmatex">\(Y = 0, 1\)</span>.</li>
+<li><strong>Flags.</strong> Self-similarity was claimed for processes that are not strictly self-similar. Martingales run on a clock with finite mean were flagged as non-martingales, and so were sums whose means cancel.</li>
+<li><strong>Simulators.</strong> The CGMY, Meixner and tempered stable simulators inverted the cf on fixed grids that aliased or under-resolved the law. The NTS clock was a gamma matched to two moments. The α = 1 stable simulator missed the <span class="arithmatex">\(\frac{2}{\pi}\beta\sigma t\log t\)</span> term. <code>X @ T</code> interpolated the parent path linearly. Tempered stable draws were unresolved at short horizons, and GH draws came from an ad hoc grid. Tempered stable, NTS and CGMY with <span class="arithmatex">\(0 &lt; Y &lt; 1\)</span> now have exact samplers. The tempered stable sampler accepts draws of a tilted positive stable law (Kanter 1975; Kawai &amp; Masuda 2011).</li>
+</ul>
+<h2 id="references">References</h2>
+<ul>
+<li>Claessen, K. &amp; Hughes, J. (2000). QuickCheck: a lightweight tool for random testing of Haskell programs. <em>Proc. ICFP</em>.</li>
+<li>Feuerverger, A. &amp; Mureika, R. A. (1977). The empirical characteristic function and its applications. <em>Ann. Statist.</em> 5.</li>
+<li>Kanter, M. (1975). Stable densities under change of scale and total variation inequalities. <em>Ann. Probab.</em> 3.</li>
+<li>Kawai, R. &amp; Masuda, H. (2011). On simulation of tempered stable random variates. <em>J. Comput. Appl. Math.</em> 235.</li>
+<li>MacIver, D. R., Hatfield-Dodds, Z. et al. (2019). Hypothesis: a new approach to property-based testing. <em>J. Open Source Software</em> 4(43).</li>
+<li>MacIver, D. R. &amp; Donaldson, A. F. (2020). Test-case reduction via test-case generation: insights from the Hypothesis reducer. <em>Proc. ECOOP</em>.</li>
+<li>Sato, K. (1999). <em>Lévy Processes and Infinitely Divisible Distributions</em>. Cambridge.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "toc.integrate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
