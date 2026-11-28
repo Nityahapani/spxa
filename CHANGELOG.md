@@ -53,6 +53,14 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
   - `average_run_length(cusum, law)` computes CUSUM run lengths by the Brook–Evans Markov chain.
     It agrees with simulation to within 1%.
   - `report.monitor()` builds either detector from a discovered model.
+- **CARMA processes** (`spxa.zoo.beyond.carma`): `CARMAProcess(ar, ma, driver)`, alias `CARMA`, is the
+  Lévy-driven continuous-time ARMA(p, q) process $a(D)Y = b(D)DL$ in state-space form (Brockwell 2001).
+  - Exact stationary quantities: mean, autocovariance (Lyapunov), spectral density, the kernel
+    $g(t) = b^\top e^{At}e_p$, cumulants $\kappa_n(L_1)\int g^n$ by residue sums, and the characteristic
+    function $\exp\int\psi_L(ug)$.
+  - Simulation is exact with a Brownian driver. Other Lévy drivers use averaged-kernel substeps,
+    which keep the mean exact with an $O(\delta^2)$ variance error.
+  - `from_roots` builds the process from AR and MA zeros. CARMA(1, 0) reproduces the OU process.
 - `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
   `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
   likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.

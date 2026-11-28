@@ -84,6 +84,38 @@ Unlike a Lévy process, $V$ does not have independent increments (the decay stru
 
 **spxa's exactness for OU-Lévy:** `MOMENT_PROPAGATION` for path-level operations; the stationary distribution is `EXACT`.
 
+## CARMA processes
+
+**Definition** (Brockwell 2001). A Lévy-driven CARMA(p, q) process solves, formally, $a(D)Y_t = b(D)\,DL_t$ with
+
+$$a(z) = z^p + a_1z^{p-1} + \dots + a_p, \qquad b(z) = b_0 + b_1z + \dots + b_qz^q, \qquad q < p .$$
+
+It is made precise by a state-space form. With $A$ the companion matrix of $a$, $e_p$ the last unit vector and $b = (b_0, \dots, b_q, 0, \dots, 0)$:
+
+$$dX_t = AX_t\,dt + e_p\,dL_t, \qquad Y_t = b^\top X_t .$$
+
+CARMA(1, 0) is the Lévy-driven Ornstein–Uhlenbeck process. Higher orders give autocovariances that are sums of damped exponentials and damped oscillations, matching the shapes of ARMA models in continuous time and on irregular grids.
+
+**Stationary version.** If every zero $\lambda_i$ of $a$ has negative real part, then
+
+$$Y_t = \int_{-\infty}^t g(t-s)\,dL_s, \qquad g(t) = b^\top e^{At}e_p = \sum_i \frac{b(\lambda_i)}{a'(\lambda_i)}\,e^{\lambda_it}$$
+
+(for distinct zeros). Each jump of $L$ adds a copy of the kernel $g$ to the path. Everything stationary follows from $g$:
+
+- $E[Y] = \kappa_1(L_1)\,b_0/a_p$;
+- $\gamma(h) = \kappa_2(L_1)\,b^\top e^{A|h|}\Sigma b$, where $A\Sigma + \Sigma A^\top + e_pe_p^\top = 0$;
+- $f(\omega) = \frac{\kappa_2(L_1)}{2\pi}|b(i\omega)|^2/|a(i\omega)|^2$;
+- $\kappa_n(Y) = \kappa_n(L_1)\int_0^\infty g(s)^n\,ds$, which is a finite sum of residues: $\int_0^\infty g^n = \sum_{i_1..i_n}\prod_k c_{i_k}\big/\big(-\sum_k\lambda_{i_k}\big)$;
+- $\log E[e^{iuY}] = \int_0^\infty \psi_L(u\,g(s))\,ds$.
+
+The second-order structure sees the driver only through $\kappa_2(L_1)$. Jumps show up in the higher cumulants and in the paths.
+
+**What spxa tracks for CARMA:** all of the above exactly (`CARMAProcess`). CARMA(1, 0) reproduces the OU class to $10^{-14}$. The spectral density integrates to $\gamma(0)$, and its cosine transform gives $\gamma(h)$ to $10^{-7}$ on a finite grid. The residue sums match quadrature, and with a Brownian driver the characteristic function matches the Gaussian closed form to $10^{-9}$.
+
+**Simulation.** With a Brownian driver, the discretised state $X_{k+1} = e^{A\Delta}X_k + m_\Delta + \varepsilon_k$ is exact, with $\varepsilon_k \sim N(0, \sigma^2(\Sigma - e^{A\Delta}\Sigma e^{A^\top\Delta}))$. Any other driver is simulated on sub-intervals, each increment weighted by the kernel averaged over its sub-interval. This keeps the mean exact and makes the variance error $O(\delta^2)$. One step of a Gamma-driven CARMA(2, 1) has a variance error of $-10\%$ with one substep, $-1.6\%$ with two, and below 1% from four on.
+
+**spxa's exactness for CARMA:** `MOMENT_PROPAGATION`. There is no triplet, because the increments are dependent.
+
 ## Degradation policy
 
 When an operation mixes process types or leaves the Lévy regime, spxa:
@@ -100,4 +132,6 @@ This design ensures the library never silently returns a wrong answer by pretend
 - Hawkes, A. G. (1971). Spectra of some self-exciting and mutually exciting point processes. *Biometrika*, 58(1), 83–90.
 - Hawkes, A. G. & Oakes, D. (1974). A cluster process representation of a self-exciting process. *Journal of Applied Probability*, 11(3), 493–503.
 - Barndorff-Nielsen, O. E. & Shephard, N. (2001). Non-Gaussian Ornstein–Uhlenbeck-based models and some of their uses in financial economics. *Journal of the Royal Statistical Society B*, 63(2), 167–241.
+- Brockwell, P. J. (2001). Lévy-driven CARMA processes. *Annals of the Institute of Statistical Mathematics*, 53(1), 113–124.
+- Brockwell, P. J., Davis, R. A. & Yang, Y. (2011). Estimation for non-negative Lévy-driven CARMA processes. *Journal of Business & Economic Statistics*, 29(2), 250–259.
 - Applebaum, D. (2009). *Lévy Processes and Stochastic Calculus*, 2nd ed. Cambridge University Press. Chapter 4.

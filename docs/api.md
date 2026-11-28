@@ -84,6 +84,7 @@ the running library. All signatures are exact.
    - [BesselProcess](#besselprocess)
    - [OrnsteinUhlenbeck](#ornsteinuhlenbeck)
    - [OULevy](#oulevy)
+   - [CARMAProcess](#carmaprocess)
 5. [Zoo — multivariate](#zoo-multivariate)
    - [MultivariateLevyTriplet](#multivariatelevytriplet)
    - [MultivariateBrownianMotion](#multivariatebrownianmotion)
@@ -3188,6 +3189,51 @@ ou.autocovariance(h: float) -> float
 **Simulation:** Exact Euler discretisation.
 
 **Reference:** Barndorff-Nielsen & Shephard (2001).
+
+---
+
+### CARMAProcess
+
+```python
+from spxa import CARMAProcess, CARMA          # CARMA is an alias
+from spxa.zoo.levy.gamma import GammaProcess
+
+CARMAProcess(ar, ma=(1.0,), driver=None, x0=None, substeps=16)
+m = CARMAProcess.from_roots([-0.5, -1 + 2j, -1 - 2j], [-2.0], driver=GammaProcess(a=2.0, b=4.0))
+```
+
+A Lévy-driven continuous-time ARMA process, $a(D)Y = b(D)DL$ (Brockwell 2001). It is defined by $dX_t = AX_t\,dt + e_p\,dL_t$ and $Y_t = b^\top X_t$, where $A$ is the companion matrix of $a(z) = z^p + a_1z^{p-1} + \dots + a_p$ and $b = (b_0, \dots, b_q, 0, \dots)$. CARMA(1, 0) is the Lévy-driven OU process.
+
+| Parameter | Constraint | Meaning |
+|---|---|---|
+| `ar` | zeros of $a$ in $\mathrm{Re}\,z < 0$ | $(a_1, \dots, a_p)$ |
+| `ma` | $q < p$, not all zero | $(b_0, \dots, b_q)$ of $b(z) = b_0 + \dots + b_qz^q$ |
+| `driver` | a Lévy `Process` | $L$; default standard Brownian motion |
+| `x0` | length $p$ or `None` | initial state; `None` starts from the stationary law |
+| `substeps` | ≥ 1 | driver increments per step for non-Brownian drivers |
+
+`from_roots(ar_roots, ma_roots=(), *, scale=1.0, driver=None, ...)` builds $a(z) = \prod(z-\lambda_i)$ and $b(z) = \text{scale}\prod(z-\mu_j)$.
+
+**Exact stationary quantities:**
+```python
+m.stationary_mean                 # κ1(L1) b0/a_p
+m.stationary_variance             # κ2(L1) b'Σb, with AΣ + ΣA' + e_p e_p' = 0
+m.autocovariance(h)               # κ2(L1) b' e^{A|h|} Σ b; also autocorrelation(h)
+m.sampled_autocovariance(dt, max_lag)
+m.spectral_density(omega)         # κ2/(2π) |b(iω)|²/|a(iω)|², integrates to γ(0)
+m.kernel(t)                       # g(t) = b' e^{At} e_p = Σ b(λ)/a'(λ) e^{λt}
+m.kernel_power_integral(n)        # ∫_0^∞ g^n (residues; quadrature for repeated zeros)
+m.stationary_cumulant(n)          # κn(L1) ∫ g^n; cumulants(order) returns these
+m.stationary_char_func(u)         # exp ∫_0^∞ ψ_L(u g(s)) ds  (needs an EXACT driver)
+m.state_matrix, m.output_vector, m.ar_roots, m.ma_roots
+m.stationary_state_mean, m.stationary_state_covariance
+```
+
+**Simulation:** exact for a Brownian driver: the state recursion uses $e^{A\Delta}$ and the exact Gaussian innovation. Other drivers use `substeps` driver increments per step, each entering through the kernel averaged over its sub-interval. This keeps the mean exact, with a covariance error of $O(\delta^2)$.
+
+**Exactness:** `MOMENT_PROPAGATION`; `triplet` raises `ExactnessError`.
+
+**References:** Brockwell (2001); Brockwell, Davis & Yang (2011).
 
 ---
 
