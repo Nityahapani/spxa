@@ -37,6 +37,15 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
     particles.
   - It does not rest on a few heavy importance weights when a posterior is far from Gaussian.
   - `structure_posterior(..., evidence="smc")` uses it, and `tempered_smc` is the generic engine.
+- **Live monitoring** (`spxa.discovery.monitor`): `PageCUSUM(null, alternative, binned)` watches
+  new increments for a change from a fitted law to a specified alternative. It runs Page's CUSUM on
+  the smoothed binned log-likelihood ratio.
+  - The in-control average run length is at least $e^h$ (`arl0=` sets $h$), and the chance of a
+    false alarm within $n$ observations is at most $n e^{-h}$. Both are exact and need no asymptotics,
+    because $E_0[e^{\lambda}] \le 1$ for the binned ratio.
+  - Alarms report an estimated change point. `kl_alternative` and `expected_delay` give the
+    detection drift and delay; `run` processes batches and `update` streams.
+  - `BinnedData.kernel_weights(x)` gives the kernel weights of new observations on fitted bins.
 - `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
   `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
   likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.

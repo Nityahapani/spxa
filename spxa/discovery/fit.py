@@ -188,8 +188,21 @@ class BinnedData:
         """
         if self.sample is None:
             raise ValueError("these bins were built without keeping the sample")
-        z = (self.edges[None, :] - self.sample[:, None]) / self.bandwidth
-        return np.diff(stats.norm.cdf(z), axis=1)
+        return self.kernel_weights(self.sample)
+
+    def kernel_weights(self, x: np.ndarray) -> np.ndarray:
+        r"""Kernel weights of new observations on these bins, shape ``x.shape + (n_bins,)``.
+
+        Entry :math:`j` is :math:`\Phi((e_{j+1}-x)/h) - \Phi((e_j-x)/h)`, the
+        probability that :math:`x + hZ` falls in bin :math:`j`. The weights are
+        non-negative and sum to one. If :math:`X` follows a model, then
+        :math:`E[K_j(X)]` is that model's smoothed bin probability
+        :math:`\tilde p_j` (:meth:`probabilities`), because both sides use the
+        same kernel.
+        """
+        x = np.asarray(x, dtype=float)
+        z = (self.edges - x[..., None]) / self.bandwidth
+        return np.diff(stats.norm.cdf(z), axis=-1)
 
     def pointwise_loglik(self, model: Model) -> np.ndarray:
         r"""Contributions :math:`\ell_i = \sum_j K_{ij}\log\tilde p_j` of each observation."""

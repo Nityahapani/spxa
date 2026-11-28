@@ -5552,6 +5552,14 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
   - The engine is `tempered_smc(log_target, loc, shape, *, df, n_particles, n_moves, cess, max_steps, rng)`, which returns an `SMCRun`.
 - `MixtureDistribution(weights, components, cumulants)` is a mixture of `COSDistribution`s. It has `pdf`, `cdf`, `quantile`, `support`, and the exact `mean` and `variance`.
 
+### Monitoring
+- `PageCUSUM(null, alternative, binned, *, threshold=None, arl0=None)`: Page's CUSUM of smoothed binned log-likelihood ratios (in `spxa.discovery.monitor`). Give exactly one of `threshold` ($h$) and `arl0` ($h = \log$ `arl0`).
+  - Guarantees: `guaranteed_arl0` $= e^h$, a lower bound on the in-control average run length; `false_alarm_bound(n)` $= \min(1, n e^{-h})$.
+  - Drifts and delay: `kl_alternative` (the post-change drift), `kl_null` and `expected_delay` $= h/\mathrm{KL}$.
+  - Running: `run(x)` returns a `MonitorResult(statistic, increments, alarms, threshold)` with `first_alarm`. `update(x)` processes one observation and returns an `Alarm` or `None`; `reset()` restarts. `increments(x)` gives $\lambda(x)$.
+  - `Alarm(time, change_point, statistic)` has `delay`. Times are 0-based indices from the start of monitoring, and the statistic restarts at zero after each alarm.
+- `BinnedData.kernel_weights(x)` gives the kernel weights of new observations on fitted bins; `kernel_matrix()` is its value on the stored sample.
+
 ### Inference: Standard Errors, Vuong & Bootstrap
 - `parameter_uncertainty(result, summary, binned=None)` returns a `ParameterUncertainty(names, estimates, covariance, method)` with `standard_errors`, `confidence_intervals(level)` and `table()`. Likelihood fits use the sandwich method and cumulant fits use GMM.
 - `vuong_test(first, second, binned, correction="none"|"aic"|"bic", level=0.05)` returns a `VuongResult(z, p_value, preferred, log_likelihood_ratio)`.
