@@ -264,6 +264,18 @@ On daily returns of a 20% BM, with the alternative of volatility up 30%:
 
 The guarantee is conservative, because it holds for every alternative and every increment law with the same bin probabilities. For a target false-alarm level it is the safe choice. When volatility rises from 20% to 30% and $h = \log 10^4$, the median error of the estimated change point is 5 observations against a mean delay of 48.
 
+**Exact run lengths.** `average_run_length(cusum, law)` computes the ARL under any law, following Brook & Evans (1972). $W$ is a Markov chain on $[0, h)$. The law of $\lambda(X)$ comes from the COS density of $X$ over one step. Discretising the state into cells and solving $(I-P)L = \mathbf 1$ gives the expected time to absorption. For the table's detector at $h = 2$, it gives 153.4. Two simulations of 2 million steps gave $153.2 \pm 1.3$ and $152.7 \pm 1.3$; at $h = 3$, the value is 503.2 against $510 \pm 8$ and $495 \pm 7$. After the change, ARL$_1$ grows by $1/\mathrm{KL}$ per unit of $h$, as Wald's identity predicts. The comparison with simulation shows how much the general bound $e^h$ gives away.
+
+**No single alternative.** Often the change of interest is any departure, not a specific one. The Shiryaev–Roberts statistic sums the likelihood ratios over change points instead of maximising over them:
+
+$$
+R^{(j)}_t = \big(1 + R^{(j)}_{t-1}\big)\,e^{\lambda_j(x_t)}, \qquad R_t = \sum_j w_j R^{(j)}_t .
+$$
+
+It is recursive and mixes freely over alternatives $j$ with weights $w_j$. Each $E_0[e^{\lambda_j}] \le 1$, so $E_0[R_t\mid\mathcal F_{t-1}] \le 1 + R_{t-1}$. $R_t - t$ is then a supermartingale, and optional stopping at the alarm $N$ gives $E_0[N] \ge E_0[R_N] \ge e^h$ for any number of alternatives (Pollak 1987). This bound is nearly tight: with one alternative at $h = 4$, $e^h = 55$ against a simulated ARL$_0$ of $81.8 \pm 0.7$, where CUSUM at the same $h$ runs 1420. For the same guaranteed false-alarm rate, Shiryaev–Roberts therefore detects much sooner. `local_alternatives(null, binned, kl)` supplies the alternatives: $\pm$ each eigenvector of the binned Fisher information, scaled by root finding to divergence exactly `kl` from the null. A volatility rise of 30% on the 20% BM, monitored with the four local alternatives at `kl=0.02` and `arl0=200`, gives an in-control ARL of 220 and an alarm every 60 steps after the change, and 95% of alarms name the volatility-up alternative. `report.monitor()` builds the mixture from a discovery report, or a CUSUM when an alternative is given.
+
+We do not refit the null on the stream. Re-estimating $\theta_0$ from data the detector is judging breaks $E_0[e^\lambda]\le 1$, and with it the guarantee. After an alarm, refit on the data from `change_point` onward.
+
 ## 9. When no Lévy composition fits
 
 Lévy increments are i.i.d. `summarize` reports the autocorrelation of returns and of squared returns, with Ljung–Box tests. When volatility clusters, the search still runs, but the report warns that no composition in the grammar can explain dependence. Volatility models (`spxa.vol`) and rough models (`spxa.rough`) are the place to look then.
@@ -281,6 +293,7 @@ The tests simulate exact increments and check:
 - model-averaged predictive moments and prices are exact mixtures, and averaged prices satisfy put–call parity;
 - the SMC engine recovers known normalising constants (Gaussian, skewed log-Gamma, a target zero on half the reference), and SMC evidence agrees with quadrature and with importance sampling;
 - monitoring: $E_0[K(X)] = \tilde p(\theta_0)$ to $10^{-10}$ and $E_0[e^{\lambda}] \le 1$ by quadrature, Ville's bound from a fixed start, run lengths above $e^h$, finite-horizon false alarms below $n e^{-h}$, delays near $h/\mathrm{KL}$, and change points located well inside the delay;
+- Brook–Evans run lengths agree with simulated cycle lengths within 4 standard errors; ARL$_1$ grows by $1/\mathrm{KL}$ per unit of $h$; Shiryaev–Roberts dominates CUSUM and its in-control ARL lies between $e^h$ and $2e^h$; local alternatives sit at divergence `kl` to $10^{-8}$; and the mixture names the alternative that changed;
 - sandwich standard errors agree with the sampling spread of the estimates;
 - the option fitter recovers VG parameters from a 27-quote surface;
 - mixed quotes trigger the maturity warning.
@@ -288,6 +301,7 @@ The tests simulate exact increments and check:
 ## References
 
 - Barndorff-Nielsen, O. E. (1997). Normal inverse Gaussian distributions and stochastic volatility modelling. *Scand. J. Statist.* 24.
+- Brook, D. & Evans, D. A. (1972). An approach to the probability distribution of CUSUM run length. *Biometrika* 59.
 - Buckland, S. T., Burnham, K. P. & Augustin, N. H. (1997). Model selection: an integral part of inference. *Biometrics* 53.
 - Burnham, K. P. & Anderson, D. R. (2002). *Model Selection and Multimodel Inference*, 2nd ed. Springer.
 - Carr, P., Geman, H., Madan, D. & Yor, M. (2002). The fine structure of asset returns. *J. Business* 75.
@@ -307,6 +321,7 @@ The tests simulate exact increments and check:
 - Moustakides, G. V. (1986). Optimal stopping times for detecting changes in distributions. *Ann. Statist.* 14.
 - Neal, R. M. (2001). Annealed importance sampling. *Statist. Comput.* 11.
 - Page, E. S. (1954). Continuous inspection schemes. *Biometrika* 41.
+- Pollak, M. (1987). Average run lengths of an optimal method of detecting a change in distribution. *Ann. Statist.* 15.
 - Roberts, G. O. & Rosenthal, J. S. (2001). Optimal scaling for various Metropolis–Hastings algorithms. *Statist. Sci.* 16.
 - Sato, K. (1999). *Lévy Processes and Infinitely Divisible Distributions*. Cambridge.
 - Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Communications in Statistics. Stochastic Models* 14(1–2), 335–349.

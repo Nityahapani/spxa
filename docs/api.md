@@ -5558,6 +5558,12 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
   - Drifts and delay: `kl_alternative` (the post-change drift), `kl_null` and `expected_delay` $= h/\mathrm{KL}$.
   - Running: `run(x)` returns a `MonitorResult(statistic, increments, alarms, threshold)` with `first_alarm`. `update(x)` processes one observation and returns an `Alarm` or `None`; `reset()` restarts. `increments(x)` gives $\lambda(x)$.
   - `Alarm(time, change_point, statistic)` has `delay`. Times are 0-based indices from the start of monitoring, and the statistic restarts at zero after each alarm.
+- `ShiryaevRoberts(null, alternatives, binned, *, weights=None, threshold=None, arl0=None)`: the mixture Shiryaev–Roberts detector, with $R^{(j)}_t = (1+R^{(j)}_{t-1})e^{\lambda_j(x_t)}$ and an alarm at $\sum_j w_j R^{(j)}_t \ge e^h$. Weights default to uniform.
+  - Its in-control ARL is at least $e^h$ for any number of alternatives, and the guarantee is nearly tight. It has `guaranteed_arl0`, `false_alarm_bound(n)`, `run`, `update`, `reset` and `increments` (shape `x.shape + (J,)`).
+  - `statistic` is $\log R_t$. An `Alarm` names the `alternative` contributing most, and its `change_point` is that alternative's CUSUM estimate.
+- `local_alternatives(null, binned, *, kl=0.02, step=1e-5)` returns alternatives at $\pm$ each eigenvector of the binned Fisher information in the free coordinates, each at binned divergence exactly `kl` from the null. Uninformative directions and unreachable targets are skipped.
+- `average_run_length(detector, law=None, *, n_states=None, n_grid=20001)` gives the ARL of a `PageCUSUM` when increments follow `law` (default: the null), by the Brook–Evans Markov chain. The default uses `max(400, 150 h)` states.
+- `DiscoveryReport.monitor(alternative=None, *, which=0, kl=0.02, arl0=10000)` returns a `PageCUSUM` against `alternative`, or a `ShiryaevRoberts` mixture over `local_alternatives` when none is given. Candidate `which` is the null.
 - `BinnedData.kernel_weights(x)` gives the kernel weights of new observations on fitted bins; `kernel_matrix()` is its value on the stored sample.
 
 ### Inference: Standard Errors, Vuong & Bootstrap

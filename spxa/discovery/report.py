@@ -38,6 +38,8 @@ from spxa.discovery.empirical import EmpiricalSummary
 from spxa.discovery.fit import BinnedData, FitResult
 
 if TYPE_CHECKING:
+    from spxa.discovery.expr import Model
+    from spxa.discovery.monitor import PageCUSUM, ShiryaevRoberts
     from spxa.discovery.posterior import StructurePosterior
     from spxa.discovery.inference import ParameterUncertainty, VuongResult
 
@@ -151,6 +153,34 @@ class DiscoveryReport:
         from spxa.discovery.posterior import structure_posterior
 
         return structure_posterior(self, **kwargs)
+
+    def monitor(
+        self,
+        alternative: Optional[Model] = None,
+        *,
+        which: int | FitResult = 0,
+        kl: float = 0.02,
+        arl0: float = 10_000.0,
+    ) -> PageCUSUM | ShiryaevRoberts:
+        """A change detector for new increments, with the fitted law of candidate ``which`` as null.
+
+        With an ``alternative``, the result is a :class:`~spxa.discovery.monitor.PageCUSUM`.
+        Without one, it is a :class:`~spxa.discovery.monitor.ShiryaevRoberts` mixture over
+        :func:`~spxa.discovery.monitor.local_alternatives` at divergence ``kl``.
+        Either way the in-control average run length is at least ``arl0``.
+        Needs a likelihood-mode report built from a return sample, and new increments
+        on the same time step.
+        """
+        from spxa.discovery.monitor import PageCUSUM, ShiryaevRoberts, local_alternatives
+
+        if self.method != "likelihood" or self.binned is None:
+            raise ValueError("monitoring needs a likelihood report built from a return sample")
+        null = self._pick(which).model
+        if alternative is not None:
+            return PageCUSUM(null, alternative, self.binned, arl0=arl0)
+        return ShiryaevRoberts(
+            null, local_alternatives(null, self.binned, kl=kl), self.binned, arl0=arl0
+        )
 
     def admissible(self) -> list[FitResult]:
         """Candidates that are not :attr:`~spxa.discovery.fit.FitResult.degenerate`, in rank order."""
