@@ -171,9 +171,9 @@ def test_importance_refinement_and_its_monte_carlo_error(bm: Any) -> None:
         for s in range(6)
     ]
     for Q in runs:
-        assert Q.method == "importance" and len(Q.importance) == 2
+        assert Q.method == "importance" and len(Q.refined) == 2
         assert np.all(Q.standard_errors > 0)
-        assert [i.log_evidence for i in Q.importance] == Q.log_evidences.tolist()
+        assert [i.log_evidence for i in Q.refined] == Q.log_evidences.tolist()
         z = Q.log_evidences + Q.log_model_prior
         np.testing.assert_allclose(Q.probabilities, softmax(z - z.max()), rtol=1e-14)
         assert "se" in str(Q).split("\n")[0].split()
