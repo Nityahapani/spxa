@@ -1,5 +1,5 @@
 """
-spxa v1.3.0 — full end-to-end showcase
+spxa v1.4.0 — full end-to-end showcase
 =======================================
 
 Runs every major capability of the library in a single script:
