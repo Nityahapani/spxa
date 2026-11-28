@@ -37,6 +37,10 @@ Evidence
     laws (:class:`MixtureDistribution`) and option prices (:class:`PosteriorPrices`).
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
+Monitoring
+    :class:`PageCUSUM` watches new increments for a change from a fitted law
+    to a specified alternative, with a guaranteed in-control average run
+    length (:class:`MonitorResult`, :class:`Alarm`).
 Option prices
     :func:`cos_prices` prices European options with a fitted model as the
     risk-neutral driver (made a martingale by :func:`martingale_correction`).
@@ -54,6 +58,7 @@ from spxa.discovery.bayes import (
     laplace_evidence,
 )
 from spxa.discovery.density import COSDistribution, model_distribution
+from spxa.discovery.monitor import Alarm, MonitorResult, PageCUSUM
 from spxa.discovery.smc import SMCEvidence, smc_evidence
 from spxa.discovery.posterior import (
     MixtureDistribution,
@@ -174,6 +179,10 @@ __all__ = [
     "structure_posterior",
     "MixtureDistribution",
     "PosteriorPrices",
+    # monitoring
+    "PageCUSUM",
+    "MonitorResult",
+    "Alarm",
     # search
     "Grammar",
     "canonical",
