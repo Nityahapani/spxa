@@ -38,6 +38,7 @@ from spxa.discovery.empirical import EmpiricalSummary
 from spxa.discovery.fit import BinnedData, FitResult
 
 if TYPE_CHECKING:
+    from spxa.discovery.posterior import StructurePosterior
     from spxa.discovery.inference import ParameterUncertainty, VuongResult
 
 
@@ -140,6 +141,16 @@ class DiscoveryReport:
         if self.method != "likelihood" or self.binned is None:
             raise ValueError("the Vuong test needs a likelihood report built from a return sample")
         return vuong_test(self._pick(first), self._pick(second), self.binned, correction, level)
+
+    def posterior(self, **kwargs: Any) -> StructurePosterior:
+        """Posterior probabilities of the candidates (:func:`~spxa.discovery.posterior.structure_posterior`).
+
+        Keyword arguments (``prior``, ``model_prior``, ``top``) are passed on.
+        Needs a likelihood-mode report.
+        """
+        from spxa.discovery.posterior import structure_posterior
+
+        return structure_posterior(self, **kwargs)
 
     def admissible(self) -> list[FitResult]:
         """Candidates that are not :attr:`~spxa.discovery.fit.FitResult.degenerate`, in rank order."""
