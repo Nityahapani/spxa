@@ -68,14 +68,17 @@ def test_variance_gamma_beats_its_neighbours() -> None:
 
 
 def test_sum_of_pure_jump_laws_up_to_near_equivalence() -> None:
-    # VG + Gamma = (Γ⁺ + Γ₃) - Γ⁻ is close to a bilateral Gamma Γ⁺' - Γ⁻ with one
-    # fewer parameter, so BIC may prefer either; both must outrank the rest and fit
+    # VG = Γ⁺ - Γ⁻, so VG + Gamma = (Γ⁺ + Γ₃) - Γ⁻ is close to a bilateral Gamma
+    # Γ⁺' - Γ⁻ with one fewer parameter, and so is VG - Gamma = Γ⁺ - (Γ⁻ + Γ₃).
+    # BIC may order these three either way; all must fit and outrank the rest.
     x = vg_increments(0.15, 0.2, -0.1, DT, 5_000, seed=1) + gamma_increments(
         4.0, 25.0, DT, 5_000, seed=20
     )
     r = discover(x, dt=DT, grammar=GRAMMAR, n_starts=2)
-    top = set(_keys(r, 2))
-    assert top == {"VG + Gamma + Drift", "-Gamma + Gamma + Drift"}
-    assert r.best.g_pvalue > 0.05 and r.best.ks_distance < 0.01
-    others = [c.bic for c in r.candidates[2:]]
+    near = {"VG + Gamma + Drift", "-Gamma + Gamma + Drift", "VG + -Gamma + Drift"}
+    assert set(_keys(r, 3)) == near
+    for c in r.candidates[:3]:
+        assert c.g_pvalue > 0.05 and c.ks_distance < 0.01, c.model
+    others = [c.bic for c in r.candidates[3:]]
+    assert min(others) - r.candidates[2].bic > 5
     assert min(others) - r.best.bic > 10
