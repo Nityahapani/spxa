@@ -12,6 +12,14 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
 - **Exact likelihood Hessian** (`spxa.graph.autodiff.discovery.likelihood_value_grad_hess`): the
   binned discovery likelihood with its Hessian in the free coordinates, from second-order jets.
   It matches differences of the exact gradient to $10^{-8}$ relative on seven structures.
+- **Model evidence** (`spxa.discovery.bayes`):
+  - `laplace_evidence`: the Laplace approximation of $\log p(D\mid M)$ at the posterior mode,
+    using the exact likelihood Hessian;
+  - `importance_evidence`: an unbiased multivariate-$t$ importance-sampling check, with a standard
+    error and an effective sample size;
+  - priors on the free coordinates: `GaussianPrior` and `default_prior`.
+
+  Laplace matches adaptive quadrature to $8\times10^{-5}$ at $n = 2000$, and its error falls like $1/n$.
 
 ## [1.3.0] — 2026-11-25
 

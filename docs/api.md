@@ -5530,6 +5530,11 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
   - `uncertainty(which=0)` and `compare(first=0, second=1, correction="bic")`.
 - `screen_degenerate(ranked, exclude, score=None, criterion="bic")` lives in `spxa.discovery.report`.
 
+### Evidence
+- `GaussianPrior(mean, sd)`: independent normals on the free coordinates, with `log_density(x)`, `grad(x)`, `hess()` and `sample(size, rng)`. `default_prior(structure, std, scale=2.0)` is centred at the starting member; `REAL_COORDINATES` lists the untransformed coordinates, which are scaled by `std`.
+- `laplace_evidence(fit, binned, *, prior=None, x0=None, gtol=1e-8, maxiter=200)` returns an `Evidence` with `log_evidence`, `mode`, `model`, `log_likelihood`, `log_prior`, `hessian`, `covariance`, `log_det_hessian`, `log_occam_factor`, `bic_equivalent`, `converged` and `draws(n, rng)`. `fit` is a `FitResult` or a structure with `x0`. It raises `ValueError` when the posterior Hessian at the mode is not positive definite.
+- `importance_evidence(evidence, binned, *, n_draws=2000, df=5.0, inflate=1.2, rng=None)` returns an `ImportanceEvidence(log_evidence, standard_error, ess, n_draws, laplace)` with `laplace_error`.
+
 ### Inference: Standard Errors, Vuong & Bootstrap
 - `parameter_uncertainty(result, summary, binned=None)` returns a `ParameterUncertainty(names, estimates, covariance, method)` with `standard_errors`, `confidence_intervals(level)` and `table()`. Likelihood fits use the sandwich method and cumulant fits use GMM.
 - `vuong_test(first, second, binned, correction="none"|"aic"|"bic", level=0.05)` returns a `VuongResult(z, p_value, preferred, log_likelihood_ratio)`.
