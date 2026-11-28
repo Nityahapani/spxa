@@ -64,6 +64,7 @@ from spxa.zoo.beyond.ornstein_uhlenbeck import (
     VasicekProcess,
 )
 from spxa.zoo.beyond.ou_levy import OULevy
+from spxa.zoo.beyond.carma import CARMA, CARMAProcess
 from spxa.zoo.beyond.sabr import SABR, SABRModel, SABRProcess
 from spxa.zoo.beyond.schobel_zhu import (
     SZModel,
@@ -356,6 +357,8 @@ __all__ = [
     "HW1F",
     "ExtendedVasicek",
     "OULevy",
+    "CARMA",
+    "CARMAProcess",
     "OrnsteinUhlenbeck",
     "OrnsteinUhlenbeckProcess",
     "SABR",
