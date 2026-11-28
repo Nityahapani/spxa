@@ -202,7 +202,9 @@ def tempered_smc(
             with np.errstate(invalid="ignore"):
                 cur = (1 - beta) * lq + np.where(np.isneginf(lp), -np.inf, beta * lp)
                 new = (1 - beta) * lq_p + np.where(np.isneginf(lp_p), -np.inf, beta * lp_p)
-            ok = np.log(rng.random(n)) < new - cur
+                # -inf - (-inf) is nan and compares False; a finite proposal from a
+                # zero-density particle has ratio +inf and is accepted
+                ok = np.log(rng.random(n)) < new - cur
             ok &= np.isfinite(new)
             x[ok], lq[ok], lp[ok] = prop[ok], lq_p[ok], lp_p[ok]
             rate = float(np.mean(ok))
