@@ -228,11 +228,47 @@ reported as `probability_se`. Over six seeds, the spread of the estimated probab
 
 **Model averaging.** `StructurePosterior.predictive(t, n_draws=0)` is the posterior predictive law of $X_t$. It is the mixture $\sum_i P(M_i\mid D)\,p(x\mid M_i)$ of COS laws, either at the modes or averaged over `n_draws` Laplace draws per structure. Its mean and variance are exact, by the law of total variance. `option_prices(...)` averages European prices in the same way. Each structure is made risk-neutral by its own martingale correction. The reported standard deviation combines parameter uncertainty within structures and disagreement between them. A draw whose prices are not finite is discarded and counted. Examples are an infinite $E[e^{X_1}]$, or a weakly identified jump part drawn with a jump standard deviation of 9.5 in log price, whose correction is about $-5\times10^{18}$. Averaged calls and puts satisfy put–call parity, because every component does.
 
-## 8. When no Lévy composition fits
+## 8. Live monitoring
+
+A fitted law is a claim about future increments too. `PageCUSUM(null, alternative, binned)` watches new increments $x_1, x_2, \dots$ for a change from the fitted law $\theta_0$ to a specified alternative $\theta_1$, for example volatility up 30% or jumps appearing. It uses Page's CUSUM (Page 1954),
+
+$$
+W_t = \max\big(0,\, W_{t-1} + \lambda(x_t)\big), \qquad
+\lambda(x) = \sum_j K_j(x)\,\log\frac{\tilde p_j(\theta_1)}{\tilde p_j(\theta_0)},
+$$
+
+and raises an alarm when $W_t \ge h$. Here $\lambda$ is the smoothed binned log-likelihood ratio of §3. A new increment gets the same kernel weights $K_j(x) = \Phi((e_{j+1}-x)/h_K) - \Phi((e_j-x)/h_K)$ as the data (`BinnedData.kernel_weights`). The two laws may have different structures.
+
+**The false-alarm guarantee is exact.** Under the null, $E_0[K_j(X)] = \tilde p_j(\theta_0)$, because the model's smoothed probabilities use the same kernel. The weights are non-negative and sum to one. By the weighted AM–GM inequality,
+
+$$
+E_0\big[e^{\lambda(X)}\big] \le E_0\Big[\sum_j K_j(X)\,\frac{\tilde p_j(\theta_1)}{\tilde p_j(\theta_0)}\Big] = \sum_j \tilde p_j(\theta_1) = 1 .
+$$
+
+So every product $\prod_{i=k+1}^{t} e^{\lambda(x_i)}$ is a non-negative supermartingale under the null. Ville's inequality bounds the chance that it ever reaches $e^h$ by $e^{-h}$. $W_t \ge h$ exactly when one of these products, started after the last zero of $W$, does. Two guarantees follow:
+
+- the in-control average run length is at least $e^h$ (Lorden 1971), so `arl0=A` sets $h = \log A$;
+- the chance of any false alarm within $n$ observations is at most $n e^{-h}$ (`false_alarm_bound(n)`).
+
+Neither bound relies on asymptotics or on the alternative being true. The only assumptions are i.i.d. increments under the null, which is the Lévy hypothesis, and the null parameters treated as known. Parameters estimated from a short history shorten the in-control run length, so refit on enough data first.
+
+**Detection.** After a change, the drift of $W$ is exactly $E_1[\lambda] = \mathrm{KL}(\tilde p(\theta_1)\,\|\,\tilde p(\theta_0))$ (`kl_alternative`), because $\lambda$ is linear in $K$. Before a change the drift is $-\mathrm{KL}(\tilde p(\theta_0)\,\|\,\tilde p(\theta_1))$ (`kl_null`). The expected delay is about $h/\mathrm{KL}$ (`expected_delay`). Page's CUSUM minimises the worst-case delay among detectors with the same false-alarm rate (Lorden 1971; Moustakides 1986). Each `Alarm` also reports `change_point`, the index after the last zero of $W$, where the excursion that crossed began.
+
+On daily returns of a 20% BM, with the alternative of volatility up 30%:
+
+| $h$ | guaranteed ARL$_0 = e^h$ | simulated ARL$_0$ | $h/\mathrm{KL}$ | simulated delay |
+|---|---|---|---|---|
+| 2 | 7.4 | 150 | 26 | 21 |
+| 3 | 20 | 490 | 39 | 34 |
+| 4 | 55 | 1420 | 52 | 48 |
+
+The guarantee is conservative, because it holds for every alternative and every increment law with the same bin probabilities. For a target false-alarm level it is the safe choice. When volatility rises from 20% to 30% and $h = \log 10^4$, the median error of the estimated change point is 5 observations against a mean delay of 48.
+
+## 9. When no Lévy composition fits
 
 Lévy increments are i.i.d. `summarize` reports the autocorrelation of returns and of squared returns, with Ljung–Box tests. When volatility clusters, the search still runs, but the report warns that no composition in the grammar can explain dependence. Volatility models (`spxa.vol`) and rough models (`spxa.rough`) are the place to look then.
 
-## 9. What is tested
+## 10. What is tested
 
 The tests simulate exact increments and check:
 
@@ -244,6 +280,7 @@ The tests simulate exact increments and check:
 - posterior probabilities are Bayes' rule on the evidences to $10^{-14}$, a structure prior shifts log odds exactly, and the importance-sampling error matches the spread over seeds;
 - model-averaged predictive moments and prices are exact mixtures, and averaged prices satisfy put–call parity;
 - the SMC engine recovers known normalising constants (Gaussian, skewed log-Gamma, a target zero on half the reference), and SMC evidence agrees with quadrature and with importance sampling;
+- monitoring: $E_0[K(X)] = \tilde p(\theta_0)$ to $10^{-10}$ and $E_0[e^{\lambda}] \le 1$ by quadrature, Ville's bound from a fixed start, run lengths above $e^h$, finite-horizon false alarms below $n e^{-h}$, delays near $h/\mathrm{KL}$, and change points located well inside the delay;
 - sandwich standard errors agree with the sampling spread of the estimates;
 - the option fitter recovers VG parameters from a 27-quote surface;
 - mixed quotes trigger the maturity warning.
@@ -264,13 +301,17 @@ The tests simulate exact increments and check:
 - Kou, S. G. (2002). A jump-diffusion model for option pricing. *Management Science* 48.
 - Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. *Ann. Statist.* 17.
 - Lindley, D. V. (1957). A statistical paradox. *Biometrika* 44.
+- Lorden, G. (1971). Procedures for reacting to a change in distribution. *Ann. Math. Statist.* 42.
 - Madan, D., Carr, P. & Chang, E. (1998). The variance gamma process and option pricing. *European Finance Review* 2.
 - Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. *J. Financial Economics* 3.
+- Moustakides, G. V. (1986). Optimal stopping times for detecting changes in distributions. *Ann. Statist.* 14.
 - Neal, R. M. (2001). Annealed importance sampling. *Statist. Comput.* 11.
+- Page, E. S. (1954). Continuous inspection schemes. *Biometrika* 41.
 - Roberts, G. O. & Rosenthal, J. S. (2001). Optimal scaling for various Metropolis–Hastings algorithms. *Statist. Sci.* 16.
 - Sato, K. (1999). *Lévy Processes and Infinitely Divisible Distributions*. Cambridge.
 - Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Communications in Statistics. Stochastic Models* 14(1–2), 335–349.
 - Tierney, L. & Kadane, J. B. (1986). Accurate approximations for posterior moments and marginal densities. *J. Amer. Statist. Assoc.* 81.
+- Ville, J. (1939). *Étude critique de la notion de collectif*. Gauthier-Villars.
 - Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. *Econometrica* 57.
 - White, H. (1982). Maximum likelihood estimation of misspecified models. *Econometrica* 50.
 - Zhou, Y., Johansen, A. M. & Aston, J. A. D. (2016). Toward automatic model comparison: an adaptive sequential Monte Carlo approach. *J. Comput. Graph. Statist.* 25.
