@@ -71,6 +71,7 @@ from spxa.discovery.fit import BinnedData, FitResult, initial_params
 
 __all__ = [
     "REAL_COORDINATES",
+    "MODE_GAP_TOLERANCE",
     "GaussianPrior",
     "default_prior",
     "Evidence",
@@ -88,6 +89,11 @@ REAL_COORDINATES: dict[str, tuple[int, ...]] = {
 }
 
 _LOG_2PI = float(np.log(2.0 * np.pi))
+
+
+#: Largest :attr:`Evidence.mode_gap` (in nats) for which the mode search counts
+#: as converged.
+MODE_GAP_TOLERANCE = 1e-6
 
 
 @dataclass(frozen=True)
@@ -180,9 +186,17 @@ class Evidence:
     hessian :
         :math:`H`, the Hessian of :math:`-[\ell + \log\pi]` at the mode.
     converged :
-        Whether the mode search met its gradient tolerance.
+        Whether :attr:`mode_gap` is at most :data:`MODE_GAP_TOLERANCE`, or the
+        gradient met ``gtol``.
     n_obs :
         Number of observations in the bins.
+    mode_gap :
+        :math:`\tfrac12 g^\top H^{-1} g` at the reported mode, half the squared
+        Newton decrement. To second order this is how far the log posterior
+        there lies below its maximum, and so it is the error this point adds to
+        :attr:`log_evidence`. The binned likelihood has kinks of relative size
+        about :math:`10^{-7}` (the CDF's clip and running maximum), so the
+        gradient can stall above a fixed tolerance while the gap is negligible.
     """
 
     structure: Node
@@ -194,6 +208,7 @@ class Evidence:
     hessian: np.ndarray = field(repr=False)
     converged: bool
     n_obs: int
+    mode_gap: float = 0.0
 
     @property
     def n_params(self) -> int:
@@ -341,6 +356,8 @@ def laplace_evidence(
             f"the posterior Hessian of {structure.key()} is not positive definite at its mode"
         ) from exc
     log_det = 2.0 * float(np.sum(np.log(np.diag(L))))
+    step = np.linalg.solve(L, g)
+    gap = 0.5 * float(step @ step)  # g' H^-1 g / 2
     k = x.size
     log_prior = prior.log_density(x)
     log_lik = -v - log_prior  # v = -(ℓ + log π)
@@ -352,8 +369,9 @@ def laplace_evidence(
         log_likelihood=float(log_lik),
         log_prior=float(log_prior),
         hessian=H,
-        converged=bool(np.max(np.abs(g)) <= max(gtol, 1e-6 * max(1.0, abs(v)))),
+        converged=bool(gap <= MODE_GAP_TOLERANCE or np.max(np.abs(g)) <= gtol),
         n_obs=binned.n,
+        mode_gap=gap,
     )
 
 
