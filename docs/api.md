@@ -4770,6 +4770,14 @@ The `spxa.calibration` package provides institutional-grade cross-sectional impl
 - Resampling algorithms: `effective_sample_size`, `systematic_resample`, `stratified_resample`, `multinomial_resample`.
 - `BootstrapParticleFilter` (`ParticleFilter`, `SequentialMonteCarlo`): Sequential Monte Carlo SIR particle filtering for general non-Gaussian/non-linear latent state spaces.
 
+#### CARMA: Exact Kalman QMLE
+- `carma_kalman_filter(process, y, dt=None, *, times=None)` returns `KalmanInnovations(innovations, variances, log_likelihood, steady_from)` with `standardized`. It gives the exact Kalman innovations of a `CARMAProcess` on an even grid (`dt`) or at irregular `times`, starting from the stationary law. `carma_log_likelihood(...)` returns just the log-likelihood. With a Brownian driver this is the exact Gaussian likelihood; otherwise it is the Gaussian quasi-likelihood.
+- `fit_carma(y, p, q=0, dt=None, *, times=None, n_starts=4, rng=None, maxiter=500)` returns a `CARMAFit`.
+  - Its fields are `process` (a `CARMAProcess` with a Brownian driver carrying the fitted first two cumulants), `p`, `q`, `ar`, `ma` (with `b_q = 1`), `sigma`, `mean`, `log_likelihood`, `n_obs`, `converged` and `filter`.
+  - It also has `n_params`, `aic`, `bic`, `ar_roots`, `ma_roots`, `residuals` (standardised innovations) and `summary()`.
+  - $\sigma^2$ and the mean are profiled out. The zeros are searched over a Hurwitz factorisation, so every candidate is causal and minimum-phase.
+- `select_carma_order(y, dt=None, *, times=None, max_p=3, criterion="bic"|"aic", n_starts=3, rng=None)` fits every CARMA(p, q) with `q < p <= max_p` and returns them ranked.
+
 #### Specialized Domain Filters
 - `HestonVarianceFilter`: Log-variance state-space tracker recovering latent variance $v_t = \exp(x_t) > 0$ from realized asset returns.
 - `SchwartzTwoFactorFilter`: Convenience yield filter tracking unobserved commodity convenience yield $\delta_t$ and spot price $S_t$ from futures term structures.

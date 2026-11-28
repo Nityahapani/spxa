@@ -61,6 +61,17 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
   - Simulation is exact with a Brownian driver. Other Lévy drivers use averaged-kernel substeps,
     which keep the mean exact with an $O(\delta^2)$ variance error.
   - `from_roots` builds the process from AR and MA zeros. CARMA(1, 0) reproduces the OU process.
+- **CARMA estimation** (`spxa.calibration.filter.carma`):
+  - `carma_kalman_filter` and `carma_log_likelihood` give the exact Kalman-filter likelihood of
+    discretely observed CARMA data, on even grids or irregular times. It equals the dense Gaussian
+    likelihood to $10^{-11}$. Lévy drivers make it a quasi-likelihood.
+  - `fit_carma` is the Gaussian QMLE. It profiles out $\sigma^2$ and the mean, and searches the
+    zeros over a Hurwitz factorisation, so every candidate is causal and minimum-phase.
+    `select_carma_order` ranks orders by BIC or AIC.
+  - On even grids, the filter switches to its steady state and runs the remaining modes through
+    `lfilter`, so a likelihood on 5000 points takes milliseconds.
+- **Example 10** (`examples/10_inference_monitoring_carma.py`): posterior over structures, model-averaged
+  prices, monitoring with `report.monitor()`, and fitting a Gamma-driven CARMA(2, 1).
 - `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
   `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
   likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.

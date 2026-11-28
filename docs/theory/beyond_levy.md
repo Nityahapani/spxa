@@ -116,6 +116,8 @@ The second-order structure sees the driver only through $\kappa_2(L_1)$. Jumps s
 
 **spxa's exactness for CARMA:** `MOMENT_PROPAGATION`. There is no triplet, because the increments are dependent.
 
+**Estimation.** Sampled CARMA data form a linear state-space model with exact transitions. `fit_carma` fits it by the Kalman-filter Gaussian quasi-likelihood, on even or irregular grids; see [Calibration §3.4](calibration.md#34-carma-processes-an-exact-kalman-filter).
+
 ## Degradation policy
 
 When an operation mixes process types or leaves the Lévy regime, spxa:
