@@ -46,6 +46,13 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
   - Alarms report an estimated change point. `kl_alternative` and `expected_delay` give the
     detection drift and delay; `run` processes batches and `update` streams.
   - `BinnedData.kernel_weights(x)` gives the kernel weights of new observations on fitted bins.
+  - **No single alternative needed:** `ShiryaevRoberts(null, alternatives, binned)` is a mixture
+    Shiryaev–Roberts detector over several alternatives. Its in-control ARL is again at least
+    $e^h$, a nearly tight bound. `local_alternatives(null, binned, kl)` puts alternatives in every
+    Fisher-information direction at an exact divergence, and alarms name the alternative that fired.
+  - `average_run_length(cusum, law)` computes CUSUM run lengths by the Brook–Evans Markov chain.
+    It agrees with simulation to within 1%.
+  - `report.monitor()` builds either detector from a discovered model.
 - `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
   `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
   likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.
