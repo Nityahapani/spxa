@@ -5536,16 +5536,20 @@ Inverse stochastic algebra: given returns, summary statistics or option prices, 
 - `importance_evidence(evidence, binned, *, n_draws=2000, df=5.0, inflate=1.2, rng=None)` returns an `ImportanceEvidence(log_evidence, standard_error, ess, n_draws, laplace)` with `laplace_error`.
 
 ### Structure Posterior & Model Averaging
-- `structure_posterior(candidates, binned=None, *, prior=None, model_prior=None, top=None, evidence="laplace"|"importance", n_draws=2000, rng=None)`.
+- `structure_posterior(candidates, binned=None, *, prior=None, model_prior=None, top=None, evidence="laplace"|"importance"|"smc", n_draws=2000, rng=None)`.
   - `candidates` is a likelihood-mode `DiscoveryReport` (also available as `report.posterior(**kwargs)`) or a list of likelihood `FitResult`s on `binned`.
   - `prior` is a `GaussianPrior`, a callable `structure -> GaussianPrior`, or `None` for `default_prior`.
   - `model_prior` is `None` (uniform), a mapping from structure key to weight, or a callable `structure -> weight`.
-  - `evidence="importance"` refines every Laplace value by importance sampling.
+  - `evidence="importance"` refines every Laplace value by importance sampling with `n_draws` draws. `evidence="smc"` uses `smc_evidence` with 4 runs of `n_draws // 4` particles.
 - `StructurePosterior` holds:
-  - the fields `evidences`, `probabilities`, `log_evidences`, `standard_errors`, `probability_se` (delta method), `log_model_prior`, `bic`, `skipped`, `method`, `importance` and `dt`;
+  - the fields `evidences`, `probabilities`, `log_evidences`, `standard_errors`, `probability_se` (delta method), `log_model_prior`, `bic`, `skipped`, `method`, `refined` (the Monte Carlo estimates) and `dt`;
   - the lookups `best`, `keys`, `probability(structure)`, `bic_weights()`, `bayes_factor(i, j)`, `credible_set(level=0.95)`, `cumulants(order, t)` and `table(top, digits)`;
   - `predictive(t=None, *, n_draws=0, rng=None, n_terms=1024, min_probability=1e-6)`, which returns a `MixtureDistribution`;
   - `option_prices(spot, strikes, maturity, rate=0.0, dividend=0.0, call=True, *, n_draws=0, rng=None, n_terms=1024)`, which returns `PosteriorPrices(mean, sd, by_structure, probabilities, discarded)`.
+- `smc_evidence(evidence, binned, *, n_particles=400, n_runs=4, n_moves=3, cess=0.95, df=5.0, inflate=1.2, max_steps=500, rng=None)` (in `spxa.discovery.smc`) returns an `SMCEvidence`.
+  - It holds `log_evidence`, `standard_error` (from the spread over runs), `runs`, `laplace`, `laplace_error`, `run_log_evidences`, `n_temperatures` and `n_evaluations`.
+  - It also has `weighted_particles()` and `draws(n, rng)`, which give posterior draws.
+  - The engine is `tempered_smc(log_target, loc, shape, *, df, n_particles, n_moves, cess, max_steps, rng)`, which returns an `SMCRun`.
 - `MixtureDistribution(weights, components, cumulants)` is a mixture of `COSDistribution`s. It has `pdf`, `cdf`, `quantile`, `support`, and the exact `mean` and `variance`.
 
 ### Inference: Standard Errors, Vuong & Bootstrap

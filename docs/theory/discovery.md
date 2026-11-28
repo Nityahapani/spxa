@@ -167,6 +167,22 @@ $\ell$ is the smoothed binned likelihood of the fit. It has no multinomial coeff
 
 **Checking Laplace.** `importance_evidence(evidence, binned, n_draws=2000)` gives an unbiased estimate of $p(D\mid M)$. Its proposal is a multivariate $t_5$ at $\hat x$ with scale $1.2^2 H^{-1}$ (Geweke 1989). It reports the delta-method standard error of $\log\hat Z$ and Kish's effective sample size.
 
+**Sequential Monte Carlo.** Importance sampling relies on one proposal. When a posterior is far from Gaussian, only a few percent of its draws carry weight, and then the estimate and its standard error rest on those few draws. `smc_evidence(evidence, binned)` reaches the posterior gradually instead. It starts from the same normalised reference $q$ and moves $N$ particles through the geometric bridge
+
+$$
+\gamma_\beta \propto q^{1-\beta}\,(L\pi)^{\beta}, \qquad 0 = \beta_0 < \dots < \beta_T = 1
+$$
+
+(Neal 2001; Del Moral, Doucet & Jasra 2006). At each temperature:
+
+- the particles are reweighted by $(L\pi/q)^{\beta_t-\beta_{t-1}}$;
+- they are resampled (systematically) when the effective sample size falls below $N/2$;
+- they are moved by random-walk Metropolis kernels that leave $\gamma_{\beta_t}$ invariant, with the particles' covariance as the proposal shape and an acceptance-tuned scale.
+
+Because $q$ is normalised, the product of the mean incremental weights estimates $Z$. Temperatures are chosen adaptively, so that the conditional effective sample size stays at 95% of $N$ (Zhou, Johansen & Aston 2016). Particles where the likelihood is zero (laws the binned likelihood rejects) drop out at the first step. The standard error comes from independent runs, four by default; with so few runs it is itself good to only about 40%.
+
+The engine `tempered_smc` was tested on targets with known normalising constants: a correlated Gaussian from an offset reference, the skewed $\log$-Gamma with shape 0.3, and a half-normal that is zero on half the reference. Its estimates match the exact values within their standard errors. Averaged over 60 runs per setting, the log-Gamma estimates lie within 1.2 standard errors (about 0.004) of $\log\Gamma(0.3)$. On 250 weekly VG returns, SMC and importance sampling agree to 0.02 nats, and both put Laplace 0.25 nats low. The cost is about $N(1 + 3T)$ likelihood evaluations per run, with $T \approx 6$–$10$ temperatures here.
+
 **Priors.** `GaussianPrior(mean, sd)` puts independent normals on the free coordinates. `default_prior(structure, std, scale=2)` centres them at the starting member (the data's standard deviation spread over the summands). The standard deviations are `scale` for logarithmic, logit and `arctanh` coordinates, and `scale` $\cdot\,\sigma_1$ for the three untransformed ones: the drift, the VG $\theta$ and the normal jump mean. Here $\sigma_1$ is the data's standard deviation per unit time. Bayes factors depend on the prior widths of parameters that two structures do not share (Lindley 1957). Pass your own prior when you have real information.
 
 **Accuracy.** On Gaussian data with one or two free coordinates, the Laplace value matches adaptive quadrature of the posterior to $6\times10^{-4}$ ($n = 300$) and $8\times10^{-5}$ ($n = 2000$). Importance sampling agrees with quadrature within its standard error. On 250 weekly VG returns, the posterior is skewed and Laplace is 0.2 nats off. Importance sampling detects this (standard error 0.02), and at $n = 2000$ the gap is 0.006.
@@ -192,7 +208,7 @@ These probabilities differ from BIC weights in two ways. They use each structure
 
 BIC charges the jump part $\frac32\log n \approx 11.4$ for its three parameters. The evidence charges only the prior volume the data rule out. Rare large jumps are barely constrained by 2000 Gaussian returns, so their prior volume is largely kept. On data with jumps (Merton, $n = 3000$) or VG data, the true structure gets probability above $1 - 10^{-12}$.
 
-**Monte Carlo evidence.** `evidence="importance"` replaces each Laplace value by the importance-sampling estimate. Weakly identified structures are where Laplace errs: in the table it is 0.45 nats low for the jump structure. The estimates' standard errors $s_j$ propagate to the probabilities by the delta method,
+**Monte Carlo evidence.** `evidence="importance"` replaces each Laplace value by the importance-sampling estimate, and `evidence="smc"` by the SMC estimate (four runs of `n_draws // 4` particles). Weakly identified structures are where Laplace errs: in the table it is 0.45 nats low for the jump structure. The estimates' standard errors $s_j$ propagate to the probabilities by the delta method,
 
 $$
 \operatorname{se}(P_i)^2 = \sum_j \big(P_i(\delta_{ij} - P_j)\big)^2 s_j^2,
@@ -217,6 +233,7 @@ The tests simulate exact increments and check:
 - the binned likelihood cannot gain from mass outside the data's range: previously aliased Merton samples recover the true jump mean, and wide-grid probabilities match Monte Carlo where the fixed interval was off by 20 standard deviations;
 - posterior probabilities are Bayes' rule on the evidences to $10^{-14}$, a structure prior shifts log odds exactly, and the importance-sampling error matches the spread over seeds;
 - model-averaged predictive moments and prices are exact mixtures, and averaged prices satisfy put–call parity;
+- the SMC engine recovers known normalising constants (Gaussian, skewed log-Gamma, a target zero on half the reference), and SMC evidence agrees with quadrature and with importance sampling;
 - sandwich standard errors agree with the sampling spread of the estimates;
 - the option fitter recovers VG parameters from a 27-quote surface;
 - mixed quotes trigger the maturity warning.
@@ -228,6 +245,7 @@ The tests simulate exact increments and check:
 - Burnham, K. P. & Anderson, D. R. (2002). *Model Selection and Multimodel Inference*, 2nd ed. Springer.
 - Carr, P., Geman, H., Madan, D. & Yor, M. (2002). The fine structure of asset returns. *J. Business* 75.
 - Cont, R. & Tankov, P. (2004). *Financial Modelling with Jump Processes*. Chapman & Hall.
+- Del Moral, P., Doucet, A. & Jasra, A. (2006). Sequential Monte Carlo samplers. *J. R. Statist. Soc. B* 68.
 - Geweke, J. (1989). Bayesian inference in econometric models using Monte Carlo integration. *Econometrica* 57.
 - Fang, F. & Oosterlee, C. W. (2008). A novel pricing method for European options based on Fourier-cosine series expansions. *SIAM J. Sci. Comput.* 31.
 - Hoeting, J. A., Madigan, D., Raftery, A. E. & Volinsky, C. T. (1999). Bayesian model averaging: a tutorial. *Statist. Sci.* 14.
@@ -238,8 +256,11 @@ The tests simulate exact increments and check:
 - Lindley, D. V. (1957). A statistical paradox. *Biometrika* 44.
 - Madan, D., Carr, P. & Chang, E. (1998). The variance gamma process and option pricing. *European Finance Review* 2.
 - Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. *J. Financial Economics* 3.
+- Neal, R. M. (2001). Annealed importance sampling. *Statist. Comput.* 11.
+- Roberts, G. O. & Rosenthal, J. S. (2001). Optimal scaling for various Metropolis–Hastings algorithms. *Statist. Sci.* 16.
 - Sato, K. (1999). *Lévy Processes and Infinitely Divisible Distributions*. Cambridge.
 - Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Communications in Statistics. Stochastic Models* 14(1–2), 335–349.
 - Tierney, L. & Kadane, J. B. (1986). Accurate approximations for posterior moments and marginal densities. *J. Amer. Statist. Assoc.* 81.
 - Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. *Econometrica* 57.
 - White, H. (1982). Maximum likelihood estimation of misspecified models. *Econometrica* 50.
+- Zhou, Y., Johansen, A. M. & Aston, J. A. D. (2016). Toward automatic model comparison: an adaptive sequential Monte Carlo approach. *J. Comput. Graph. Statist.* 25.

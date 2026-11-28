@@ -29,6 +29,14 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
     over structures and, optionally, Laplace parameter draws.
   - `StructurePosterior.option_prices` gives model-averaged European prices with their posterior
     standard deviation.
+- **SMC evidence** (`spxa.discovery.smc`): `smc_evidence(evidence, binned)` estimates $\log p(D\mid M)$
+  by tempering particles from the Laplace-$t$ reference to the posterior.
+  - Temperatures adapt to keep the conditional ESS at 95% of the particles, with systematic
+    resampling and random-walk Metropolis moves.
+  - The standard error comes from independent runs, and posterior draws come from the weighted
+    particles.
+  - It does not rest on a few heavy importance weights when a posterior is far from Gaussian.
+  - `structure_posterior(..., evidence="smc")` uses it, and `tempered_smc` is the generic engine.
 - `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
   `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
   likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.
