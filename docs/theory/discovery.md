@@ -171,11 +171,42 @@ $\ell$ is the smoothed binned likelihood of the fit. It has no multinomial coeff
 
 **Accuracy.** On Gaussian data with one or two free coordinates, the Laplace value matches adaptive quadrature of the posterior to $6\times10^{-4}$ ($n = 300$) and $8\times10^{-5}$ ($n = 2000$). Importance sampling agrees with quadrature within its standard error. On 250 weekly VG returns, the posterior is skewed and Laplace is 0.2 nats off. Importance sampling detects this (standard error 0.02), and at $n = 2000$ the gap is 0.006.
 
-## 7. When no Lévy composition fits
+**When the mode search has converged.** The binned likelihood is piecewise smooth, with kinks of relative size about $10^{-7}$ from the CDF's clip and running maximum. At such points the gradient can stall above a fixed tolerance. Convergence is therefore judged by $\tfrac12 g^\top H^{-1} g$ (`Evidence.mode_gap`, half the squared Newton decrement). To second order, this is how far the log posterior at the reported point lies below its maximum, so it is exactly the error the point adds to $\log p(D\mid M)$. The search counts as converged below $10^{-6}$ nats. For example, BM fitted to jump-diffusion returns stalls with a gradient of $10^{-2}$, yet its gap is $10^{-8}$ nats.
+
+## 7. Posterior over structures
+
+`structure_posterior(report)`, or `report.posterior()`, turns the evidences of the fitted candidates into posterior probabilities,
+
+$$
+P(M_i\mid D) = \frac{\pi_i\,p(D\mid M_i)}{\sum_j \pi_j\,p(D\mid M_j)}.
+$$
+
+The prior $\pi$ over structures is uniform by default. It can also be a mapping from structure key to weight, or a callable, and it is normalised over the candidates. The probabilities are computed by shifting the log posteriors by their maximum before exponentiating. That shift is exact, whereas $z - \operatorname{logsumexp}(z)$ loses $|z|\,\varepsilon$, about $10^{-12}$ for log evidences near $-6500$. The probabilities are conditional on the candidate set: a structure that was never fitted has probability zero. Candidates without a Laplace approximation (no positive-definite Hessian at the mode) are listed as skipped.
+
+These probabilities differ from BIC weights in two ways. They use each structure's actual posterior volume rather than $\frac k2\log n$. And they are honest about weakly identified extensions. On 2000 daily Brownian returns:
+
+| structure | BIC weight | $P(M\mid D)$, Laplace | $P(M\mid D)$, importance |
+|---|---|---|---|
+| BM | 0.999 | 0.81 | 0.74 ± 0.01 |
+| BM + NormalJumps | 0.000 | 0.19 | 0.26 ± 0.01 |
+
+BIC charges the jump part $\frac32\log n \approx 11.4$ for its three parameters. The evidence charges only the prior volume the data rule out. Rare large jumps are barely constrained by 2000 Gaussian returns, so their prior volume is largely kept. On data with jumps (Merton, $n = 3000$) or VG data, the true structure gets probability above $1 - 10^{-12}$.
+
+**Monte Carlo evidence.** `evidence="importance"` replaces each Laplace value by the importance-sampling estimate. Weakly identified structures are where Laplace errs: in the table it is 0.45 nats low for the jump structure. The estimates' standard errors $s_j$ propagate to the probabilities by the delta method,
+
+$$
+\operatorname{se}(P_i)^2 = \sum_j \big(P_i(\delta_{ij} - P_j)\big)^2 s_j^2,
+$$
+
+reported as `probability_se`. Over six seeds, the spread of the estimated probability matches the reported error to within 20%.
+
+**Model averaging.** `StructurePosterior.predictive(t, n_draws=0)` is the posterior predictive law of $X_t$. It is the mixture $\sum_i P(M_i\mid D)\,p(x\mid M_i)$ of COS laws, either at the modes or averaged over `n_draws` Laplace draws per structure. Its mean and variance are exact, by the law of total variance. `option_prices(...)` averages European prices in the same way. Each structure is made risk-neutral by its own martingale correction. The reported standard deviation combines parameter uncertainty within structures and disagreement between them. A draw whose prices are not finite is discarded and counted. Examples are an infinite $E[e^{X_1}]$, or a weakly identified jump part drawn with a jump standard deviation of 9.5 in log price, whose correction is about $-5\times10^{18}$. Averaged calls and puts satisfy put–call parity, because every component does.
+
+## 8. When no Lévy composition fits
 
 Lévy increments are i.i.d. `summarize` reports the autocorrelation of returns and of squared returns, with Ljung–Box tests. When volatility clusters, the search still runs, but the report warns that no composition in the grammar can explain dependence. Volatility models (`spxa.vol`) and rough models (`spxa.rough`) are the place to look then.
 
-## 8. What is tested
+## 9. What is tested
 
 The tests simulate exact increments and check:
 
@@ -184,6 +215,8 @@ The tests simulate exact increments and check:
 - VG beats its neighbours with weight above 0.95;
 - a VG + Gamma sum is recovered up to near-equivalence;
 - the binned likelihood cannot gain from mass outside the data's range: previously aliased Merton samples recover the true jump mean, and wide-grid probabilities match Monte Carlo where the fixed interval was off by 20 standard deviations;
+- posterior probabilities are Bayes' rule on the evidences to $10^{-14}$, a structure prior shifts log odds exactly, and the importance-sampling error matches the spread over seeds;
+- model-averaged predictive moments and prices are exact mixtures, and averaged prices satisfy put–call parity;
 - sandwich standard errors agree with the sampling spread of the estimates;
 - the option fitter recovers VG parameters from a 27-quote surface;
 - mixed quotes trigger the maturity warning.
@@ -197,6 +230,7 @@ The tests simulate exact increments and check:
 - Cont, R. & Tankov, P. (2004). *Financial Modelling with Jump Processes*. Chapman & Hall.
 - Geweke, J. (1989). Bayesian inference in econometric models using Monte Carlo integration. *Econometrica* 57.
 - Fang, F. & Oosterlee, C. W. (2008). A novel pricing method for European options based on Fourier-cosine series expansions. *SIAM J. Sci. Comput.* 31.
+- Hoeting, J. A., Madigan, D., Raftery, A. E. & Volinsky, C. T. (1999). Bayesian model averaging: a tutorial. *Statist. Sci.* 14.
 - Huber, P. J. (1967). The behavior of maximum likelihood estimates under nonstandard conditions. *Proc. Fifth Berkeley Symp.* 1.
 - Kass, R. E. & Raftery, A. E. (1995). Bayes factors. *J. Amer. Statist. Assoc.* 90.
 - Kou, S. G. (2002). A jump-diffusion model for option pricing. *Management Science* 48.

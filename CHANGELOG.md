@@ -20,6 +20,18 @@ live monitoring of a fitted model, and Lévy-driven CARMA processes.
   - priors on the free coordinates: `GaussianPrior` and `default_prior`.
 
   Laplace matches adaptive quadrature to $8\times10^{-5}$ at $n = 2000$, and its error falls like $1/n$.
+- **Structure posterior and model averaging** (`spxa.discovery.posterior`): `structure_posterior(report)`
+  or `report.posterior()` gives $P(M_i\mid D)$ over the fitted candidates under a prior over
+  structures. The result reports Bayes factors, credible sets and BIC weights for comparison.
+  - `evidence="importance"` uses importance-sampling evidences, with delta-method errors on the
+    probabilities (`probability_se`).
+  - `StructurePosterior.predictive` is the posterior predictive law of $X_t$, a `MixtureDistribution`
+    over structures and, optionally, Laplace parameter draws.
+  - `StructurePosterior.option_prices` gives model-averaged European prices with their posterior
+    standard deviation.
+- `Evidence.mode_gap` $= \tfrac12 g^\top H^{-1} g$, the error of the reported mode in nats.
+  `laplace_evidence` counts as converged when it is below `MODE_GAP_TOLERANCE = 1e-6`. The binned
+  likelihood's $10^{-7}$ kinks can stall the gradient above a fixed tolerance at an accurate mode.
 
 ### Fixed
 

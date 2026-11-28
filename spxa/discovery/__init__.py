@@ -31,6 +31,9 @@ Evidence
     :func:`laplace_evidence` (with the exact likelihood Hessian) and
     :func:`importance_evidence` compute the log evidence log p(D | M) under a
     :class:`GaussianPrior` on the free coordinates (:func:`default_prior`).
+    :func:`structure_posterior` turns them into posterior probabilities of the
+    candidates (:class:`StructurePosterior`), with model-averaged predictive
+    laws (:class:`MixtureDistribution`) and option prices (:class:`PosteriorPrices`).
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
 Option prices
@@ -50,6 +53,12 @@ from spxa.discovery.bayes import (
     laplace_evidence,
 )
 from spxa.discovery.density import COSDistribution, model_distribution
+from spxa.discovery.posterior import (
+    MixtureDistribution,
+    PosteriorPrices,
+    StructurePosterior,
+    structure_posterior,
+)
 from spxa.discovery.empirical import (
     EmpiricalSummary,
     acf,
@@ -157,6 +166,10 @@ __all__ = [
     "laplace_evidence",
     "ImportanceEvidence",
     "importance_evidence",
+    "StructurePosterior",
+    "structure_posterior",
+    "MixtureDistribution",
+    "PosteriorPrices",
     # search
     "Grammar",
     "canonical",

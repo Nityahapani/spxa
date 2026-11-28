@@ -11,6 +11,7 @@ from scipy import integrate
 
 from spxa.discovery import families as F
 from spxa.discovery.bayes import (
+    MODE_GAP_TOLERANCE,
     Evidence,
     GaussianPrior,
     _coerce_prior,
@@ -236,3 +237,41 @@ def test_a_tighter_prior_moves_the_mode_and_the_evidence() -> None:
     # both stay exact up to Laplace's error
     for ev in (wide, off):
         assert abs(ev.log_evidence - _quad_log_evidence(ev, bd)) < 5e-3
+
+
+def test_convergence_is_judged_by_the_newton_decrement() -> None:
+    # BM fitted to jump-diffusion data: the binned likelihood's kinks (clip and
+    # running maximum, about 1e-7 relative) stall the gradient above 1e-6 |v|,
+    # yet the mode is accurate to well under a micro-nat
+    rng = np.random.default_rng(2)
+    truth = Model(
+        leaf(F.BROWNIAN) + leaf(F.NORMAL_JUMPS) + leaf(F.DRIFT),
+        [(0.15,), (20.0, -0.02, 0.04), (0.05,)],
+    )
+    x = np.diff(truth.to_process().simulate(3000, 1, T=3000 / 252, rng=rng)[0])
+    summ = summarize(x, dt=1 / 252)
+    bd = BinnedData.from_sample(summ.sample, summ.dt)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fit = fit_structure(leaf(F.BROWNIAN), summ, binned=bd, rng=np.random.default_rng(1))
+    # gtol = 0 can never be met by a nonzero gradient, so only the gap
+    # criterion can declare convergence (where the search stalls varies with
+    # the platform's floating point: |g| was 1.2e-2 on one machine, 6e-3 on another)
+    ev = laplace_evidence(fit, bd, gtol=0.0)
+    from spxa.graph.autodiff.discovery import likelihood_value_grad_hess
+
+    v, g, _ = likelihood_value_grad_hess(ev.structure, bd, ev.mode)
+    g = g - ev.prior.grad(ev.mode)
+    assert np.max(np.abs(g)) > 0
+    assert ev.mode_gap == pytest.approx(0.5 * g @ np.linalg.solve(ev.hessian, g), rel=1e-10)
+    assert 0 <= ev.mode_gap < MODE_GAP_TOLERANCE and ev.converged
+    # the default search reaches the same mode
+    default = laplace_evidence(fit, bd)
+    assert default.converged
+    assert default.log_evidence == pytest.approx(ev.log_evidence, abs=1e-6)
+    # and the gap is what it claims: the log posterior one Newton step on
+    # rises by about that much, not more
+    nxt = ev.mode - np.linalg.solve(ev.hessian, g)
+    v2, _, _ = likelihood_value_grad_hess(ev.structure, bd, nxt)
+    rise = (v - ev.prior.log_density(ev.mode)) - (v2 - ev.prior.log_density(nxt))
+    assert rise < 1e-5
