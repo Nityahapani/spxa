@@ -84,6 +84,12 @@ Each defaults to the exact derivative; `"2-point"` restores SciPy's differences.
 
 **Implicit parameters.** When `calibrate_sabr` pins $\alpha$ to the at-the-money vol, $\alpha(\rho,\nu)$ solves $g(\alpha,\rho,\nu) = \sigma_{ATM}(\alpha,\rho,\nu) - \sigma = 0$. The implicit function theorem gives $\partial\alpha = -\partial g/g_\alpha$, which is exact to first order. A consequence is checked by the tests: the pinned at-the-money vol has zero gradient.
 
+**Likelihood Hessian.** `spxa.graph.autodiff.discovery.likelihood_value_grad_hess` returns the binned likelihood with its exact Hessian in the free coordinates. Second-order jets carry $\nabla p_j$ and $\nabla^2 p_j$ of every bin probability through $\psi$, the COS series and the bin differences. Then
+
+$$\nabla^2\Bigl(-\sum_j c_j \log p_j\Bigr) = \sum_j c_j\Bigl(\frac{\nabla p_j\nabla p_j^\top}{p_j^2} - \frac{\nabla^2 p_j}{p_j}\Bigr).$$
+
+At the maximum this is the observed information. The Laplace evidence of `spxa.discovery.bayes` is built on it.
+
 **Objectives with kinks.** The binned likelihood clips probabilities at a floor and takes a running maximum. Jets differentiate the branch taken, which is the derivative almost everywhere. On the penalty plateau the gradient is zero. If a gradient is not finite, `fit_structure` falls back to a difference for that step, and `fit_options` zeroes the Jacobian rows whose derivatives are not finite or whose residual sits at the penalty.
 
 ## 5. Monte Carlo gradients
@@ -128,7 +134,7 @@ Tests pool fixed seeds against COS and Black–Scholes references. They check th
 
   Over 12 seeds × 300 examples per law no law failed. Mutation tests show that a derivative off by $10^{-4}$ is caught.
 - **Differences use steps of $10^{-4}$ relative to the parameter.** At $10^{-3}$, the Richardson truncation error near CGMY's $\Gamma(-Y)$ pole ($Y = 1.9$) reached $1.2\times10^{-6}$ and falsified a jet derivative that mpmath confirms.
-- **Discovery gradients.** The exponents and cumulants in free coordinates match differences to $10^{-9}$ relative, for all eleven families and four composites. The likelihood and cumulant objectives match differences to $10^{-8}$ of the largest gradient entry on five structures, and the option-residual Jacobian does so on six.
+- **Discovery gradients.** The exponents and cumulants in free coordinates match differences to $10^{-9}$ relative, for all eleven families and four composites. The likelihood and cumulant objectives match differences to $10^{-8}$ of the largest gradient entry on five structures, and the option-residual Jacobian does so on six. The likelihood Hessian matches Richardson differences of the exact gradient to $10^{-8}$ of its largest entry on seven structures (observed $10^{-10}$ to $10^{-12}$), including a subordinated one and an eight-parameter sum.
 
 **Known limitations.**
 
