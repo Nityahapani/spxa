@@ -254,14 +254,21 @@ def test_convergence_is_judged_by_the_newton_decrement() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fit = fit_structure(leaf(F.BROWNIAN), summ, binned=bd, rng=np.random.default_rng(1))
-    ev = laplace_evidence(fit, bd)
+    # gtol = 0 can never be met by a nonzero gradient, so only the gap
+    # criterion can declare convergence (where the search stalls varies with
+    # the platform's floating point: |g| was 1.2e-2 on one machine, 6e-3 on another)
+    ev = laplace_evidence(fit, bd, gtol=0.0)
     from spxa.graph.autodiff.discovery import likelihood_value_grad_hess
 
     v, g, _ = likelihood_value_grad_hess(ev.structure, bd, ev.mode)
     g = g - ev.prior.grad(ev.mode)
-    assert np.max(np.abs(g)) > 1e-6 * abs(v)  # the old test would fail
+    assert np.max(np.abs(g)) > 0
     assert ev.mode_gap == pytest.approx(0.5 * g @ np.linalg.solve(ev.hessian, g), rel=1e-10)
     assert 0 <= ev.mode_gap < MODE_GAP_TOLERANCE and ev.converged
+    # the default search reaches the same mode
+    default = laplace_evidence(fit, bd)
+    assert default.converged
+    assert default.log_evidence == pytest.approx(ev.log_evidence, abs=1e-6)
     # and the gap is what it claims: the log posterior one Newton step on
     # rises by about that much, not more
     nxt = ev.mode - np.linalg.solve(ev.hessian, g)
