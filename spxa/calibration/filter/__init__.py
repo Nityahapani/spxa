@@ -1,6 +1,14 @@
-r"""Nonlinear latent state filtering and QMLE estimation submodule."""
+r"""Latent-state filtering and QMLE estimation: nonlinear filters, and exact Kalman QMLE for CARMA."""
 
 from spxa.calibration.filter.base import FilteredTrajectory, StateSpaceModel
+from spxa.calibration.filter.carma import (
+    CARMAFit,
+    KalmanInnovations,
+    carma_kalman_filter,
+    carma_log_likelihood,
+    fit_carma,
+    select_carma_order,
+)
 from spxa.calibration.filter.heston_filter import HestonVarianceFilter
 from spxa.calibration.filter.intensity_filter import DefaultIntensityFilter
 from spxa.calibration.filter.particle_filter import (
@@ -42,4 +50,10 @@ __all__ = [
     "HestonVarianceFilter",
     "SchwartzTwoFactorFilter",
     "DefaultIntensityFilter",
+    "CARMAFit",
+    "KalmanInnovations",
+    "carma_kalman_filter",
+    "carma_log_likelihood",
+    "fit_carma",
+    "select_carma_order",
 ]

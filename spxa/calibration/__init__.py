@@ -28,6 +28,8 @@ from spxa.calibration.diagnostics import (
 )
 from spxa.calibration.filter import (
     UKF,
+    CARMAFit,
+    KalmanInnovations,
     BootstrapParticleFilter,
     DefaultIntensityFilter,
     FilteredTrajectory,
@@ -45,6 +47,10 @@ from spxa.calibration.filter import (
     multinomial_resample,
     stratified_resample,
     systematic_resample,
+    carma_kalman_filter,
+    carma_log_likelihood,
+    fit_carma,
+    select_carma_order,
 )
 from spxa.calibration.mle import (
     BESQMLE,
@@ -99,6 +105,13 @@ __all__ = [
     "mle",
     "filter",
     "diagnostics",
+    # CARMA Kalman QMLE
+    "CARMAFit",
+    "KalmanInnovations",
+    "carma_kalman_filter",
+    "carma_log_likelihood",
+    "fit_carma",
+    "select_carma_order",
     # Surface Calibration
     "MarketQuote",
     "MarketSlice",
