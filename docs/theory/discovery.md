@@ -137,11 +137,35 @@ Tables mark these fits with `!`, a warning names the best admissible structure w
 
 **Selection stability.** `bootstrap(report, n_boot, top)` resamples the returns and refits the leading structures from their estimates. It records how often each one wins (the bootstrap analogue of an Akaike weight; Buckland, Burnham & Augustin 1997) and percentile intervals for the parameters. `block_length > 1` gives the moving-block bootstrap (Künsch 1989) for short-range dependence.
 
-## 6. When no Lévy composition fits
+## 6. Model evidence
+
+BIC is a large-sample stand-in for $-2\log p(D\mid M)$. `laplace_evidence(fit, binned, prior=None)` computes the evidence
+
+$$
+p(D\mid M) = \int p(D\mid x, M)\,\pi(x\mid M)\,dx
+$$
+
+itself, for a proper prior $\pi$ on the free coordinates $x$ of the structure. It uses the Laplace approximation at the posterior mode $\hat x$:
+
+$$
+\log p(D\mid M) \approx \ell(\hat x) + \log\pi(\hat x) + \tfrac k2\log 2\pi - \tfrac12\log\det H, \qquad H = -\nabla^2[\ell+\log\pi](\hat x).
+$$
+
+The mode is found by a trust-region Newton search from the maximum-likelihood point. $H$ comes from the exact likelihood Hessian, so the only approximation is Laplace's, with relative error $O(1/n)$ (Tierney & Kadane 1986). With $H \approx n\,I_1$, $-2\log p(D\mid M) = \mathrm{BIC} + O(1)$ (Kass & Raftery 1995). `Evidence.log_occam_factor` $= \log p(D\mid M) - \ell(\hat x)$ is the price the structure pays for its parameters, measured on the actual posterior volume rather than as $\frac k2\log n$.
+
+$\ell$ is the smoothed binned likelihood of the fit. It has no multinomial coefficient, so evidences share an additive constant per set of bins. They compare structures fitted to the same `BinnedData`, which is what `discover` produces.
+
+**Checking Laplace.** `importance_evidence(evidence, binned, n_draws=2000)` gives an unbiased estimate of $p(D\mid M)$. Its proposal is a multivariate $t_5$ at $\hat x$ with scale $1.2^2 H^{-1}$ (Geweke 1989). It reports the delta-method standard error of $\log\hat Z$ and Kish's effective sample size.
+
+**Priors.** `GaussianPrior(mean, sd)` puts independent normals on the free coordinates. `default_prior(structure, std, scale=2)` centres them at the starting member (the data's standard deviation spread over the summands). The standard deviations are `scale` for logarithmic, logit and `arctanh` coordinates, and `scale` $\cdot\,\sigma_1$ for the three untransformed ones: the drift, the VG $\theta$ and the normal jump mean. Here $\sigma_1$ is the data's standard deviation per unit time. Bayes factors depend on the prior widths of parameters that two structures do not share (Lindley 1957). Pass your own prior when you have real information.
+
+**Accuracy.** On Gaussian data with one or two free coordinates, the Laplace value matches adaptive quadrature of the posterior to $6\times10^{-4}$ ($n = 300$) and $8\times10^{-5}$ ($n = 2000$). Importance sampling agrees with quadrature within its standard error. On 250 weekly VG returns, the posterior is skewed and Laplace is 0.2 nats off. Importance sampling detects this (standard error 0.02), and at $n = 2000$ the gap is 0.006.
+
+## 7. When no Lévy composition fits
 
 Lévy increments are i.i.d. `summarize` reports the autocorrelation of returns and of squared returns, with Ljung–Box tests. When volatility clusters, the search still runs, but the report warns that no composition in the grammar can explain dependence. Volatility models (`spxa.vol`) and rough models (`spxa.rough`) are the place to look then.
 
-## 7. What is tested
+## 8. What is tested
 
 The tests simulate exact increments and check:
 
@@ -160,13 +184,17 @@ The tests simulate exact increments and check:
 - Burnham, K. P. & Anderson, D. R. (2002). *Model Selection and Multimodel Inference*, 2nd ed. Springer.
 - Carr, P., Geman, H., Madan, D. & Yor, M. (2002). The fine structure of asset returns. *J. Business* 75.
 - Cont, R. & Tankov, P. (2004). *Financial Modelling with Jump Processes*. Chapman & Hall.
+- Geweke, J. (1989). Bayesian inference in econometric models using Monte Carlo integration. *Econometrica* 57.
 - Fang, F. & Oosterlee, C. W. (2008). A novel pricing method for European options based on Fourier-cosine series expansions. *SIAM J. Sci. Comput.* 31.
 - Huber, P. J. (1967). The behavior of maximum likelihood estimates under nonstandard conditions. *Proc. Fifth Berkeley Symp.* 1.
+- Kass, R. E. & Raftery, A. E. (1995). Bayes factors. *J. Amer. Statist. Assoc.* 90.
 - Kou, S. G. (2002). A jump-diffusion model for option pricing. *Management Science* 48.
 - Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. *Ann. Statist.* 17.
+- Lindley, D. V. (1957). A statistical paradox. *Biometrika* 44.
 - Madan, D., Carr, P. & Chang, E. (1998). The variance gamma process and option pricing. *European Finance Review* 2.
 - Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. *J. Financial Economics* 3.
 - Sato, K. (1999). *Lévy Processes and Infinitely Divisible Distributions*. Cambridge.
 - Schoutens, W. & Teugels, J. L. (1998). Lévy processes, polynomials and martingales. *Communications in Statistics. Stochastic Models* 14(1–2), 335–349.
+- Tierney, L. & Kadane, J. B. (1986). Accurate approximations for posterior moments and marginal densities. *J. Amer. Statist. Assoc.* 81.
 - Vuong, Q. H. (1989). Likelihood ratio tests for model selection and non-nested hypotheses. *Econometrica* 57.
 - White, H. (1982). Maximum likelihood estimation of misspecified models. *Econometrica* 50.

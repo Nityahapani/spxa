@@ -27,6 +27,10 @@ Inference
     :func:`parameter_uncertainty` (sandwich or GMM standard errors) and
     :func:`vuong_test` for non-nested structures, :func:`bootstrap` for
     selection frequencies and parameter intervals.
+Evidence
+    :func:`laplace_evidence` (with the exact likelihood Hessian) and
+    :func:`importance_evidence` compute the log evidence log p(D | M) under a
+    :class:`GaussianPrior` on the free coordinates (:func:`default_prior`).
 Search
     :class:`Grammar`, :func:`discover` and the :class:`DiscoveryReport`.
 Option prices
@@ -37,6 +41,14 @@ Option prices
 """
 
 from spxa.discovery.bootstrap import BootstrapResult, bootstrap
+from spxa.discovery.bayes import (
+    Evidence,
+    GaussianPrior,
+    ImportanceEvidence,
+    default_prior,
+    importance_evidence,
+    laplace_evidence,
+)
 from spxa.discovery.density import COSDistribution, model_distribution
 from spxa.discovery.empirical import (
     EmpiricalSummary,
@@ -138,6 +150,13 @@ __all__ = [
     "vuong_test",
     "BootstrapResult",
     "bootstrap",
+    # evidence
+    "GaussianPrior",
+    "default_prior",
+    "Evidence",
+    "laplace_evidence",
+    "ImportanceEvidence",
+    "importance_evidence",
     # search
     "Grammar",
     "canonical",
