@@ -157,13 +157,16 @@ def _binned_cdf(
     their gradient ``(m, n)`` and, for ``order=2``, their Hessian ``(m, n, n)``.
     """
     fm = FreeModel(structure, x)
+    if hasattr(binned, "cos_grid"):
+        A, B, u, sine = binned.cos_grid(Model.from_free(structure, fm.values))
+    else:
+        A, B, u, sine = binned.a, binned.b, binned.u, binned.sine
     th = variable_vector(fm.values, order=order)
-    u = binned.u
     psi = fm.char_exponent(u, th)
     phi = np.exp(binned.dt * psi) * np.exp(-0.5 * (binned.bandwidth * u) ** 2)
-    coef = 2.0 / (binned.b - binned.a) * np.real(phi * np.exp(-1j * u * binned.a))
+    coef = 2.0 / (B - A) * np.real(phi * np.exp(-1j * u * A))
     inner = binned.edges[1:-1]
-    F_in = (inner - binned.a) / (binned.b - binned.a) + binned.sine @ coef[1:]
+    F_in = (inner - A) / (B - A) + sine @ coef[1:]
     n = fm.values.size
     Fv = np.concatenate([[0.0], np.real(value_of(F_in)), [1.0]])
     Fg = np.concatenate([np.zeros((1, n)), np.real(F_in.grad), np.zeros((1, n))])
